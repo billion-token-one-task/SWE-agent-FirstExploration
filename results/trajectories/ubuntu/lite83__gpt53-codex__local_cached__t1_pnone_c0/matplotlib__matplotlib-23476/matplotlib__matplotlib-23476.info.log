@@ -1,0 +1,831 @@
+2026-03-04 11:02:26,196 - INFO - rex-deploy-matplotlib__matplotlib-23476 - Starting container docker.ioswebenchsweb.eval.x86_64.matplotlib_1776_matplotlib-23476latest-ce063c56-58cf-4d7b-a96b-24cb2e8fad14 with image docker.io/swebench/sweb.eval.x86_64.matplotlib_1776_matplotlib-23476:latest serving on port 40677
+2026-03-04 11:02:26,199 - INFO - rex-deploy-matplotlib__matplotlib-23476 - Starting runtime at 40677
+2026-03-04 11:02:28,036 - INFO - rex-deploy-matplotlib__matplotlib-23476 - Runtime started in 1.84s
+2026-03-04 11:02:29,090 - INFO - swea-env-matplotlib__matplotlib-23476 - Environment Initialized
+2026-03-04 11:02:45,144 - INFO - swea-agent-matplotlib__matplotlib-23476 - Setting up agent for instance matplotlib__matplotlib-23476
+2026-03-04 11:02:45,145 - INFO - swea-agent-matplotlib__matplotlib-23476 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_local_cached/matplotlib__matplotlib-23476/matplotlib__matplotlib-23476.traj
+2026-03-04 11:06:23,408 - INFO - swea-tools-matplotlib__matplotlib-23476 - Resetting tools
+2026-03-04 11:06:23,855 - INFO - swea-agent-matplotlib__matplotlib-23476 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-04 11:06:24,078 - INFO - swea-agent-matplotlib__matplotlib-23476 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+[Bug]: DPI of a figure is doubled after unpickling on M1 Mac
+### Bug summary
+
+When a figure is unpickled, it's dpi is doubled. This behaviour happens every time and if done in a loop it can cause an `OverflowError`.
+
+### Code for reproduction
+
+```python
+import numpy as np
+import matplotlib
+import matplotlib.pyplot as plt
+import pickle
+import platform
+
+print(matplotlib.get_backend())
+print('Matplotlib ver:', matplotlib.__version__)
+print('Platform:', platform.platform())
+print('System:', platform.system())
+print('Release:', platform.release())
+print('Python ver:', platform.python_version())
+
+
+def dump_load_get_dpi(fig):
+    with open('sinus.pickle','wb') as file:
+        pickle.dump(fig, file)
+
+    with open('sinus.pickle', 'rb') as blob:
+        fig2 = pickle.load(blob)
+    return fig2, fig2.dpi
+
+
+def run():
+    fig = plt.figure()
+    x = np.linspace(0,2*np.pi)
+    y = np.sin(x)
+
+    for i in range(32):
+        print(f'{i}: {fig.dpi}')
+        fig, dpi = dump_load_get_dpi(fig)
+
+
+if __name__ == '__main__':
+    run()
+```
+
+
+### Actual outcome
+
+```
+MacOSX
+Matplotlib ver: 3.5.2
+Platform: macOS-12.4-arm64-arm-64bit
+System: Darwin
+Release: 21.5.0
+Python ver: 3.9.12
+0: 200.0
+1: 400.0
+2: 800.0
+3: 1600.0
+4: 3200.0
+5: 6400.0
+6: 12800.0
+7: 25600.0
+8: 51200.0
+9: 102400.0
+10: 204800.0
+11: 409600.0
+12: 819200.0
+13: 1638400.0
+14: 3276800.0
+15: 6553600.0
+16: 13107200.0
+17: 26214400.0
+18: 52428800.0
+19: 104857600.0
+20: 209715200.0
+21: 419430400.0
+Traceback (most recent call last):
+  File "/Users/wsykala/projects/matplotlib/example.py", line 34, in <module>
+    run()
+  File "/Users/wsykala/projects/matplotlib/example.py", line 30, in run
+    fig, dpi = dump_load_get_dpi(fig)
+  File "/Users/wsykala/projects/matplotlib/example.py", line 20, in dump_load_get_dpi
+    fig2 = pickle.load(blob)
+  File "/Users/wsykala/miniconda3/envs/playground/lib/python3.9/site-packages/matplotlib/figure.py", line 2911, in __setstate__
+    mgr = plt._backend_mod.new_figure_manager_given_figure(num, self)
+  File "/Users/wsykala/miniconda3/envs/playground/lib/python3.9/site-packages/matplotlib/backend_bases.py", line 3499, in new_figure_manager_given_figure
+    canvas = cls.FigureCanvas(figure)
+  File "/Users/wsykala/miniconda3/envs/playground/lib/python3.9/site-packages/matplotlib/backends/backend_macosx.py", line 32, in __init__
+    _macosx.FigureCanvas.__init__(self, width, height)
+OverflowError: signed integer is greater than maximum
+```
+
+### Expected outcome
+
+```
+MacOSX
+Matplotlib ver: 3.5.2
+Platform: macOS-12.4-arm64-arm-64bit
+System: Darwin
+Release: 21.5.0
+Python ver: 3.9.12
+0: 200.0
+1: 200.0
+2: 200.0
+3: 200.0
+4: 200.0
+5: 200.0
+6: 200.0
+7: 200.0
+8: 200.0
+9: 200.0
+10: 200.0
+11: 200.0
+12: 200.0
+13: 200.0
+14: 200.0
+15: 200.0
+16: 200.0
+17: 200.0
+18: 200.0
+19: 200.0
+20: 200.0
+21: 200.0
+22: 200.0
+```
+
+### Additional information
+
+This seems to happen only on M1 MacBooks and the version of python doesn't matter.
+
+### Operating system
+
+OS/X
+
+### Matplotlib Version
+
+3.5.2
+
+### Matplotlib Backend
+
+MacOSX
+
+### Python version
+
+3.9.12
+
+### Jupyter version
+
+_No response_
+
+### Installation
+
+pip
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-04 11:06:24,079 - INFO - swea-agent-matplotlib__matplotlib-23476 - ========================= STEP 1 =========================
+2026-03-04 11:06:28,697 - INFO - swea-agent-matplotlib__matplotlib-23476 - 💭 THOUGHT
+
+
+🎬 ACTION
+ls -la /testbed
+2026-03-04 11:06:29,053 - INFO - swea-agent-matplotlib__matplotlib-23476 - 🤖 MODEL INPUT
+OBSERVATION:
+total 184
+drwxrwxrwx  1 root root    18 Sep 10 14:24 .
+drwxr-xr-x  1 root root    55 Mar  4 03:02 ..
+-rw-r--r--  1 root root  3711 Sep 10 14:10 .appveyor.yml
+drwxrwxrwx  2 root root    46 Sep 10 14:10 .circleci
+-rw-r--r--  1 root root   227 Sep 10 14:10 .coveragerc
+drwxr-xr-x  3 root root    75 Sep 10 14:24 .eggs
+-rw-r--r--  1 root root  5213 Sep 10 14:10 .flake8
+drwxrwxrwx  1 root root   105 Mar  4 03:02 .git
+-rw-r--r--  1 root root   331 Sep 10 14:10 .git-blame-ignore-revs
+-rw-r--r--  1 root root    23 Sep 10 14:10 .git_archival.txt
+-rw-r--r--  1 root root   112 Sep 10 14:10 .gitattributes
+drwxrwxrwx  4 root root   160 Sep 10 14:10 .github
+-rw-r--r--  1 root root  1777 Sep 10 14:10 .gitignore
+-rw-r--r--  1 root root   639 Sep 10 14:10 .lgtm.yml
+-rw-r--r--  1 root root  8849 Sep 10 14:10 .mailmap
+-rw-r--r--  1 root root   164 Sep 10 14:10 .matplotlib-repo
+-rw-r--r--  1 root root    44 Sep 10 14:10 .meeseeksdev.yml
+-rw-r--r--  1 root root  1136 Sep 10 14:10 .pre-commit-config.yaml
+-rw-r--r--  1 root root   529 Sep 10 14:10 CITATION.bib
+-rw-r--r--  1 root root  5678 Sep 10 14:10 CODE_OF_CONDUCT.md
+-rw-r--r--  1 root root    35 Sep 10 14:10 INSTALL.rst
+drwxrwxrwx  2 root root  4096 Sep 10 14:25 LICENSE
+-rw-r--r--  1 root root  4775 Sep 10 14:10 README.rst
+-rw-r--r--  1 root root  1018 Sep 10 14:10 SECURITY.md
+drwxr-xr-x  2 root root    38 Sep 10 14:24 __pycache__
+-rw-r--r--  1 root root  5220 Sep 10 14:10 azure-pipelines.yml
+drwxr-xr-x  6 root root   121 Sep 10 14:25 build
+drwxrwxrwx  2 root root    86 Sep 10 14:10 ci
+drwxrwxrwx  9 root root  4096 Sep 10 14:10 doc
+-rw-r--r--  1 root root  1118 Sep 10 14:10 environment.yml
+drwxr-xr-x 27 root root  4096 Sep 10 14:10 examples
+drwxrwxrwx  4 root root    37 Sep 10 14:10 extern
+drwxrwxrwx  5 root root    87 Sep 10 14:24 lib
+-rw-r--r--  1 root root  1390 Sep 10 14:10 mplsetup.cfg.template
+drwxr-xr-x  6 root root    84 Sep 10 14:10 plot_types
+-rw-r--r--  1 root root   446 Sep 10 14:10 pytest.ini
+drwxrwxrwx  5 root root    43 Sep 10 14:10 requirements
+-rw-r--r--  1 root root   132 Sep 10 14:10 setup.cfg
+-rw-r--r--  1 root root 12886 Sep 10 14:10 setup.py
+-rw-r--r--  1 root root 28036 Sep 10 14:10 setupext.py
+drwxrwxrwx  4 root root  4096 Sep 10 14:10 src
+-rwxr-xr-x  1 root root  1069 Sep 10 14:10 tests.py
+drwxr-xr-x  2 root root    69 Sep 10 14:24 tmp
+drwxrwxrwx  2 root root  4096 Sep 10 14:10 tools
+-rw-r--r--  1 root root   583 Sep 10 14:10 tox.ini
+drwxr-xr-x  9 root root   141 Sep 10 14:10 tutorials
+
+2026-03-04 11:06:29,056 - INFO - swea-agent-matplotlib__matplotlib-23476 - ========================= STEP 2 =========================
+2026-03-04 11:06:31,254 - INFO - swea-agent-matplotlib__matplotlib-23476 - 💭 THOUGHT
+
+
+🎬 ACTION
+grep -R "device_pixel_ratio\|dpi\"\|_dpi_ratio\|macosx" -n /testbed/lib/matplotlib | head -n 200
+2026-03-04 11:06:31,931 - INFO - swea-agent-matplotlib__matplotlib-23476 - 🤖 MODEL INPUT
+OBSERVATION:
+/testbed/lib/matplotlib/animation.py:492:            buf, **{**savefig_kwargs, "format": "rgba", "dpi": self.dpi})
+/testbed/lib/matplotlib/animation.py:1190:        # emit a resize event on launch, but the macosx backend does not,
+/testbed/lib/matplotlib/backend_bases.py:109:            'macosx': 'macosx',
+/testbed/lib/matplotlib/backend_bases.py:1600:    # Set to one of {"qt", "gtk3", "gtk4", "wx", "tk", "macosx"} if an
+/testbed/lib/matplotlib/backend_bases.py:1657:        self._device_pixel_ratio = 1
+/testbed/lib/matplotlib/backend_bases.py:1688:            "macosx": "osx",
+/testbed/lib/matplotlib/backend_bases.py:2059:    def device_pixel_ratio(self):
+/testbed/lib/matplotlib/backend_bases.py:2069:        return self._device_pixel_ratio
+/testbed/lib/matplotlib/backend_bases.py:2071:    def _set_device_pixel_ratio(self, ratio):
+/testbed/lib/matplotlib/backend_bases.py:2098:        if self._device_pixel_ratio == ratio:
+/testbed/lib/matplotlib/backend_bases.py:2106:        self._device_pixel_ratio = ratio
+/testbed/lib/matplotlib/backend_bases.py:2130:        return tuple(int(size / (1 if physical else self.device_pixel_ratio))
+/testbed/lib/matplotlib/backend_bases.py:2203:                "dpi", "facecolor", "edgecolor", "orientation",
+/testbed/lib/matplotlib/backend_bases.py:2291:             cbook._setattr_cm(self.figure.canvas, _device_pixel_ratio=1), \
+/testbed/lib/matplotlib/backends/_backend_gtk.py:233:        width = int(width / self.canvas.device_pixel_ratio)
+/testbed/lib/matplotlib/backends/_backend_gtk.py:234:        height = int(height / self.canvas.device_pixel_ratio)
+/testbed/lib/matplotlib/backends/_backend_tk.py:181:            self._tkcanvas.bind("<Map>", self._update_device_pixel_ratio)
+/testbed/lib/matplotlib/backends/_backend_tk.py:217:    def _update_device_pixel_ratio(self, event=None):
+/testbed/lib/matplotlib/backends/_backend_tk.py:222:        if self._set_device_pixel_ratio(ratio):
+/testbed/lib/matplotlib/backends/_backend_tk.py:494:        self.canvas._update_device_pixel_ratio()
+/testbed/lib/matplotlib/backends/backend_gtk3.py:99:        self.connect('screen-changed',       self._update_device_pixel_ratio)
+/testbed/lib/matplotlib/backends/backend_gtk3.py:100:        self.connect('notify::scale-factor', self._update_device_pixel_ratio)
+/testbed/lib/matplotlib/backends/backend_gtk3.py:148:        x = x * self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_gtk3.py:150:        y = self.figure.bbox.height - y * self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_gtk3.py:198:        winch = allocation.width * self.device_pixel_ratio / dpival
+/testbed/lib/matplotlib/backends/backend_gtk3.py:199:        hinch = allocation.height * self.device_pixel_ratio / dpival
+/testbed/lib/matplotlib/backends/backend_gtk3.py:221:    def _update_device_pixel_ratio(self, *args, **kwargs):
+/testbed/lib/matplotlib/backends/backend_gtk3.py:223:        # device_pixel_ratio changes.
+/testbed/lib/matplotlib/backends/backend_gtk3.py:224:        if self._set_device_pixel_ratio(self.get_scale_factor()):
+/testbed/lib/matplotlib/backends/backend_gtk3.py:234:        w = event.width * self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_gtk3.py:235:        h = event.height * self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_gtk3.py:252:        x0, y0, w, h = (dim / self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_gtk3agg.py:17:        scale = self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_gtk3agg.py:56:        scale = self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_gtk3cairo.py:21:            scale = self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_gtk4.py:52:        self.connect('notify::scale-factor', self._update_device_pixel_ratio)
+/testbed/lib/matplotlib/backends/backend_gtk4.py:108:        x = x * self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_gtk4.py:110:        y = self.figure.bbox.height - y * self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_gtk4.py:154:        self._update_device_pixel_ratio()
+/testbed/lib/matplotlib/backends/backend_gtk4.py:156:        winch = width * self.device_pixel_ratio / dpi
+/testbed/lib/matplotlib/backends/backend_gtk4.py:157:        hinch = height * self.device_pixel_ratio / dpi
+/testbed/lib/matplotlib/backends/backend_gtk4.py:179:    def _update_device_pixel_ratio(self, *args, **kwargs):
+/testbed/lib/matplotlib/backends/backend_gtk4.py:181:        # device_pixel_ratio changes.
+/testbed/lib/matplotlib/backends/backend_gtk4.py:182:        if self._set_device_pixel_ratio(self.get_scale_factor()):
+/testbed/lib/matplotlib/backends/backend_gtk4.py:201:            x0, y0, w, h = (dim / self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_gtk4.py:205:            lw *= self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_gtk4.py:206:            dash *= self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_gtk4agg.py:14:        scale = self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_gtk4cairo.py:22:            scale = self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_macosx.py:6:from . import _macosx
+/testbed/lib/matplotlib/backends/backend_macosx.py:15:class TimerMac(_macosx.Timer, TimerBase):
+/testbed/lib/matplotlib/backends/backend_macosx.py:17:    # completely implemented at the C-level (in _macosx.Timer)
+/testbed/lib/matplotlib/backends/backend_macosx.py:20:class FigureCanvasMac(FigureCanvasAgg, _macosx.FigureCanvas, FigureCanvasBase):
+/testbed/lib/matplotlib/backends/backend_macosx.py:34:    required_interactive_framework = "macosx"
+/testbed/lib/matplotlib/backends/backend_macosx.py:44:        """Render the figure and update the macosx canvas."""
+/testbed/lib/matplotlib/backends/backend_macosx.py:97:        scale = self.figure.dpi / self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_macosx.py:105:class NavigationToolbar2Mac(_macosx.NavigationToolbar2, NavigationToolbar2):
+/testbed/lib/matplotlib/backends/backend_macosx.py:110:        _macosx.NavigationToolbar2.__init__(
+/testbed/lib/matplotlib/backends/backend_macosx.py:125:        filename = _macosx.choose_save_file('Save the figure',
+/testbed/lib/matplotlib/backends/backend_macosx.py:144:class FigureManagerMac(_macosx.FigureManager, FigureManagerBase):
+/testbed/lib/matplotlib/backends/backend_macosx.py:149:        _macosx.FigureManager.__init__(self, canvas)
+/testbed/lib/matplotlib/backends/backend_macosx.py:151:        _macosx.FigureManager.set_icon(icon_path)
+/testbed/lib/matplotlib/backends/backend_macosx.py:182:        _macosx.show()
+/testbed/lib/matplotlib/backends/backend_qt.py:225:        if self._set_device_pixel_ratio(_devicePixelRatioF(self)):
+/testbed/lib/matplotlib/backends/backend_qt.py:269:        y = self.figure.bbox.height / self.device_pixel_ratio - pos.y()
+/testbed/lib/matplotlib/backends/backend_qt.py:270:        return x * self.device_pixel_ratio, y * self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_qt.py:341:        w = event.size().width() * self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_qt.py:342:        h = event.size().height() * self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_qt.py:442:        l, b, w, h = [int(pt / self.device_pixel_ratio) for pt in bbox.bounds]
+/testbed/lib/matplotlib/backends/backend_qt.py:463:            x0, y0, w, h = [int(pt / self.device_pixel_ratio) for pt in rect]
+/testbed/lib/matplotlib/backends/backend_qt.py:469:                    1 / self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_qt.py:579:        width = int(width / self.canvas.device_pixel_ratio)
+/testbed/lib/matplotlib/backends/backend_qt.py:580:        height = int(height / self.canvas.device_pixel_ratio)
+/testbed/lib/matplotlib/backends/backend_qtagg.py:41:            width = rect.width() * self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_qtagg.py:42:            height = rect.height() * self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_qtagg.py:66:            _setDevicePixelRatio(qimage, self.device_pixel_ratio)
+/testbed/lib/matplotlib/backends/backend_qtcairo.py:16:        width = int(self.device_pixel_ratio * self.width())
+/testbed/lib/matplotlib/backends/backend_qtcairo.py:17:        height = int(self.device_pixel_ratio * self.height())
+/testbed/lib/matplotlib/backends/backend_qtcairo.py:37:        _setDevicePixelRatio(qimage, self.device_pixel_ratio)
+/testbed/lib/matplotlib/backends/backend_webagg_core.py:335:        x = int(event.get('width', 800)) * self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_webagg_core.py:336:        y = int(event.get('height', 800)) * self.device_pixel_ratio
+/testbed/lib/matplotlib/backends/backend_webagg_core.py:352:    def handle_set_device_pixel_ratio(self, event):
+/testbed/lib/matplotlib/backends/backend_webagg_core.py:353:        self._handle_set_device_pixel_ratio(event.get('device_pixel_ratio', 1))
+/testbed/lib/matplotlib/backends/backend_webagg_core.py:355:    def handle_set_dpi_ratio(self, event):
+/testbed/lib/matplotlib/backends/backend_webagg_core.py:357:        self._handle_set_device_pixel_ratio(event.get('dpi_ratio', 1))
+/testbed/lib/matplotlib/backends/backend_webagg_core.py:359:    def _handle_set_device_pixel_ratio(self, device_pixel_ratio):
+/testbed/lib/matplotlib/backends/backend_webagg_core.py:360:        if self._set_device_pixel_ratio(device_pixel_ratio):
+/testbed/lib/matplotlib/backends/backend_webagg_core.py:441:            size=(w / self.canvas.device_pixel_ratio,
+/testbed/lib/matplotlib/backends/backend_webagg_core.py:442:                  h / self.canvas.device_pixel_ratio),
+/testbed/lib/matplotlib/backends/web_backend/js/mpl.js:66:            fig.send_message('set_device_pixel_ratio', {
+/testbed/lib/matplotlib/backends/web_backend/js/mpl.js:67:                device_pixel_ratio: fig.ratio,
+/testbed/lib/matplotlib/cbook/__init__.py:43:        "macosx", "headless", ``None``.
+/testbed/lib/matplotlib/cbook/__init__.py:74:    macosx = sys.modules.get("matplotlib.backends._macosx")
+/testbed/lib/matplotlib/cbook/__init__.py:75:    if macosx and macosx.event_loop_is_running():
+/testbed/lib/matplotlib/cbook/__init__.py:76:        return "macosx"
+/testbed/lib/matplotlib/dviread.py:1133:    parser.add_argument("dpi", nargs="?", type=float, default=None)
+/testbed/lib/matplotlib/image.py:1655:        pil_kwargs.setdefault("dpi", (dpi, dpi))
+/testbed/lib/matplotlib/mathtext.py:207:        'macosx': MathtextBackendAgg,
+/testbed/lib/matplotlib/pyplot.py:234:                   'macosx': 'macosx',
+/testbed/lib/matplotlib/pyplot.py:243:            "macosx", "qtagg", "gtk4agg", "gtk3agg", "tkagg", "wxagg"]
+/testbed/lib/matplotlib/rcsetup.py:1137:    "figure.dpi":              validate_float,
+/testbed/lib/matplotlib/tests/test_backend_macosx.py:8:    from matplotlib.backends import _macosx
+/testbed/lib/matplotlib/tests/test_backend_macosx.py:13:@pytest.mark.backend('macosx')
+/testbed/lib/matplotlib/tests/test_backend_macosx.py:26:@pytest.mark.backend('macosx')
+/testbed/lib/matplotlib/tests/test_backend_macosx.py:36:    monkeypatch.setattr(_macosx, "choose_save_file", new_choose_save_file)
+/testbed/lib/matplotlib/tests/test_backend_qt.py:339:def test_device_pixel_ratio_change():
+/testbed/lib/matplotlib/tests/test_backend_qt.py:353:        def set_device_pixel_ratio(ratio):
+/testbed/lib/matplotlib/tests/test_backend_qt.py:366:            assert qt_canvas.device_pixel_ratio == ratio
+/testbed/lib/matplotlib/tests/test_backend_qt.py:371:        set_device_pixel_ratio(3)
+/testbed/lib/matplotlib/tests/test_backend_qt.py:384:        set_device_pixel_ratio(2)
+/testbed/lib/matplotlib/tests/test_backend_qt.py:397:        set_device_pixel_ratio(1.5)
+/testbed/lib/matplotlib/tests/test_backend_qt.py:627:        elif env["MPLBACKEND"] == 'macosx' and os.environ.get('TF_BUILD'):
+/testbed/lib/matplotlib/tests/test_backend_qt.py:628:            reason = "macosx backend fails on Azure"
+/testbed/lib/matplotlib/tests/test_backends_interactive.py:38:            (["matplotlib.backends._macosx"], {"MPLBACKEND": "macosx"}),
+/testbed/lib/matplotlib/tests/test_backends_interactive.py:47:        elif env["MPLBACKEND"] == 'macosx' and os.environ.get('TF_BUILD'):
+/testbed/lib/matplotlib/tests/test_backends_interactive.py:48:            reason = "macosx backend fails on Azure"
+/testbed/lib/matplotlib/tests/test_backends_interactive.py:172:    if env["MPLBACKEND"] == "macosx":
+/testbed/lib/matplotlib/tests/test_backends_interactive.py:174:            pytest.skip("toolmanager is not implemented for macosx.")
+/testbed/lib/matplotlib/tests/test_backends_interactive.py:224:    elif backend == "macosx":
+/testbed/lib/matplotlib/tests/test_backends_interactive.py:583:    if env["MPLBACKEND"] == "macosx" or (
+/testbed/lib/matplotlib/tests/test_figure.py:519:    fig.canvas._set_device_pixel_ratio(2)
+/testbed/lib/matplotlib/tests/test_image.py:114:    dpi = plt.rcParams["savefig.dpi"]
+/testbed/lib/matplotlib/tests/test_image.py:130:    dpi = plt.rcParams["savefig.dpi"]
+/testbed/lib/matplotlib/tests/test_mathtext.py:377:        dpi=mpl.rcParams["savefig.dpi"])
+/testbed/lib/matplotlib/tests/test_nbagg_01.ipynb:90:       "                fig.send_message(\"set_dpi_ratio\", {'dpi_ratio': mpl.ratio});\n",
+/testbed/lib/matplotlib/tests/test_patches.py:516:    plt.rcParams["savefig.dpi"] = plt.rcParams["figure.dpi"]
+/testbed/lib/matplotlib/tests/test_patches.py:580:    plt.rcParams["savefig.dpi"] = "figure"
+
+2026-03-04 11:06:31,937 - INFO - swea-agent-matplotlib__matplotlib-23476 - ========================= STEP 3 =========================
+2026-03-04 11:06:34,318 - INFO - swea-agent-matplotlib__matplotlib-23476 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/lib/matplotlib/backends/backend_macosx.py
+2026-03-04 11:06:34,779 - INFO - swea-agent-matplotlib__matplotlib-23476 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/lib/matplotlib/backends/backend_macosx.py:
+     1	import os
+     2	
+     3	import matplotlib as mpl
+     4	from matplotlib import _api, cbook
+     5	from matplotlib._pylab_helpers import Gcf
+     6	from . import _macosx
+     7	from .backend_agg import FigureCanvasAgg
+     8	from matplotlib.backend_bases import (
+     9	    _Backend, FigureCanvasBase, FigureManagerBase, NavigationToolbar2,
+    10	    ResizeEvent, TimerBase)
+    11	from matplotlib.figure import Figure
+    12	from matplotlib.widgets import SubplotTool
+    13	
+    14	
+    15	class TimerMac(_macosx.Timer, TimerBase):
+    16	    """Subclass of `.TimerBase` using CFRunLoop timer events."""
+    17	    # completely implemented at the C-level (in _macosx.Timer)
+    18	
+    19	
+    20	class FigureCanvasMac(FigureCanvasAgg, _macosx.FigureCanvas, FigureCanvasBase):
+    21	    # docstring inherited
+    22	
+    23	    # Ideally this class would be `class FCMacAgg(FCAgg, FCMac)`
+    24	    # (FC=FigureCanvas) where FCMac would be an ObjC-implemented mac-specific
+    25	    # class also inheriting from FCBase (this is the approach with other GUI
+    26	    # toolkits).  However, writing an extension type inheriting from a Python
+    27	    # base class is slightly tricky (the extension type must be a heap type),
+    28	    # and we can just as well lift the FCBase base up one level, keeping it *at
+    29	    # the end* to have the right method resolution order.
+    30	
+    31	    # Events such as button presses, mouse movements, and key presses are
+    32	    # handled in C and events (MouseEvent, etc.) are triggered from there.
+    33	
+    34	    required_interactive_framework = "macosx"
+    35	    _timer_cls = TimerMac
+    36	    manager_class = _api.classproperty(lambda cls: FigureManagerMac)
+    37	
+    38	    def __init__(self, figure):
+    39	        super().__init__(figure=figure)
+    40	        self._draw_pending = False
+    41	        self._is_drawing = False
+    42	
+    43	    def draw(self):
+    44	        """Render the figure and update the macosx canvas."""
+    45	        # The renderer draw is done here; delaying causes problems with code
+    46	        # that uses the result of the draw() to update plot elements.
+    47	        if self._is_drawing:
+    48	            return
+    49	        with cbook._setattr_cm(self, _is_drawing=True):
+    50	            super().draw()
+    51	        self.update()
+    52	
+    53	    def draw_idle(self):
+    54	        # docstring inherited
+    55	        if not (getattr(self, '_draw_pending', False) or
+    56	                getattr(self, '_is_drawing', False)):
+    57	            self._draw_pending = True
+    58	            # Add a singleshot timer to the eventloop that will call back
+    59	            # into the Python method _draw_idle to take care of the draw
+    60	            self._single_shot_timer(self._draw_idle)
+    61	
+    62	    def _single_shot_timer(self, callback):
+    63	        """Add a single shot timer with the given callback"""
+    64	        # We need to explicitly stop (called from delete) the timer after
+    65	        # firing, otherwise segfaults will occur when trying to deallocate
+    66	        # the singleshot timers.
+    67	        def callback_func(callback, timer):
+    68	            callback()
+    69	            del timer
+    70	        timer = self.new_timer(interval=0)
+    71	        timer.add_callback(callback_func, callback, timer)
+    72	        timer.start()
+    73	
+    74	    def _draw_idle(self):
+    75	        """
+    76	        Draw method for singleshot timer
+    77	
+    78	        This draw method can be added to a singleshot timer, which can
+    79	        accumulate draws while the eventloop is spinning. This method will
+    80	        then only draw the first time and short-circuit the others.
+    81	        """
+    82	        with self._idle_draw_cntx():
+    83	            if not self._draw_pending:
+    84	                # Short-circuit because our draw request has already been
+    85	                # taken care of
+    86	                return
+    87	            self._draw_pending = False
+    88	            self.draw()
+    89	
+    90	    def blit(self, bbox=None):
+    91	        # docstring inherited
+    92	        super().blit(bbox)
+    93	        self.update()
+    94	
+    95	    def resize(self, width, height):
+    96	        # Size from macOS is logical pixels, dpi is physical.
+    97	        scale = self.figure.dpi / self.device_pixel_ratio
+    98	        width /= scale
+    99	        height /= scale
+   100	        self.figure.set_size_inches(width, height, forward=False)
+   101	        ResizeEvent("resize_event", self)._process()
+   102	        self.draw_idle()
+   103	
+   104	
+   105	class NavigationToolbar2Mac(_macosx.NavigationToolbar2, NavigationToolbar2):
+   106	
+   107	    def __init__(self, canvas):
+   108	        data_path = cbook._get_data_path('images')
+   109	        _, tooltips, image_names, _ = zip(*NavigationToolbar2.toolitems)
+   110	        _macosx.NavigationToolbar2.__init__(
+   111	            self, canvas,
+   112	            tuple(str(data_path / image_name) + ".pdf"
+   113	                  for image_name in image_names if image_name is not None),
+   114	            tuple(tooltip for tooltip in tooltips if tooltip is not None))
+   115	        NavigationToolbar2.__init__(self, canvas)
+   116	
+   117	    def draw_rubberband(self, event, x0, y0, x1, y1):
+   118	        self.canvas.set_rubberband(int(x0), int(y0), int(x1), int(y1))
+   119	
+   120	    def remove_rubberband(self):
+   121	        self.canvas.remove_rubberband()
+   122	
+   123	    def save_figure(self, *args):
+   124	        directory = os.path.expanduser(mpl.rcParams['savefig.directory'])
+   125	        filename = _macosx.choose_save_file('Save the figure',
+   126	                                            directory,
+   127	                                            self.canvas.get_default_filename())
+   128	        if filename is None:  # Cancel
+   129	            return
+   130	        # Save dir for next time, unless empty str (which means use cwd).
+   131	        if mpl.rcParams['savefig.directory']:
+   132	            mpl.rcParams['savefig.directory'] = os.path.dirname(filename)
+   133	        self.canvas.figure.savefig(filename)
+   134	
+   135	    def prepare_configure_subplots(self):
+   136	        toolfig = Figure(figsize=(6, 3))
+   137	        canvas = FigureCanvasMac(toolfig)
+   138	        toolfig.subplots_adjust(top=0.9)
+   139	        # Need to keep a reference to the tool.
+   140	        _tool = SubplotTool(self.canvas.figure, toolfig)
+   141	        return canvas
+   142	
+   143	
+   144	class FigureManagerMac(_macosx.FigureManager, FigureManagerBase):
+   145	    _toolbar2_class = NavigationToolbar2Mac
+   146	
+   147	    def __init__(self, canvas, num):
+   148	        self._shown = False
+   149	        _macosx.FigureManager.__init__(self, canvas)
+   150	        icon_path = str(cbook._get_data_path('images/matplotlib.pdf'))
+   151	        _macosx.FigureManager.set_icon(icon_path)
+   152	        FigureManagerBase.__init__(self, canvas, num)
+   153	        if self.toolbar is not None:
+   154	            self.toolbar.update()
+   155	        if mpl.is_interactive():
+   156	            self.show()
+   157	            self.canvas.draw_idle()
+   158	
+   159	    def _close_button_pressed(self):
+   160	        Gcf.destroy(self)
+   161	        self.canvas.flush_events()
+   162	
+   163	    @_api.deprecated("3.6")
+   164	    def close(self):
+   165	        return self._close_button_pressed()
+   166	
+   167	    def show(self):
+   168	        if not self._shown:
+   169	            self._show()
+   170	            self._shown = True
+   171	        if mpl.rcParams["figure.raise_window"]:
+   172	            self._raise()
+   173	
+   174	
+   175	@_Backend.export
+   176	class _BackendMac(_Backend):
+   177	    FigureCanvas = FigureCanvasMac
+   178	    FigureManager = FigureManagerMac
+   179	
+   180	    @staticmethod
+   181	    def mainloop():
+   182	        _macosx.show()
+   183	
+
+
+2026-03-04 11:06:34,783 - INFO - swea-agent-matplotlib__matplotlib-23476 - ========================= STEP 4 =========================
+2026-03-04 11:06:40,879 - INFO - swea-agent-matplotlib__matplotlib-23476 - 💭 THOUGHT
+
+
+🎬 ACTION
+cat > /testbed/repro_pickle_dpi.py <<'PY'
+import pickle
+import matplotlib
+matplotlib.use('macosx', force=True)
+import matplotlib.pyplot as plt
+
+fig = plt.figure()
+print('backend', matplotlib.get_backend(), 'initial dpi', fig.dpi)
+for i in range(5):
+    with open('/testbed/tmp_fig.pkl', 'wb') as f:
+        pickle.dump(fig, f)
+    with open('/testbed/tmp_fig.pkl', 'rb') as f:
+        fig = pickle.load(f)
+    print(i+1, fig.dpi)
+PY
+python /testbed/repro_pickle_dpi.py
+2026-03-04 11:06:41,623 - INFO - swea-agent-matplotlib__matplotlib-23476 - 🤖 MODEL INPUT
+OBSERVATION:
+
+A module that was compiled using NumPy 1.x cannot be run in
+NumPy 2.4.2 as it may crash. To support both 1.x and 2.x
+versions of NumPy, modules must be compiled with NumPy 2.0.
+Some module may need to rebuild instead e.g. with 'pybind11>=2.12'.
+
+If you are a user of the module, the easiest solution will be to
+downgrade to 'numpy<2' or try to upgrade the affected module.
+We expect that some modules will need time to support NumPy 2.
+
+Traceback (most recent call last):  File "/testbed/repro_pickle_dpi.py", line 2, in <module>
+    import matplotlib
+  File "/testbed/lib/matplotlib/__init__.py", line 113, in <module>
+    from . import _api, _version, cbook, _docstring, rcsetup
+  File "/testbed/lib/matplotlib/rcsetup.py", line 27, in <module>
+    from matplotlib.colors import Colormap, is_color_like
+  File "/testbed/lib/matplotlib/colors.py", line 56, in <module>
+    from matplotlib import _api, _cm, cbook, scale
+  File "/testbed/lib/matplotlib/scale.py", line 22, in <module>
+    from matplotlib.ticker import (
+  File "/testbed/lib/matplotlib/ticker.py", line 138, in <module>
+    from matplotlib import transforms as mtransforms
+  File "/testbed/lib/matplotlib/transforms.py", line 49, in <module>
+    from matplotlib._path import (
+AttributeError: _ARRAY_API not found
+Traceback (most recent call last):
+  File "/testbed/repro_pickle_dpi.py", line 2, in <module>
+    import matplotlib
+  File "/testbed/lib/matplotlib/__init__.py", line 113, in <module>
+    from . import _api, _version, cbook, _docstring, rcsetup
+  File "/testbed/lib/matplotlib/rcsetup.py", line 27, in <module>
+    from matplotlib.colors import Colormap, is_color_like
+  File "/testbed/lib/matplotlib/colors.py", line 56, in <module>
+    from matplotlib import _api, _cm, cbook, scale
+  File "/testbed/lib/matplotlib/scale.py", line 22, in <module>
+    from matplotlib.ticker import (
+  File "/testbed/lib/matplotlib/ticker.py", line 138, in <module>
+    from matplotlib import transforms as mtransforms
+  File "/testbed/lib/matplotlib/transforms.py", line 49, in <module>
+    from matplotlib._path import (
+ImportError: numpy.core.multiarray failed to import
+
+2026-03-04 11:06:41,633 - INFO - swea-agent-matplotlib__matplotlib-23476 - ========================= STEP 5 =========================
+2026-03-04 11:06:48,911 - INFO - swea-agent-matplotlib__matplotlib-23476 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/lib/matplotlib/backends/backend_macosx.py   --old_str '    def __init__(self, figure):
+        super().__init__(figure=figure)
+        self._draw_pending = False
+        self._is_drawing = False
+' --new_str '    def __init__(self, figure):
+        # FigureCanvasBase.__init__ may set the figure dpi based on the current
+        # device pixel ratio (e.g. on HiDPI/Retina displays).  During
+        # unpickling, Figure.__setstate__ has already restored the figure dpi,
+        # so keep that value.
+        orig_dpi = figure.dpi
+        super().__init__(figure=figure)
+        if figure._original_dpi == orig_dpi:  # Not changed by user code.
+            figure._set_dpi(orig_dpi, forward=False)
+        self._draw_pending = False
+        self._is_drawing = False
+'
+2026-03-04 11:06:49,466 - INFO - swea-agent-matplotlib__matplotlib-23476 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/lib/matplotlib/backends/backend_macosx.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/lib/matplotlib/backends/backend_macosx.py:
+    33	
+    34	    required_interactive_framework = "macosx"
+    35	    _timer_cls = TimerMac
+    36	    manager_class = _api.classproperty(lambda cls: FigureManagerMac)
+    37	
+    38	    def __init__(self, figure):
+    39	        # FigureCanvasBase.__init__ may set the figure dpi based on the current
+    40	        # device pixel ratio (e.g. on HiDPI/Retina displays).  During
+    41	        # unpickling, Figure.__setstate__ has already restored the figure dpi,
+    42	        # so keep that value.
+    43	        orig_dpi = figure.dpi
+    44	        super().__init__(figure=figure)
+    45	        if figure._original_dpi == orig_dpi:  # Not changed by user code.
+    46	            figure._set_dpi(orig_dpi, forward=False)
+    47	        self._draw_pending = False
+    48	        self._is_drawing = False
+    49	
+    50	    def draw(self):
+    51	        """Render the figure and update the macosx canvas."""
+    52	        # The renderer draw is done here; delaying causes problems with code
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-04 11:06:49,482 - INFO - swea-agent-matplotlib__matplotlib-23476 - ========================= STEP 6 =========================
+2026-03-04 11:06:58,560 - WARNING - swea-agent-matplotlib__matplotlib-23476 - Requerying model after FunctionCallingFormatError (1th requery)
+2026-03-04 11:06:58,569 - WARNING - swea-agent-matplotlib__matplotlib-23476 - Your last output did not use any tool calls!
+Please make sure your output includes exactly _ONE_ function call!
+You must invoke the function directly using the function call format.
+You cannot invoke commands with ```, you have to use the function call format.
+If you think you have already resolved the issue, please submit your changes by running the `submit` command.
+If you think you cannot solve the problem, please run `exit_forfeit` (if available) or `submit`.
+Else, please continue with a new tool call!
+2026-03-04 11:07:00,931 - INFO - swea-agent-matplotlib__matplotlib-23476 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-04 11:07:01,461 - INFO - swea-agent-matplotlib__matplotlib-23476 - 🤖 MODEL INPUT
+OBSERVATION:
+Thank you for your work on this issue. Please carefully follow the steps below to help review your changes.
+
+1. If you made any changes to your code after running the reproduction script, please run the reproduction script again.
+  If the reproduction script is failing, please revisit your changes and make sure they are correct.
+  If you have already removed your reproduction script, please ignore this step.
+2. Remove your reproduction script (if you haven't done so already).
+3. If you have modified any TEST files, please revert them to the state they had before you started fixing the issue.
+  You can do this with `git checkout -- /path/to/test/file.py`. Use below <diff> to find the files you need to revert.
+4. Run the submit command again to confirm.
+
+Here is a list of all of your changes:
+
+<diff>
+diff --git a/lib/matplotlib/backends/backend_macosx.py b/lib/matplotlib/backends/backend_macosx.py
+index 700d1d4c58..ab1429cd4f 100644
+--- a/lib/matplotlib/backends/backend_macosx.py
++++ b/lib/matplotlib/backends/backend_macosx.py
+@@ -36,7 +36,14 @@ class FigureCanvasMac(FigureCanvasAgg, _macosx.FigureCanvas, FigureCanvasBase):
+     manager_class = _api.classproperty(lambda cls: FigureManagerMac)
+ 
+     def __init__(self, figure):
++        # FigureCanvasBase.__init__ may set the figure dpi based on the current
++        # device pixel ratio (e.g. on HiDPI/Retina displays).  During
++        # unpickling, Figure.__setstate__ has already restored the figure dpi,
++        # so keep that value.
++        orig_dpi = figure.dpi
+         super().__init__(figure=figure)
++        if figure._original_dpi == orig_dpi:  # Not changed by user code.
++            figure._set_dpi(orig_dpi, forward=False)
+         self._draw_pending = False
+         self._is_drawing = False
+ 
+diff --git a/repro_pickle_dpi.py b/repro_pickle_dpi.py
+new file mode 100644
+index 0000000000..7db773fed5
+--- /dev/null
++++ b/repro_pickle_dpi.py
+@@ -0,0 +1,13 @@
++import pickle
++import matplotlib
++matplotlib.use('macosx', force=True)
++import matplotlib.pyplot as plt
++
++fig = plt.figure()
++print('backend', matplotlib.get_backend(), 'initial dpi', fig.dpi)
++for i in range(5):
++    with open('/testbed/tmp_fig.pkl', 'wb') as f:
++        pickle.dump(fig, f)
++    with open('/testbed/tmp_fig.pkl', 'rb') as f:
++        fig = pickle.load(f)
++    print(i+1, fig.dpi)
+
+</diff>
+
+
+2026-03-04 11:07:01,473 - INFO - swea-agent-matplotlib__matplotlib-23476 - ========================= STEP 8 =========================
+2026-03-04 11:07:06,013 - INFO - swea-agent-matplotlib__matplotlib-23476 - 💭 THOUGHT
+
+
+🎬 ACTION
+rm -f /testbed/repro_pickle_dpi.py && cd /testbed && git status --short
+2026-03-04 11:07:06,415 - INFO - swea-agent-matplotlib__matplotlib-23476 - 🤖 MODEL INPUT
+OBSERVATION:
+M  lib/matplotlib/backends/backend_macosx.py
+AD repro_pickle_dpi.py
+
+2026-03-04 11:07:06,526 - INFO - swea-agent-matplotlib__matplotlib-23476 - ========================= STEP 9 =========================
+2026-03-04 11:07:12,170 - INFO - swea-agent-matplotlib__matplotlib-23476 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && git rm --cached repro_pickle_dpi.py; rm -f repro_pickle_dpi.py; git status --short
+2026-03-04 11:07:12,594 - INFO - swea-agent-matplotlib__matplotlib-23476 - 🤖 MODEL INPUT
+OBSERVATION:
+rm 'repro_pickle_dpi.py'
+M  lib/matplotlib/backends/backend_macosx.py
+
+2026-03-04 11:07:12,611 - INFO - swea-agent-matplotlib__matplotlib-23476 - ========================= STEP 10 =========================
+2026-03-04 11:07:21,499 - WARNING - swea-agent-matplotlib__matplotlib-23476 - Requerying model after FunctionCallingFormatError (1th requery)
+2026-03-04 11:07:21,505 - WARNING - swea-agent-matplotlib__matplotlib-23476 - Your last output did not use any tool calls!
+Please make sure your output includes exactly _ONE_ function call!
+You must invoke the function directly using the function call format.
+You cannot invoke commands with ```, you have to use the function call format.
+If you think you have already resolved the issue, please submit your changes by running the `submit` command.
+If you think you cannot solve the problem, please run `exit_forfeit` (if available) or `submit`.
+Else, please continue with a new tool call!
+2026-03-04 11:07:25,825 - INFO - swea-agent-matplotlib__matplotlib-23476 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-04 11:07:26,356 - INFO - swea-agent-matplotlib__matplotlib-23476 - Found submission: diff --git a/lib/matplotlib/backends/backend_macosx.py b/lib/matplotlib/backends/backend_macosx.py
+index 700d1d4c58..ab1429cd4f 100644
+--- a/lib/matplotlib/backends/backend_macosx.py
++++ b/lib/matplotlib/backends/backend_macosx.py
+@@ -36,7 +36,14 @@ class FigureCanvasMac(FigureCanvasAgg, _macosx.FigureCanvas, FigureCanvasBase):
+     manager_class = _api.classproperty(lambda cls: FigureManagerMac)
+ 
+     def __init__(self, figure):
++        # FigureCanvasBase.__init__ may set the figure dpi based on the current
++        # device pixel ratio (e.g. on HiDPI/Retina displays).  During
++        # unpickling, Figure.__setstate__ has already restored the figure dpi,
++        # so keep that value.
++        orig_dpi = figure.dpi
+         super().__init__(figure=figure)
++        if figure._original_dpi == orig_dpi:  # Not changed by user code.
++            figure._set_dpi(orig_dpi, forward=False)
+         self._draw_pending = False
+         self._is_drawing = False
+ 
+
+2026-03-04 11:07:26,358 - INFO - swea-agent-matplotlib__matplotlib-23476 - 🤖 MODEL INPUT
+OBSERVATION:
+diff --git a/lib/matplotlib/backends/backend_macosx.py b/lib/matplotlib/backends/backend_macosx.py
+index 700d1d4c58..ab1429cd4f 100644
+--- a/lib/matplotlib/backends/backend_macosx.py
++++ b/lib/matplotlib/backends/backend_macosx.py
+@@ -36,7 +36,14 @@ class FigureCanvasMac(FigureCanvasAgg, _macosx.FigureCanvas, FigureCanvasBase):
+     manager_class = _api.classproperty(lambda cls: FigureManagerMac)
+ 
+     def __init__(self, figure):
++        # FigureCanvasBase.__init__ may set the figure dpi based on the current
++        # device pixel ratio (e.g. on HiDPI/Retina displays).  During
++        # unpickling, Figure.__setstate__ has already restored the figure dpi,
++        # so keep that value.
++        orig_dpi = figure.dpi
+         super().__init__(figure=figure)
++        if figure._original_dpi == orig_dpi:  # Not changed by user code.
++            figure._set_dpi(orig_dpi, forward=False)
+         self._draw_pending = False
+         self._is_drawing = False
+ 
+
+2026-03-04 11:07:26,391 - INFO - swea-agent-matplotlib__matplotlib-23476 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_local_cached/matplotlib__matplotlib-23476/matplotlib__matplotlib-23476.traj
+2026-03-04 11:07:26,399 - INFO - swea-env-matplotlib__matplotlib-23476 - Beginning environment shutdown...

@@ -1,0 +1,36 @@
+diff --git a/django/db/models/enums.py b/django/db/models/enums.py
+index bbe362a6ab..b520b34a43 100644
+--- a/django/db/models/enums.py
++++ b/django/db/models/enums.py
+@@ -60,7 +60,10 @@ class ChoicesMeta(enum.EnumMeta):
+ 
+ class Choices(enum.Enum, metaclass=ChoicesMeta):
+     """Class for creating enumerated choices."""
+-    pass
++
++    def __str__(self):
++        """Use value when cast to str() so freshly assigned values match DB-loaded values."""
++        return str(self.value)
+ 
+ 
+ class IntegerChoices(int, Choices):
+diff --git a/repro_enum_issue.py b/repro_enum_issue.py
+new file mode 100644
+index 0000000000..9c75223a51
+--- /dev/null
++++ b/repro_enum_issue.py
+@@ -0,0 +1,14 @@
++from django.conf import settings
++
++settings.configure(
++    INSTALLED_APPS=[],
++    DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}},
++)
++
++from django.db import models
++
++class MyChoice(models.TextChoices):
++    FIRST_CHOICE = "first", "The first choice, it is"
++
++v = MyChoice.FIRST_CHOICE
++print(type(v), v, str(v), v.value)

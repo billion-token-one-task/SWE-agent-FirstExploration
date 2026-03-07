@@ -1,0 +1,55 @@
+diff --git a/repro_viewcode_epub.py b/repro_viewcode_epub.py
+new file mode 100644
+index 000000000..e5e2656e7
+--- /dev/null
++++ b/repro_viewcode_epub.py
+@@ -0,0 +1,36 @@
++import os, tempfile, textwrap, subprocess, sys
++
++root = tempfile.mkdtemp(prefix='repro_viewcode_')
++src = os.path.join(root, 'src')
++os.makedirs(src)
++
++with open(os.path.join(src, 'conf.py'), 'w') as f:
++    f.write(textwrap.dedent('''
++    extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
++    master_doc = 'index'
++    project = 'demo'
++    viewcode_enable_epub = False
++    '''))
++
++with open(os.path.join(src, 'index.rst'), 'w') as f:
++    f.write('''Demo\n====\n\n.. automodule:: demo_module\n   :members:\n''')
++
++with open(os.path.join(src, 'demo_module.py'), 'w') as f:
++    f.write('''def foo():\n    return 1\n''')
++
++build = os.path.join(root, '_build')
++os.makedirs(build)
++
++cmd = [sys.executable, '-m', 'sphinx', '-b', 'html', src, os.path.join(build, 'html')]
++subprocess.check_call(cmd)
++cmd = [sys.executable, '-m', 'sphinx', '-b', 'epub', src, os.path.join(build, 'epub')]
++subprocess.check_call(cmd)
++
++mods_html = os.path.join(build, 'html', '_modules')
++mods_epub = os.path.join(build, 'epub', '_modules')
++print('html _modules exists:', os.path.exists(mods_html))
++print('epub _modules exists:', os.path.exists(mods_epub))
++if os.path.exists(mods_epub):
++    for r, d, files in os.walk(mods_epub):
++        for fn in files:
++            print('epub module file:', os.path.relpath(os.path.join(r, fn), mods_epub))
+diff --git a/sphinx/ext/viewcode.py b/sphinx/ext/viewcode.py
+index a7d52a91c..863fc3d6d 100644
+--- a/sphinx/ext/viewcode.py
++++ b/sphinx/ext/viewcode.py
+@@ -180,6 +180,8 @@ def should_generate_module_page(app: Sphinx, modname: str) -> bool:
+ 
+ def collect_pages(app: Sphinx) -> Generator[Tuple[str, Dict[str, Any], str], None, None]:
+     env = app.builder.env
++    if app.builder.name.startswith("epub") and not env.config.viewcode_enable_epub:
++        return
+     if not hasattr(env, '_viewcode_modules'):
+         return
+     highlighter = app.builder.highlighter  # type: ignore

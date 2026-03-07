@@ -1,0 +1,41 @@
+diff --git a/repro_gm.py b/repro_gm.py
+new file mode 100644
+index 000000000..14dcf50d9
+--- /dev/null
++++ b/repro_gm.py
+@@ -0,0 +1,19 @@
++import numpy as np
++from sklearn.mixture import GaussianMixture
++from numpy.testing import assert_array_equal
++
++X = np.random.RandomState(0).randn(1000, 5)
++
++print('no n_init')
++gm = GaussianMixture(n_components=5, random_state=0)
++c1 = gm.fit_predict(X)
++c2 = gm.predict(X)
++assert_array_equal(c1, c2)
++
++print('n_init=5')
++gm = GaussianMixture(n_components=5, n_init=5, random_state=0)
++c1 = gm.fit_predict(X)
++c2 = gm.predict(X)
++assert_array_equal(c1, c2)
++
++print('ok')
+diff --git a/sklearn/mixture/base.py b/sklearn/mixture/base.py
+index bd34333c0..a5ba707f1 100644
+--- a/sklearn/mixture/base.py
++++ b/sklearn/mixture/base.py
+@@ -257,11 +257,6 @@ class BaseMixture(DensityMixin, BaseEstimator, metaclass=ABCMeta):
+                 best_params = self._get_parameters()
+                 best_n_iter = n_iter
+ 
+-        # Always do a final e-step to guarantee that the labels returned by
+-        # fit_predict(X) are always consistent with fit(X).predict(X)
+-        # for any value of max_iter and tol (and any random_state).
+-        _, log_resp = self._e_step(X)
+-
+         if not self.converged_:
+             warnings.warn('Initialization %d did not converge. '
+                           'Try different init parameters, '

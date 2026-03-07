@@ -1,0 +1,55 @@
+diff --git a/django/forms/formsets.py b/django/forms/formsets.py
+index a89c35599f..fb71f01efe 100644
+--- a/django/forms/formsets.py
++++ b/django/forms/formsets.py
+@@ -333,7 +333,7 @@ class BaseFormSet:
+         self._non_form_errors.
+         """
+         self._errors = []
+-        self._non_form_errors = self.error_class()
++        self._non_form_errors = self.error_class(error_class='nonform')
+         empty_forms_count = 0
+ 
+         if not self.is_bound:  # Stop further processing.
+@@ -380,7 +380,10 @@ class BaseFormSet:
+             # Give self.clean() a chance to do cross-form validation.
+             self.clean()
+         except ValidationError as e:
+-            self._non_form_errors = self.error_class(e.error_list)
++            self._non_form_errors = self.error_class(
++                e.error_list,
++                error_class='nonform',
++            )
+ 
+     def clean(self):
+         """
+diff --git a/repro_nonform.py b/repro_nonform.py
+new file mode 100644
+index 0000000000..59178495c9
+--- /dev/null
++++ b/repro_nonform.py
+@@ -0,0 +1,24 @@
++from django.forms import Form, CharField
++from django.forms.formsets import formset_factory, BaseFormSet
++
++class F(Form):
++    name = CharField(required=False)
++
++class FS(BaseFormSet):
++    def clean(self):
++        from django.core.exceptions import ValidationError
++        raise ValidationError('boom')
++
++FormSet = formset_factory(F, formset=FS, extra=1)
++fs = FormSet(data={
++    'form-TOTAL_FORMS': '1',
++    'form-INITIAL_FORMS': '0',
++    'form-MIN_NUM_FORMS': '0',
++    'form-MAX_NUM_FORMS': '1000',
++    'form-0-name': 'x',
++})
++
++errs = fs.non_form_errors()
++print(type(errs).__name__)
++print('error_class attr:', getattr(errs, 'error_class', None))
++print('as_ul:', errs.as_ul())

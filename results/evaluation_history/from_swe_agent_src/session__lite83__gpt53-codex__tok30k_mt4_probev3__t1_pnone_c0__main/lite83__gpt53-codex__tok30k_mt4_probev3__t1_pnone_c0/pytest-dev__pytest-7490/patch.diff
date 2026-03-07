@@ -1,0 +1,23 @@
+diff --git a/repro_xfail_dynamic.py b/repro_xfail_dynamic.py
+new file mode 100644
+index 000000000..89ea246d9
+--- /dev/null
++++ b/repro_xfail_dynamic.py
+@@ -0,0 +1,17 @@
++import os, sys, textwrap, tempfile, subprocess
++
++with tempfile.TemporaryDirectory() as d:
++    p = os.path.join(d, 'test_foo.py')
++    with open(p, 'w') as f:
++        f.write(textwrap.dedent('''\
++            import pytest
++
++            def test_xfail_test(request):
++                mark = pytest.mark.xfail(reason="xfail")
++                request.node.add_marker(mark)
++                assert 0
++        '''))
++    cmd = [sys.executable, '-m', 'pytest', '-q', p]
++    r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
++    print(r.stdout)
++    print('exit', r.returncode)

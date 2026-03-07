@@ -1,0 +1,287 @@
+--- /tmp/swe_exceptions.py	2026-03-03 21:06:52.328170160 +0800
++++ /data/liora/SWE-agent-src/sweagent/exceptions.py	2026-03-03 21:17:32.861002049 +0800
+@@ -44,6 +44,10 @@
+     """Raised when we exceed the per instance call limit"""
+ 
+ 
++class BudgetExhaustedError(CostLimitExceededError):
++    """Raised when we exceed the per-instance token budget"""
++
++
+ class ContentPolicyViolationError(Exception):
+     """Raised when the model response violates a content policy"""
+ 
+--- /tmp/swe_models.py	2026-03-03 21:06:03.575484490 +0800
++++ /data/liora/SWE-agent-src/sweagent/agent/models.py	2026-03-03 21:17:32.865001941 +0800
+@@ -27,6 +27,7 @@
+ 
+ from sweagent import REPO_ROOT, __version__
+ from sweagent.exceptions import (
++    BudgetExhaustedError,
+     ContentPolicyViolationError,
+     ContextWindowExceededError,
+     CostLimitExceededError,
+@@ -48,6 +49,27 @@
+ litellm.suppress_debug_info = True
+ 
+ 
++def _read_int_env(key: str, default: int = 0) -> int:
++    """Parse integer environment variables defensively."""
++    value = os.getenv(key)
++    if value is None:
++        return default
++    try:
++        return int(value)
++    except ValueError:
++        get_logger("swea-config", emoji="🔧").warning(
++            "Ignoring invalid integer for %s=%r; using %d",
++            key,
++            value,
++            default,
++        )
++        return default
++
++
++MAX_TOKEN_BUDGET = max(0, _read_int_env("MAX_TOKEN_BUDGET", 0))
++"""Per-instance hard cap on (input+output) tokens. Set to 0 to disable."""
++
++
+ _THREADS_THAT_USED_API_KEYS = []
+ """Keeps track of thread orders so that we can choose the same API key for the same thread."""
+ 
+@@ -651,6 +673,12 @@
+             f"total_api_calls={self.stats.api_calls:,}",
+         )
+ 
++        total_tokens = self.stats.tokens_sent + self.stats.tokens_received
++        if 0 < MAX_TOKEN_BUDGET < total_tokens:
++            msg = f"Token budget exhausted: {total_tokens} > {MAX_TOKEN_BUDGET}"
++            self.logger.warning(msg)
++            raise BudgetExhaustedError(msg)
++
+         # Check whether total cost or instance cost limits have been exceeded
+         if 0 < self.config.total_cost_limit < GLOBAL_STATS.total_cost:
+             self.logger.warning(f"Cost {GLOBAL_STATS.total_cost:.2f} exceeds limit {self.config.total_cost_limit:.2f}")
+--- /tmp/swe_agents.py	2026-03-03 21:06:21.707738453 +0800
++++ /data/liora/SWE-agent-src/sweagent/agent/agents.py	2026-03-03 21:17:32.869001833 +0800
+@@ -4,6 +4,7 @@
+ import copy
+ import json
+ import logging
++import re
+ import time
+ from pathlib import Path, PurePosixPath
+ from typing import Annotated, Any, Literal
+@@ -39,6 +40,7 @@
+ )
+ from sweagent.environment.swe_env import SWEEnv
+ from sweagent.exceptions import (
++    BudgetExhaustedError,
+     ContentPolicyViolationError,
+     ContextWindowExceededError,
+     CostLimitExceededError,
+@@ -220,6 +222,22 @@
+ RETRY_WITHOUT_OUTPUT_TOKEN = "###SWE-AGENT-RETRY-WITHOUT-OUTPUT###"
+ EXIT_FORFEIT_TOKEN = "###SWE-AGENT-EXIT-FORFEIT###"
+ 
++THERMO_FRICTION_PATTERNS = (
++    r"command not found",
++    r"no such file or directory",
++    r"syntax error",
++    r"invalid option",
++    r"not a git repository",
++    r"permission denied",
++    r"cancelled because it took more than",
++)
++THERMO_USEFUL_PATTERNS = (
++    r"\b\d+\s+passed\b",
++    r"all tests passed",
++    r"==+\s*\d+ passed",
++    r"\bok\b",
++)
++
+ 
+ class AbstractAgent:
+     def __init__(self, *args, **kwargs):
+@@ -497,6 +515,7 @@
+         #: after 5 of them.
+         self._n_consecutive_timeouts = 0
+         self._total_execution_time = 0.0
++        self._thermo_stats: dict[str, int] = {"useful_work": 0, "friction_loss": 0, "unknown": 0}
+ 
+     @classmethod
+     def from_config(cls, config: DefaultAgentConfig) -> Self:
+@@ -597,6 +616,7 @@
+         self.info["swe_agent_version"] = __version__
+         self.info["swe_rex_version"] = get_rex_version()
+         self.info["swe_rex_hash"] = get_rex_commit_hash()
++        self._thermo_stats = {"useful_work": 0, "friction_loss": 0, "unknown": 0}
+         assert self._env is not None
+         assert self._problem_statement is not None
+         self._env.set_env_variables({"PROBLEM_STATEMENT": self._problem_statement.get_problem_statement_for_env()})
+@@ -933,6 +953,47 @@
+             out[f"edited_files{context_length}"] = value
+         return out
+ 
++    def _classify_thermo_outcome(self, step: StepOutput) -> str:
++        observation = (step.observation or "").lower()
++        state = step.state if isinstance(step.state, dict) else {}
++        diff_text = str(state.get("diff", "")).strip()
++        if diff_text or (step.submission or "").strip():
++            return "useful_work"
++        if any(re.search(pattern, observation, re.IGNORECASE) for pattern in THERMO_USEFUL_PATTERNS):
++            return "useful_work"
++        if any(re.search(pattern, observation, re.IGNORECASE) for pattern in THERMO_FRICTION_PATTERNS):
++            return "friction_loss"
++        return "unknown"
++
++    def _record_thermo_probe(self, step: StepOutput) -> None:
++        label = self._classify_thermo_outcome(step)
++        self._thermo_stats[label] = self._thermo_stats.get(label, 0) + 1
++        total = sum(self._thermo_stats.values())
++        friction = self._thermo_stats.get("friction_loss", 0)
++        step.extra_info = step.extra_info or {}
++        step.extra_info["thermo_probe"] = {
++            "classification": label,
++            "useful_work": self._thermo_stats.get("useful_work", 0),
++            "friction_loss": friction,
++            "unknown": self._thermo_stats.get("unknown", 0),
++            "friction_ratio": (friction / total) if total else 0.0,
++        }
++
++    def _thermo_probe_summary(self) -> dict[str, Any]:
++        useful = self._thermo_stats.get("useful_work", 0)
++        friction = self._thermo_stats.get("friction_loss", 0)
++        unknown = self._thermo_stats.get("unknown", 0)
++        total = useful + friction + unknown
++        denom = useful + friction
++        return {
++            "useful_work": useful,
++            "friction_loss": friction,
++            "unknown": unknown,
++            "total_classified_steps": total,
++            "friction_ratio": (friction / total) if total else 0.0,
++            "carnot_efficiency_proxy": (useful / denom) if denom else 0.0,
++        }
++
+     def handle_action(self, step: StepOutput) -> StepOutput:
+         """Runs an action proposed by the agent in the environment and returns the corresponding output.
+ 
+@@ -1001,7 +1062,9 @@
+         elif EXIT_FORFEIT_TOKEN in step.observation:
+             raise _ExitForfeit()
+ 
+-        return self.handle_submission(step)
++        step = self.handle_submission(step)
++        self._record_thermo_probe(step)
++        return step
+ 
+     def forward(self, history: list[dict[str, str]]) -> StepOutput:
+         """Forward the model without handling errors.
+@@ -1179,6 +1242,11 @@
+                 )
+             except TotalCostLimitExceededError:
+                 raise
++            except BudgetExhaustedError:
++                return handle_error_with_autosubmission(
++                    "exit_token_budget",
++                    "Exit due to token budget exhaustion",
++                )
+             except CostLimitExceededError:
+                 return handle_error_with_autosubmission(
+                     "exit_cost",
+@@ -1255,7 +1323,10 @@
+         self.info["submission"] = step_output.submission
+         self.info["exit_status"] = step_output.exit_status  # type: ignore
+         self.info.update(self._get_edited_files_with_context(patch=step_output.submission or ""))  # type: ignore
+-        self.info["model_stats"] = self.model.stats.model_dump()
++        model_stats = self.model.stats.model_dump()
++        model_stats["total_tokens"] = model_stats.get("tokens_sent", 0) + model_stats.get("tokens_received", 0)
++        self.info["model_stats"] = model_stats
++        self.info["thermo_probe"] = self._thermo_probe_summary()
+ 
+         self.add_step_to_trajectory(step_output)
+ 
+--- /tmp/swe_types.py	2026-03-03 21:06:44.860064550 +0800
++++ /data/liora/SWE-agent-src/sweagent/types.py	2026-03-03 21:17:32.869001833 +0800
+@@ -95,6 +95,7 @@
+     swe_agent_version: str
+     swe_rex_version: str
+     swe_rex_hash: str
++    thermo_probe: dict[str, Any]
+ 
+ 
+ class AgentRunResult(BaseModel):
+--- /dev/null	2026-03-01 11:41:51.827405013 +0800
++++ /data/liora/SWE-agent-src/analyze_trajectory.py	2026-03-03 21:18:39.823341948 +0800
+@@ -0,0 +1,70 @@
++#!/usr/bin/env python3
++"""Extract key thermo-probe metrics from a SWE-agent trajectory file."""
++
++from __future__ import annotations
++
++import argparse
++import json
++from pathlib import Path
++
++
++def _load(path: Path) -> dict:
++    return json.loads(path.read_text())
++
++
++def _get_total_tokens(data: dict) -> int:
++    model_stats = data.get("info", {}).get("model_stats", {})
++    if "total_tokens" in model_stats:
++        return int(model_stats["total_tokens"])
++    sent = int(model_stats.get("tokens_sent", 0))
++    received = int(model_stats.get("tokens_received", 0))
++    return sent + received
++
++
++def _get_thermo_counts(data: dict) -> tuple[int, int, int]:
++    summary = data.get("info", {}).get("thermo_probe", {})
++    useful = int(summary.get("useful_work", 0))
++    friction = int(summary.get("friction_loss", 0))
++    if useful or friction:
++        return useful, friction, int(summary.get("unknown", 0))
++
++    useful = friction = unknown = 0
++    for step in data.get("trajectory", []):
++        label = (
++            step.get("extra_info", {})
++            .get("thermo_probe", {})
++            .get("classification", "unknown")
++        )
++        if label == "useful_work":
++            useful += 1
++        elif label == "friction_loss":
++            friction += 1
++        else:
++            unknown += 1
++    return useful, friction, unknown
++
++
++def main() -> None:
++    parser = argparse.ArgumentParser(description="Analyze SWE-agent thermo probe trajectory.")
++    parser.add_argument("trajectory", type=Path, help="Path to *.traj / trajectory.json")
++    args = parser.parse_args()
++
++    data = _load(args.trajectory)
++    total_tokens = _get_total_tokens(data)
++    useful, friction, unknown = _get_thermo_counts(data)
++
++    denom = useful + friction
++    friction_ratio = (friction / denom) if denom else 0.0
++
++    final_status = data.get("info", {}).get("exit_status", "unknown")
++
++    print(f"Total Token Consumption: {total_tokens}")
++    print(
++        "Friction Loss Ratio (friction/(useful+friction)): "
++        f"{friction_ratio:.4f} (useful={useful}, friction={friction}, unknown={unknown})"
++    )
++    print(f"Final Task Status: {final_status}")
++
++
++if __name__ == "__main__":
++    main()

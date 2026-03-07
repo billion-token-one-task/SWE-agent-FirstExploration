@@ -1,0 +1,37 @@
+diff --git a/astropy/io/ascii/rst.py b/astropy/io/ascii/rst.py
+index abdeba8ef..e336a6251 100644
+--- a/astropy/io/ascii/rst.py
++++ b/astropy/io/ascii/rst.py
+@@ -57,8 +57,14 @@ class RST(FixedWidth):
+     data_class = SimpleRSTData
+     header_class = SimpleRSTHeader
+ 
+-    def __init__(self):
+-        super().__init__(delimiter_pad=None, bookend=False)
++    def __init__(self, header_rows=None):
++        if header_rows is None:
++            header_rows = ["name"]
++        super().__init__(
++            delimiter_pad=None,
++            bookend=False,
++            header_rows=header_rows,
++        )
+ 
+     def write(self, lines):
+         lines = super().write(lines)
+diff --git a/repro_rst_header_rows.py b/repro_rst_header_rows.py
+new file mode 100644
+index 000000000..32fb8168f
+--- /dev/null
++++ b/repro_rst_header_rows.py
+@@ -0,0 +1,10 @@
++from astropy.table import QTable
++import astropy.units as u
++import sys
++
++
++tbl = QTable({'wave': [350,950]*u.nm, 'response': [0.7, 1.2]*u.count})
++print('fixed_width with header_rows works:')
++tbl.write(sys.stdout, format='ascii.fixed_width', header_rows=['name', 'unit'])
++print('\nrst with header_rows:')
++tbl.write(sys.stdout, format='ascii.rst', header_rows=['name', 'unit'])

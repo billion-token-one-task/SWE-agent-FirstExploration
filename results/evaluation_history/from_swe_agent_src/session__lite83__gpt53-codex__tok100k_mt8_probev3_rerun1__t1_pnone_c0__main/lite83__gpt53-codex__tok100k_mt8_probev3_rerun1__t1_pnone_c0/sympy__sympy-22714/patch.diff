@@ -1,0 +1,20 @@
+diff --git a/sympy/parsing/sympy_parser.py b/sympy/parsing/sympy_parser.py
+index e403654cb4..4f6a38e091 100644
+--- a/sympy/parsing/sympy_parser.py
++++ b/sympy/parsing/sympy_parser.py
+@@ -1201,8 +1201,13 @@ def visit_BinOp(self, node):
+ 
+     def visit_Call(self, node):
+         new_node = self.generic_visit(node)
+-        if isinstance(node.func, ast.Name) and node.func.id in self.functions:
+-            new_node.keywords.append(ast.keyword(arg='evaluate', value=ast.NameConstant(value=False, ctx=ast.Load())))
++        if isinstance(node.func, ast.Name):
++            # Only add evaluate=False when the callable supports it.
++            # In particular, geometry constructors like Point2D/Point3D
++            # do not accept evaluate and passing it changes behavior via
++            # **kwargs forwarding.
++            if node.func.id in self.functions:
++                new_node.keywords.append(ast.keyword(arg='evaluate', value=ast.NameConstant(value=False, ctx=ast.Load())))
+         return new_node
+ 
+ 

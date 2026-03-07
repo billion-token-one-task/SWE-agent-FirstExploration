@@ -1,0 +1,41 @@
+diff --git a/repro_point_mul.py b/repro_point_mul.py
+new file mode 100644
+index 0000000000..8ffc81ed35
+--- /dev/null
++++ b/repro_point_mul.py
+@@ -0,0 +1,8 @@
++from sympy import geometry as ge
++import sympy
++
++point1 = ge.Point(0, 0)
++point2 = ge.Point(1, 1)
++
++print(point1 + point2 * sympy.sympify(2.0))
++print(point1 + sympy.sympify(2.0) * point2)
+diff --git a/sympy/geometry/point.py b/sympy/geometry/point.py
+index 7c978c47be..9f038de189 100644
+--- a/sympy/geometry/point.py
++++ b/sympy/geometry/point.py
+@@ -31,7 +31,7 @@
+ from sympy.matrices import Matrix
+ from sympy.core.numbers import Float
+ from sympy.core.evaluate import global_evaluate
+-from sympy.core.add import Add
++from sympy.core.mul import Mul
+ from sympy.utilities.iterables import uniq
+ from sympy.utilities.misc import filldedent, func_name, Undecidable
+ 
+@@ -213,6 +213,13 @@ def __add__(self, other):
+         sympy.geometry.point.Point.translate
+ 
+         """
++        if other.is_Mul:
++            points = [arg for arg in other.args if isinstance(arg, Point)]
++            if len(points) == 1:
++                point = points[0]
++                factor = simplify(Mul(*[arg for arg in other.args if arg != point]))
++                if not factor.has(Point):
++                    other = point*factor
+         try:
+             s, o = Point._normalize_dimension(self, Point(other, evaluate=False))
+         except TypeError:

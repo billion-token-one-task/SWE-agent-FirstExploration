@@ -1,0 +1,42 @@
+diff --git a/django/contrib/auth/validators.py b/django/contrib/auth/validators.py
+index b4878cfd45..1304f20a60 100644
+--- a/django/contrib/auth/validators.py
++++ b/django/contrib/auth/validators.py
+@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
+ 
+ @deconstructible
+ class ASCIIUsernameValidator(validators.RegexValidator):
+-    regex = r'^[\w.@+-]+$'
++    regex = r'\A[\w.@+-]+\Z'
+     message = _(
+         'Enter a valid username. This value may contain only English letters, '
+         'numbers, and @/./+/-/_ characters.'
+@@ -17,7 +17,7 @@ class ASCIIUsernameValidator(validators.RegexValidator):
+ 
+ @deconstructible
+ class UnicodeUsernameValidator(validators.RegexValidator):
+-    regex = r'^[\w.@+-]+$'
++    regex = r'\A[\w.@+-]+\Z'
+     message = _(
+         'Enter a valid username. This value may contain only letters, '
+         'numbers, and @/./+/-/_ characters.'
+diff --git a/repro_username_newline.py b/repro_username_newline.py
+new file mode 100644
+index 0000000000..bfb021cbf9
+--- /dev/null
++++ b/repro_username_newline.py
+@@ -0,0 +1,14 @@
++import re
++
++
++def check(pattern, value, flags=0):
++    return re.search(pattern, value, flags) is not None
++
++
++if __name__ == "__main__":
++    values = ["normaluser", "bad\n", "good.name+tag-1@x"]
++    pattern = r'\A[\w.@+-]+\Z'
++    for name, flags in (("ASCIIUsernameValidator", re.ASCII), ("UnicodeUsernameValidator", 0)):
++        print(name)
++        for value in values:
++            print(repr(value), check(pattern, value, flags))

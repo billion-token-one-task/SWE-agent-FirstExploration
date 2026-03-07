@@ -1,0 +1,29 @@
+diff --git a/lib/matplotlib/__init__.py b/lib/matplotlib/__init__.py
+index c268a56724..d5e9d3b78b 100644
+--- a/lib/matplotlib/__init__.py
++++ b/lib/matplotlib/__init__.py
+@@ -1088,6 +1088,7 @@ def rc_context(rc=None, fname=None):
+ 
+     """
+     orig = rcParams.copy()
++    orig_backend = rcParams._get_backend_or_none()
+     try:
+         if fname:
+             rc_file(fname)
+@@ -1096,6 +1097,16 @@ def rc_context(rc=None, fname=None):
+         yield
+     finally:
+         dict.update(rcParams, orig)  # Revert to the original rcs.
++        # Preserve an already-resolved backend so that querying the backend
++        # after leaving the context does not trigger a backend switch, which
++        # would close existing figures.
++        if orig_backend is not None:
++            rcParams['backend'] = orig_backend
++        else:
++            from matplotlib import pyplot as plt
++            backend_mod = getattr(plt, '_backend_mod', None)
++            if backend_mod is not None:
++                rcParams['backend'] = backend_mod.__name__
+ 
+ 
+ def use(backend, *, force=True):

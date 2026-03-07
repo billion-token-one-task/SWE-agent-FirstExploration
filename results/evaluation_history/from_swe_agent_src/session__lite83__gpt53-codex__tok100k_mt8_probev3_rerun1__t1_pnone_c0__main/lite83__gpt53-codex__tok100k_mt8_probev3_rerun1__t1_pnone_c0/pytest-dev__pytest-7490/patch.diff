@@ -1,0 +1,57 @@
+diff --git a/repro.py b/repro.py
+new file mode 100644
+index 000000000..e5177f428
+--- /dev/null
++++ b/repro.py
+@@ -0,0 +1,37 @@
++import os
++import subprocess
++import sys
++import tempfile
++from textwrap import dedent
++
++
++def main() -> int:
++    with tempfile.TemporaryDirectory() as td:
++        test_file = os.path.join(td, "test_foo.py")
++        with open(test_file, "w", encoding="utf-8") as f:
++            f.write(
++                dedent(
++                    """
++                    import pytest
++
++
++                    def test_xfail_test(request):
++                        mark = pytest.mark.xfail(reason=\"xfail\")
++                        request.node.add_marker(mark)
++                        assert 0
++                    """
++                )
++            )
++
++        cmd = [sys.executable, "-m", "pytest", "-q", "-rsx", test_file]
++        env = os.environ.copy()
++        env["PYTHONPATH"] = "/testbed/src" + os.pathsep + env.get("PYTHONPATH", "")
++        env["PYTEST_DISABLE_PLUGIN_AUTOLOAD"] = "1"
++        proc = subprocess.run(cmd, text=True, capture_output=True, env=env)
++        print(proc.stdout)
++        print(proc.stderr)
++        return proc.returncode
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/src/_pytest/skipping.py b/src/_pytest/skipping.py
+index 335e10996..8bbea6480 100644
+--- a/src/_pytest/skipping.py
++++ b/src/_pytest/skipping.py
+@@ -262,6 +262,9 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]):
+     outcome = yield
+     rep = outcome.get_result()
+     xfailed = item._store.get(xfailed_key, None)
++    if xfailed is None:
++        xfailed = evaluate_xfail_marks(item)
++        item._store[xfailed_key] = xfailed
+     # unittest special case, see setting of unexpectedsuccess_key
+     if unexpectedsuccess_key in item._store and rep.when == "call":
+         reason = item._store[unexpectedsuccess_key]

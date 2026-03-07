@@ -1,0 +1,971 @@
+2026-03-07 12:07:16,312 - INFO - rex-deploy-sympy__sympy-13647 - Starting container docker.ioswebenchsweb.eval.x86_64.sympy_1776_sympy-13647latest-d00beb2a-53a1-49ed-8911-4e36f4c5fcdb with image docker.io/swebench/sweb.eval.x86_64.sympy_1776_sympy-13647:latest serving on port 46437
+2026-03-07 12:07:16,314 - INFO - rex-deploy-sympy__sympy-13647 - Starting runtime at 46437
+2026-03-07 12:07:17,919 - INFO - rex-deploy-sympy__sympy-13647 - Runtime started in 1.60s
+2026-03-07 12:07:19,012 - INFO - swea-env-sympy__sympy-13647 - Environment Initialized
+2026-03-07 12:07:19,920 - INFO - swea-agent-sympy__sympy-13647 - Setting up agent for instance sympy__sympy-13647
+2026-03-07 12:07:19,920 - INFO - swea-agent-sympy__sympy-13647 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.4__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok100k_mt8_probev3_gpt54_rerun1/sympy__sympy-13647/sympy__sympy-13647.traj
+2026-03-07 12:07:44,611 - INFO - swea-tools-sympy__sympy-13647 - Resetting tools
+2026-03-07 12:07:45,072 - INFO - swea-agent-sympy__sympy-13647 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-07 12:07:45,266 - INFO - swea-agent-sympy__sympy-13647 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+Matrix.col_insert() no longer seems to work correctly.
+Example:
+
+```
+In [28]: import sympy as sm
+
+In [29]: M = sm.eye(6)
+
+In [30]: M
+Out[30]: 
+⎡1  0  0  0  0  0⎤
+⎢                ⎥
+⎢0  1  0  0  0  0⎥
+⎢                ⎥
+⎢0  0  1  0  0  0⎥
+⎢                ⎥
+⎢0  0  0  1  0  0⎥
+⎢                ⎥
+⎢0  0  0  0  1  0⎥
+⎢                ⎥
+⎣0  0  0  0  0  1⎦
+
+In [31]: V = 2 * sm.ones(6, 2)
+
+In [32]: V
+Out[32]: 
+⎡2  2⎤
+⎢    ⎥
+⎢2  2⎥
+⎢    ⎥
+⎢2  2⎥
+⎢    ⎥
+⎢2  2⎥
+⎢    ⎥
+⎢2  2⎥
+⎢    ⎥
+⎣2  2⎦
+
+In [33]: M.col_insert(3, V)
+Out[33]: 
+⎡1  0  0  2  2  1  0  0⎤
+⎢                      ⎥
+⎢0  1  0  2  2  0  1  0⎥
+⎢                      ⎥
+⎢0  0  1  2  2  0  0  1⎥
+⎢                      ⎥
+⎢0  0  0  2  2  0  0  0⎥
+⎢                      ⎥
+⎢0  0  0  2  2  0  0  0⎥
+⎢                      ⎥
+⎣0  0  0  2  2  0  0  0⎦
+In [34]: sm.__version__
+Out[34]: '1.1.1'
+```
+
+The 3 x 3 identify matrix to the right of the columns of twos is shifted from the bottom three rows to the top three rows.
+
+@siefkenj Do you think this has to do with your matrix refactor?
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-07 12:07:45,267 - INFO - swea-agent-sympy__sympy-13647 - ========================= STEP 1 =========================
+2026-03-07 12:07:50,169 - INFO - swea-agent-sympy__sympy-13647 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -R "def col_insert\|col_insert(" -n sympy | head -50
+2026-03-07 12:07:50,684 - INFO - swea-agent-sympy__sympy-13647 - 🤖 MODEL INPUT
+OBSERVATION:
+sympy/geometry/line.py:467:                m_rref, pivots = m.col_insert(2, v).rref(simplify=True)
+sympy/matrices/common.py:81:    def _eval_col_insert(self, pos, other):
+sympy/matrices/common.py:182:    def col_insert(self, pos, other):
+sympy/matrices/common.py:191:        >>> M.col_insert(1, V)
+sympy/matrices/common.py:218:        return self._eval_col_insert(pos, other)
+sympy/matrices/normalforms.py:31:        smf = smf.col_insert(m.cols, zeros(m.rows, m.cols-n))
+sympy/matrices/sparse.py:271:    def _eval_col_insert(self, icol, other):
+sympy/matrices/sparse.py:319:                    rv = rv.col_insert(i, rv.col(i_previous))
+sympy/matrices/sparse.py:1193:        >>> C == A.col_insert(A.cols, B)
+sympy/matrices/tests/test_commonmatrix.py:197:def test_col_insert():
+sympy/matrices/tests/test_commonmatrix.py:202:        assert flatten(zeros_Shaping(3).col_insert(i, c4).row(0).tolist()) == l
+sympy/matrices/tests/test_matrices.py:1866:    raises(ShapeError, lambda: Matrix([1]).col_insert(1, Matrix([[1,
+sympy/matrices/tests/test_matrices.py:2230:def test_col_insert():
+sympy/matrices/tests/test_matrices.py:2235:        assert flatten(zeros(3).col_insert(i, c4).row(0).tolist()) == l
+sympy/simplify/hyperexpand.py:707:        m = m.col_insert(0, zeros(n, 1))
+sympy/solvers/solveset.py:1115:    M = M.col_insert(len(symbols), Matrix([1]))
+
+2026-03-07 12:07:50,702 - INFO - swea-agent-sympy__sympy-13647 - ========================= STEP 2 =========================
+2026-03-07 12:07:51,065 - WARNING - swea-lm-sympy__sympy-13647 - Retrying LM query: attempt 1 (slept for 10.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 12:08:04,976 - INFO - swea-agent-sympy__sympy-13647 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/sympy/matrices/common.py  --view_range 1 260
+2026-03-07 12:08:05,418 - INFO - swea-agent-sympy__sympy-13647 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/sympy/matrices/common.py:
+     1	"""
+     2	Basic methods common to all matrices to be used
+     3	when creating more advanced matrices (e.g., matrices over rings,
+     4	etc.).
+     5	"""
+     6	
+     7	from __future__ import print_function, division
+     8	
+     9	import collections
+    10	from sympy.core.add import Add
+    11	from sympy.core.basic import Basic, Atom
+    12	from sympy.core.expr import Expr
+    13	from sympy.core.symbol import Symbol
+    14	from sympy.core.function import count_ops
+    15	from sympy.core.singleton import S
+    16	from sympy.core.sympify import sympify
+    17	from sympy.core.compatibility import is_sequence, default_sort_key, range, \
+    18	    NotIterable
+    19	
+    20	from sympy.simplify import simplify as _simplify, signsimp, nsimplify
+    21	from sympy.utilities.iterables import flatten
+    22	from sympy.functions import Abs
+    23	from sympy.core.compatibility import reduce, as_int, string_types
+    24	from sympy.assumptions.refine import refine
+    25	from sympy.core.decorators import call_highest_priority
+    26	
+    27	from types import FunctionType
+    28	
+    29	
+    30	class MatrixError(Exception):
+    31	    pass
+    32	
+    33	
+    34	class ShapeError(ValueError, MatrixError):
+    35	    """Wrong matrix shape"""
+    36	    pass
+    37	
+    38	
+    39	class NonSquareMatrixError(ShapeError):
+    40	    pass
+    41	
+    42	
+    43	class MatrixRequired(object):
+    44	    """All subclasses of matrix objects must implement the
+    45	    required matrix properties listed here."""
+    46	    rows = None
+    47	    cols = None
+    48	    shape = None
+    49	    _simplify = None
+    50	
+    51	    @classmethod
+    52	    def _new(cls, *args, **kwargs):
+    53	        """`_new` must, at minimum, be callable as
+    54	        `_new(rows, cols, mat) where mat is a flat list of the
+    55	        elements of the matrix."""
+    56	        raise NotImplementedError("Subclasses must implement this.")
+    57	
+    58	    def __eq__(self, other):
+    59	        raise NotImplementedError("Subclasses must impliment this.")
+    60	
+    61	    def __getitem__(self, key):
+    62	        """Implementations of __getitem__ should accept ints, in which
+    63	        case the matrix is indexed as a flat list, tuples (i,j) in which
+    64	        case the (i,j) entry is returned, slices, or mixed tuples (a,b)
+    65	        where a and b are any combintion of slices and integers."""
+    66	        raise NotImplementedError("Subclasses must implement this.")
+    67	
+    68	    def __len__(self):
+    69	        """The total number of entries in the matrix."""
+    70	        raise NotImplementedError("Subclasses must implement this.")
+    71	
+    72	
+    73	class MatrixShaping(MatrixRequired):
+    74	    """Provides basic matrix shaping and extracting of submatrices"""
+    75	
+    76	    def _eval_col_del(self, col):
+    77	        def entry(i, j):
+    78	            return self[i, j] if j < col else self[i, j + 1]
+    79	        return self._new(self.rows, self.cols - 1, entry)
+    80	
+    81	    def _eval_col_insert(self, pos, other):
+    82	        cols = self.cols
+    83	
+    84	        def entry(i, j):
+    85	            if j < pos:
+    86	                return self[i, j]
+    87	            elif pos <= j < pos + other.cols:
+    88	                return other[i, j - pos]
+    89	            return self[i, j - pos - other.cols]
+    90	
+    91	        return self._new(self.rows, self.cols + other.cols,
+    92	                         lambda i, j: entry(i, j))
+    93	
+    94	    def _eval_col_join(self, other):
+    95	        rows = self.rows
+    96	
+    97	        def entry(i, j):
+    98	            if i < rows:
+    99	                return self[i, j]
+   100	            return other[i - rows, j]
+   101	
+   102	        return classof(self, other)._new(self.rows + other.rows, self.cols,
+   103	                                         lambda i, j: entry(i, j))
+   104	
+   105	    def _eval_extract(self, rowsList, colsList):
+   106	        mat = list(self)
+   107	        cols = self.cols
+   108	        indices = (i * cols + j for i in rowsList for j in colsList)
+   109	        return self._new(len(rowsList), len(colsList),
+   110	                         list(mat[i] for i in indices))
+   111	
+   112	    def _eval_get_diag_blocks(self):
+   113	        sub_blocks = []
+   114	
+   115	        def recurse_sub_blocks(M):
+   116	            i = 1
+   117	            while i <= M.shape[0]:
+   118	                if i == 1:
+   119	                    to_the_right = M[0, i:]
+   120	                    to_the_bottom = M[i:, 0]
+   121	                else:
+   122	                    to_the_right = M[:i, i:]
+   123	                    to_the_bottom = M[i:, :i]
+   124	                if any(to_the_right) or any(to_the_bottom):
+   125	                    i += 1
+   126	                    continue
+   127	                else:
+   128	                    sub_blocks.append(M[:i, :i])
+   129	                    if M.shape == M[:i, :i].shape:
+   130	                        return
+   131	                    else:
+   132	                        recurse_sub_blocks(M[i:, i:])
+   133	                        return
+   134	
+   135	        recurse_sub_blocks(self)
+   136	        return sub_blocks
+   137	
+   138	    def _eval_row_del(self, row):
+   139	        def entry(i, j):
+   140	            return self[i, j] if i < row else self[i + 1, j]
+   141	        return self._new(self.rows - 1, self.cols, entry)
+   142	
+   143	    def _eval_row_insert(self, pos, other):
+   144	        entries = list(self)
+   145	        insert_pos = pos * self.cols
+   146	        entries[insert_pos:insert_pos] = list(other)
+   147	        return self._new(self.rows + other.rows, self.cols, entries)
+   148	
+   149	    def _eval_row_join(self, other):
+   150	        cols = self.cols
+   151	
+   152	        def entry(i, j):
+   153	            if j < cols:
+   154	                return self[i, j]
+   155	            return other[i, j - cols]
+   156	
+   157	        return classof(self, other)._new(self.rows, self.cols + other.cols,
+   158	                                         lambda i, j: entry(i, j))
+   159	
+   160	    def _eval_tolist(self):
+   161	        return [list(self[i,:]) for i in range(self.rows)]
+   162	
+   163	    def _eval_vec(self):
+   164	        rows = self.rows
+   165	
+   166	        def entry(n, _):
+   167	            # we want to read off the columns first
+   168	            j = n // rows
+   169	            i = n - j * rows
+   170	            return self[i, j]
+   171	
+   172	        return self._new(len(self), 1, entry)
+   173	
+   174	    def col_del(self, col):
+   175	        """Delete the specified column."""
+   176	        if col < 0:
+   177	            col += self.cols
+   178	        if not 0 <= col < self.cols:
+   179	            raise ValueError("Column {} out of range.".format(col))
+   180	        return self._eval_col_del(col)
+   181	
+   182	    def col_insert(self, pos, other):
+   183	        """Insert one or more columns at the given column position.
+   184	
+   185	        Examples
+   186	        ========
+   187	
+   188	        >>> from sympy import zeros, ones
+   189	        >>> M = zeros(3)
+   190	        >>> V = ones(3, 1)
+   191	        >>> M.col_insert(1, V)
+   192	        Matrix([
+   193	        [0, 1, 0, 0],
+   194	        [0, 1, 0, 0],
+   195	        [0, 1, 0, 0]])
+   196	
+   197	        See Also
+   198	        ========
+   199	
+   200	        col
+   201	        row_insert
+   202	        """
+   203	        # Allows you to build a matrix even if it is null matrix
+   204	        if not self:
+   205	            return type(self)(other)
+   206	
+   207	        if pos < 0:
+   208	            pos = self.cols + pos
+   209	        if pos < 0:
+   210	            pos = 0
+   211	        elif pos > self.cols:
+   212	            pos = self.cols
+   213	
+   214	        if self.rows != other.rows:
+   215	            raise ShapeError(
+   216	                "self and other must have the same number of rows.")
+   217	
+   218	        return self._eval_col_insert(pos, other)
+   219	
+   220	    def col_join(self, other):
+   221	        """Concatenates two matrices along self's last and other's first row.
+   222	
+   223	        Examples
+   224	        ========
+   225	
+   226	        >>> from sympy import zeros, ones
+   227	        >>> M = zeros(3)
+   228	        >>> V = ones(1, 3)
+   229	        >>> M.col_join(V)
+   230	        Matrix([
+   231	        [0, 0, 0],
+   232	        [0, 0, 0],
+   233	        [0, 0, 0],
+   234	        [1, 1, 1]])
+   235	
+   236	        See Also
+   237	        ========
+   238	
+   239	        col
+   240	        row_join
+   241	        """
+   242	        # A null matrix can always be stacked (see  #10770)
+   243	        if self.rows == 0 and self.cols != other.cols:
+   244	            return self._new(0, other.cols, []).col_join(other)
+   245	
+   246	        if self.cols != other.cols:
+   247	            raise ShapeError(
+   248	                "`self` and `other` must have the same number of columns.")
+   249	        return self._eval_col_join(other)
+   250	
+   251	    def col(self, j):
+   252	        """Elementary column selector.
+   253	
+   254	        Examples
+   255	        ========
+   256	
+   257	        >>> from sympy import eye
+   258	        >>> eye(2).col(0)
+   259	        Matrix([
+   260	        [1],
+
+
+2026-03-07 12:08:05,424 - INFO - swea-agent-sympy__sympy-13647 - ========================= STEP 3 =========================
+2026-03-07 12:08:09,429 - INFO - swea-agent-sympy__sympy-13647 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/sympy/matrices/sparse.py  --view_range 260 295
+2026-03-07 12:08:10,040 - INFO - swea-agent-sympy__sympy-13647 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/sympy/matrices/sparse.py:
+   260	        if not isinstance(other, SparseMatrix):
+   261	            return self + self._new(other)
+   262	
+   263	        smat = {}
+   264	        zero = self._sympify(0)
+   265	        for key in set().union(self._smat.keys(), other._smat.keys()):
+   266	            sum = self._smat.get(key, zero) + other._smat.get(key, zero)
+   267	            if sum != 0:
+   268	                smat[key] = sum
+   269	        return self._new(self.rows, self.cols, smat)
+   270	
+   271	    def _eval_col_insert(self, icol, other):
+   272	        if not isinstance(other, SparseMatrix):
+   273	            other = SparseMatrix(other)
+   274	        new_smat = {}
+   275	        # make room for the new rows
+   276	        for key, val in self._smat.items():
+   277	            row, col = key
+   278	            if col >= icol:
+   279	                col += other.cols
+   280	            new_smat[(row, col)] = val
+   281	        # add other's keys
+   282	        for key, val in other._smat.items():
+   283	            row, col = key
+   284	            new_smat[(row, col + icol)] = val
+   285	        return self._new(self.rows, self.cols + other.cols, new_smat)
+   286	
+   287	    def _eval_conjugate(self):
+   288	        smat = {key: val.conjugate() for key,val in self._smat.items()}
+   289	        return self._new(self.rows, self.cols, smat)
+   290	
+   291	    def _eval_extract(self, rowsList, colsList):
+   292	        urow = list(uniq(rowsList))
+   293	        ucol = list(uniq(colsList))
+   294	        smat = {}
+   295	        if len(urow)*len(ucol) < len(self._smat):
+
+
+2026-03-07 12:08:10,126 - INFO - swea-agent-sympy__sympy-13647 - ========================= STEP 4 =========================
+2026-03-07 12:08:17,303 - INFO - swea-agent-sympy__sympy-13647 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor create /testbed/repro_col_insert.py --file_text 'import sympy as sm
+
+M = sm.eye(6)
+V = 2 * sm.ones(6, 2)
+R = M.col_insert(3, V)
+print(R)
+print('"'"'equal?'"'"', R == sm.Matrix([
+    [1, 0, 0, 2, 2, 0, 0, 0],
+    [0, 1, 0, 2, 2, 0, 0, 0],
+    [0, 0, 1, 2, 2, 0, 0, 0],
+    [0, 0, 0, 2, 2, 1, 0, 0],
+    [0, 0, 0, 2, 2, 0, 1, 0],
+    [0, 0, 0, 2, 2, 0, 0, 1],
+]))
+'
+2026-03-07 12:08:17,826 - INFO - swea-agent-sympy__sympy-13647 - 🤖 MODEL INPUT
+OBSERVATION:
+File created successfully at: /testbed/repro_col_insert.py
+
+2026-03-07 12:08:17,879 - INFO - swea-agent-sympy__sympy-13647 - ========================= STEP 5 =========================
+2026-03-07 12:08:20,731 - INFO - swea-agent-sympy__sympy-13647 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python repro_col_insert.py
+2026-03-07 12:08:22,861 - INFO - swea-agent-sympy__sympy-13647 - 🤖 MODEL INPUT
+OBSERVATION:
+/testbed/sympy/core/basic.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  from collections import Mapping, defaultdict
+/testbed/sympy/core/containers.py:271: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  class OrderedSet(collections.MutableSet):
+/testbed/sympy/solvers/diophantine.py:3188: SyntaxWarning: "is" with a literal. Did you mean "=="?
+  if feasible is 1:  # it's prime and k == 2
+/testbed/sympy/plotting/plot.py:28: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  from collections import Callable
+Matrix([[1, 0, 0, 2, 2, 1, 0, 0], [0, 1, 0, 2, 2, 0, 1, 0], [0, 0, 1, 2, 2, 0, 0, 1], [0, 0, 0, 2, 2, 0, 0, 0], [0, 0, 0, 2, 2, 0, 0, 0], [0, 0, 0, 2, 2, 0, 0, 0]])
+equal? False
+
+2026-03-07 12:08:22,871 - INFO - swea-agent-sympy__sympy-13647 - ========================= STEP 6 =========================
+2026-03-07 12:08:25,156 - INFO - swea-agent-sympy__sympy-13647 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -R "class MutableDenseMatrix\|class DenseMatrix\|def _new" -n sympy/matrices | head -40
+2026-03-07 12:08:25,654 - INFO - swea-agent-sympy__sympy-13647 - 🤖 MODEL INPUT
+OBSERVATION:
+sympy/matrices/common.py:52:    def _new(cls, *args, **kwargs):
+sympy/matrices/common.py:2158:    def _new(cls, *args, **kwargs):
+sympy/matrices/dense.py:39:class DenseMatrix(MatrixBase):
+sympy/matrices/dense.py:409:class MutableDenseMatrix(DenseMatrix, MatrixBase):
+sympy/matrices/dense.py:414:    def _new(cls, *args, **kwargs):
+sympy/matrices/immutable.py:47:    def _new(cls, *args, **kwargs):
+sympy/matrices/immutable.py:152:    def _new(cls, *args, **kwargs):
+sympy/matrices/sparse.py:849:    def _new(cls, *args, **kwargs):
+
+2026-03-07 12:08:25,735 - INFO - swea-agent-sympy__sympy-13647 - ========================= STEP 7 =========================
+2026-03-07 12:08:28,524 - INFO - swea-agent-sympy__sympy-13647 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/sympy/matrices/dense.py  --view_range 400 470
+2026-03-07 12:08:29,072 - INFO - swea-agent-sympy__sympy-13647 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/sympy/matrices/dense.py:
+   400	        return x
+   401	    elif hasattr(x, '__array__'):
+   402	        a = x.__array__()
+   403	        if len(a.shape) == 0:
+   404	            return sympify(a)
+   405	        return Matrix(x)
+   406	    return x
+   407	
+   408	
+   409	class MutableDenseMatrix(DenseMatrix, MatrixBase):
+   410	    def __new__(cls, *args, **kwargs):
+   411	        return cls._new(*args, **kwargs)
+   412	
+   413	    @classmethod
+   414	    def _new(cls, *args, **kwargs):
+   415	        # if the `copy` flag is set to False, the input
+   416	        # was rows, cols, [list].  It should be used directly
+   417	        # without creating a copy.
+   418	        if kwargs.get('copy', True) is False:
+   419	            if len(args) != 3:
+   420	                raise TypeError("'copy=False' requires a matrix be initialized as rows,cols,[list]")
+   421	            rows, cols, flat_list = args
+   422	        else:
+   423	            rows, cols, flat_list = cls._handle_creation_inputs(*args, **kwargs)
+   424	            flat_list = list(flat_list) # create a shallow copy
+   425	        self = object.__new__(cls)
+   426	        self.rows = rows
+   427	        self.cols = cols
+   428	        self._mat = flat_list
+   429	        return self
+   430	
+   431	    def __setitem__(self, key, value):
+   432	        """
+   433	
+   434	        Examples
+   435	        ========
+   436	
+   437	        >>> from sympy import Matrix, I, zeros, ones
+   438	        >>> m = Matrix(((1, 2+I), (3, 4)))
+   439	        >>> m
+   440	        Matrix([
+   441	        [1, 2 + I],
+   442	        [3,     4]])
+   443	        >>> m[1, 0] = 9
+   444	        >>> m
+   445	        Matrix([
+   446	        [1, 2 + I],
+   447	        [9,     4]])
+   448	        >>> m[1, 0] = [[0, 1]]
+   449	
+   450	        To replace row r you assign to position r*m where m
+   451	        is the number of columns:
+   452	
+   453	        >>> M = zeros(4)
+   454	        >>> m = M.cols
+   455	        >>> M[3*m] = ones(1, m)*2; M
+   456	        Matrix([
+   457	        [0, 0, 0, 0],
+   458	        [0, 0, 0, 0],
+   459	        [0, 0, 0, 0],
+   460	        [2, 2, 2, 2]])
+   461	
+   462	        And to replace column c you can assign to position c:
+   463	
+   464	        >>> M[2] = ones(m, 1)*4; M
+   465	        Matrix([
+   466	        [0, 0, 4, 0],
+   467	        [0, 0, 4, 0],
+   468	        [0, 0, 4, 0],
+   469	        [2, 2, 4, 2]])
+   470	        """
+
+
+2026-03-07 12:08:29,119 - INFO - swea-agent-sympy__sympy-13647 - ========================= STEP 8 =========================
+2026-03-07 12:08:33,595 - INFO - swea-agent-sympy__sympy-13647 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+import sympy as sm
+M = sm.eye(6)
+V = 2*sm.ones(6,2)
+R = M.col_insert(3, V)
+print(type(M))
+print(R.shape)
+print(R._mat[:20])
+PY
+2026-03-07 12:08:34,735 - INFO - swea-agent-sympy__sympy-13647 - 🤖 MODEL INPUT
+OBSERVATION:
+/testbed/sympy/core/basic.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  from collections import Mapping, defaultdict
+/testbed/sympy/core/containers.py:271: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  class OrderedSet(collections.MutableSet):
+/testbed/sympy/plotting/plot.py:28: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  from collections import Callable
+<class 'sympy.matrices.dense.MutableDenseMatrix'>
+(6, 8)
+[1, 0, 0, 2, 2, 1, 0, 0, 0, 1, 0, 2, 2, 0, 1, 0, 0, 0, 1, 2]
+
+2026-03-07 12:08:34,781 - INFO - swea-agent-sympy__sympy-13647 - ========================= STEP 9 =========================
+2026-03-07 12:08:37,845 - INFO - swea-agent-sympy__sympy-13647 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+import sympy as sm
+M = sm.eye(6)
+V = 2*sm.ones(6,2)
+R = M._eval_col_insert(3, V)
+print(R._mat)
+print(len(R._mat))
+PY
+2026-03-07 12:08:38,817 - INFO - swea-agent-sympy__sympy-13647 - 🤖 MODEL INPUT
+OBSERVATION:
+/testbed/sympy/core/basic.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  from collections import Mapping, defaultdict
+/testbed/sympy/core/containers.py:271: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  class OrderedSet(collections.MutableSet):
+/testbed/sympy/plotting/plot.py:28: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  from collections import Callable
+[1, 0, 0, 2, 2, 1, 0, 0, 0, 1, 0, 2, 2, 0, 1, 0, 0, 0, 1, 2, 2, 0, 0, 1, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0]
+48
+
+2026-03-07 12:08:38,835 - INFO - swea-agent-sympy__sympy-13647 - ========================= STEP 10 =========================
+2026-03-07 12:08:41,859 - INFO - swea-agent-sympy__sympy-13647 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -R "def _new(.*entry\|lambda i, j\|callable(flat_list\|callable" -n sympy/matrices | head -50
+2026-03-07 12:08:42,256 - INFO - swea-agent-sympy__sympy-13647 - 🤖 MODEL INPUT
+OBSERVATION:
+grep: sympy/matrices/expressions/__pycache__/matexpr.cpython-39.pyc: binary file matches
+sympy/matrices/common.py:53:        """`_new` must, at minimum, be callable as
+sympy/matrices/common.py:92:                         lambda i, j: entry(i, j))
+sympy/matrices/common.py:103:                                         lambda i, j: entry(i, j))
+sympy/matrices/common.py:158:                                         lambda i, j: entry(i, j))
+sympy/matrices/common.py:390:        >>> m = Matrix(2, 3, lambda i, j: 1)
+sympy/matrices/common.py:406:        return self._new(rows, cols, lambda i, j: self[i * cols + j])
+sympy/matrices/common.py:931:        mat = self._new(self.rows, self.cols, lambda i, j: simpfunc(self[i, j] - self[j, i].conjugate()))
+sympy/matrices/common.py:957:        mat = self._new(self.rows, self.cols, lambda i, j: simpfunc(self[i, j] - self[j, i]))
+sympy/matrices/common.py:1520:        return self._new(self.cols, self.rows, lambda i, j: self[j, i])
+sympy/matrices/common.py:1533:        >>> m = Matrix(2, 2, lambda i, j: i*2+j)
+sympy/matrices/common.py:1544:        if not callable(f):
+sympy/matrices/common.py:1545:            raise TypeError("`f` must be callable.")
+sympy/matrices/common.py:1761:        >>> M = Matrix(2, 2, lambda i, j: F(i+j)) ; M
+sympy/matrices/common.py:1896:        return self._new(self.rows, self.cols, lambda i, j: Abs(self[i, j]))
+sympy/matrices/common.py:1900:                         lambda i, j: self[i, j] + other[i, j])
+sympy/matrices/common.py:1920:        return self._new(self.rows, self.cols, lambda i, j: self[i,j]*other[i,j])
+sympy/matrices/common.py:1936:        return self._new(self.rows, self.cols, lambda i, j: self[i,j]*other)
+sympy/matrices/common.py:1939:        return self._new(self.rows, self.cols, lambda i, j: other*self[i,j])
+sympy/matrices/common.py:2042:                    return self._new(self.rows, self.cols, lambda i, j: int(i == j))
+sympy/matrices/dense.py:148:        return self._new(rhs.rows, rhs.cols, lambda i, j: rhs[i, j] / self[i, i])
+sympy/matrices/dense.py:1059:        f = lambda i, j: seqs[j].subs(n, n + i)
+sympy/matrices/dense.py:1061:        f = lambda i, j: seqs[j].subs(n, i)
+sympy/matrices/dense.py:1324:                              lambda i, j: A[i, j]*B[i, j])
+sympy/matrices/dense.py:1400:        m = Matrix._new(r, c, lambda i, j: prng.randint(min, max))
+sympy/matrices/dense.py:1452:    W = Matrix(n, n, lambda i, j: functions[i].diff(var, j))
+sympy/matrices/expressions/matexpr.py:671:        raise TypeError( "%s object is not callable" % self.__class__ )
+sympy/matrices/expressions/tests/test_funcmatrix.py:11:    assert Matrix(X) == Matrix(3, 3, lambda i, j: i - j)
+sympy/matrices/expressions/tests/test_matexpr.py:172:    assert ImmutableMatrix(X) == ImmutableMatrix(2, 2, lambda i, j: X[i, j])
+sympy/matrices/expressions/tests/test_matexpr.py:173:    assert Matrix(X) == Matrix(2, 2, lambda i, j: X[i, j])
+sympy/matrices/matrices.py:229:        iszerofunc is a callable that returns a boolean indicating if its
+sympy/matrices/matrices.py:231:        simpfunc is a callable that simplifies its input.
+sympy/matrices/matrices.py:380:                         lambda i, j: self.cofactor(i, j, method))
+sympy/matrices/matrices.py:1965:        >>> Matrix(2, 2, lambda i, j: i/(j + 1) )
+sympy/matrices/matrices.py:2047:            # Matrix(2, 2, lambda i, j: i+j)
+sympy/matrices/matrices.py:3103:        iszerofunc is a callable that returns a boolean indicating if its
+sympy/matrices/matrices.py:3105:        simpfunc is a callable that simplifies its input.
+sympy/matrices/matrices.py:3601:        >>> m = Matrix(2, 3, lambda i, j: i*3+j)
+sympy/matrices/matrices.py:4166:    `iszerofunc` is a callable that returns a Boolean that indicates
+sympy/matrices/matrices.py:4168:    `simpfunc` is a callable that simplifies its input. It must return
+sympy/matrices/sparse.py:200:        return self._new(self.rows, 1, lambda i, j: rhs[i, 0] / self[i, i])
+sympy/matrices/sparse.py:511:        >>> m = SparseMatrix(2, 2, lambda i, j: i*2+j)
+sympy/matrices/sparse.py:522:        if not callable(f):
+sympy/matrices/sparse.py:523:            raise TypeError("`f` must be callable.")
+sympy/matrices/tests/test_commonmatrix.py:31:    return ShapingOnlyMatrix(n, n, lambda i, j: int(i == j))
+sympy/matrices/tests/test_commonmatrix.py:34:    return ShapingOnlyMatrix(n, n, lambda i, j: 0)
+sympy/matrices/tests/test_commonmatrix.py:40:    return PropertiesOnlyMatrix(n, n, lambda i, j: int(i == j))
+sympy/matrices/tests/test_commonmatrix.py:43:    return PropertiesOnlyMatrix(n, n, lambda i, j: 0)
+sympy/matrices/tests/test_commonmatrix.py:49:    return OperationsOnlyMatrix(n, n, lambda i, j: int(i == j))
+sympy/matrices/tests/test_commonmatrix.py:52:    return OperationsOnlyMatrix(n, n, lambda i, j: 0)
+sympy/matrices/tests/test_commonmatrix.py:58:    return ArithmeticOnlyMatrix(n, n, lambda i, j: int(i == j))
+grep: sympy/matrices/__pycache__/matrices.cpython-39.pyc: binary file matches
+grep: sympy/matrices/__pycache__/common.cpython-39.pyc: binary file matches
+grep: sympy/matrices/__pycache__/sparse.cpython-39.pyc: binary file matches
+grep: write error
+
+2026-03-07 12:08:42,320 - INFO - swea-agent-sympy__sympy-13647 - ========================= STEP 11 =========================
+2026-03-07 12:08:46,257 - INFO - swea-agent-sympy__sympy-13647 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/sympy/matrices/matrices.py  --view_range 2020 2075
+2026-03-07 12:08:46,685 - INFO - swea-agent-sympy__sympy-13647 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/sympy/matrices/matrices.py:
+  2020	                        try:
+  2021	                            ncol.add(len(row))
+  2022	                        except TypeError:
+  2023	                            ncol.add(1)
+  2024	                if len(ncol) > 1:
+  2025	                    raise ValueError("Got rows of variable lengths: %s" %
+  2026	                                     sorted(list(ncol)))
+  2027	                cols = ncol.pop() if ncol else 0
+  2028	                rows = len(in_mat) if cols else 0
+  2029	                if rows:
+  2030	                    if not is_sequence(in_mat[0]):
+  2031	                        cols = 1
+  2032	                        flat_list = [cls._sympify(i) for i in in_mat]
+  2033	                        return rows, cols, flat_list
+  2034	                flat_list = []
+  2035	                for j in range(rows):
+  2036	                    for i in range(cols):
+  2037	                        flat_list.append(cls._sympify(in_mat[j][i]))
+  2038	
+  2039	        elif len(args) == 3:
+  2040	            rows = as_int(args[0])
+  2041	            cols = as_int(args[1])
+  2042	
+  2043	            if rows < 0 or cols < 0:
+  2044	                raise ValueError("Cannot create a {} x {} matrix. "
+  2045	                                 "Both dimensions must be positive".format(rows, cols))
+  2046	
+  2047	            # Matrix(2, 2, lambda i, j: i+j)
+  2048	            if len(args) == 3 and isinstance(args[2], collections.Callable):
+  2049	                op = args[2]
+  2050	                flat_list = []
+  2051	                for i in range(rows):
+  2052	                    flat_list.extend(
+  2053	                        [cls._sympify(op(cls._sympify(i), cls._sympify(j)))
+  2054	                         for j in range(cols)])
+  2055	
+  2056	            # Matrix(2, 2, [1, 2, 3, 4])
+  2057	            elif len(args) == 3 and is_sequence(args[2]):
+  2058	                flat_list = args[2]
+  2059	                if len(flat_list) != rows * cols:
+  2060	                    raise ValueError(
+  2061	                        'List length should be equal to rows*columns')
+  2062	                flat_list = [cls._sympify(i) for i in flat_list]
+  2063	
+  2064	
+  2065	        # Matrix()
+  2066	        elif len(args) == 0:
+  2067	            # Empty Matrix
+  2068	            rows = cols = 0
+  2069	            flat_list = []
+  2070	
+  2071	        if flat_list is None:
+  2072	            raise TypeError("Data type not understood")
+  2073	
+  2074	        return rows, cols, flat_list
+  2075	
+
+
+2026-03-07 12:08:46,708 - INFO - swea-agent-sympy__sympy-13647 - ========================= STEP 12 =========================
+2026-03-07 12:08:52,800 - INFO - swea-agent-sympy__sympy-13647 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/sympy/matrices/common.py   --old_str '    def _eval_col_insert(self, pos, other):
+        cols = self.cols
+
+        def entry(i, j):
+            if j < pos:
+                return self[i, j]
+            elif pos <= j < pos + other.cols:
+                return other[i, j - pos]
+            return self[i, j - pos - other.cols]
+
+        return self._new(self.rows, self.cols + other.cols,
+                         lambda i, j: entry(i, j))
+' --new_str '    def _eval_col_insert(self, pos, other):
+        entries = []
+        for i in range(self.rows):
+            entries.extend(self[i, :pos])
+            entries.extend(other[i, :])
+            entries.extend(self[i, pos:])
+        return self._new(self.rows, self.cols + other.cols, entries)
+'
+2026-03-07 12:08:53,233 - INFO - swea-agent-sympy__sympy-13647 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/sympy/matrices/common.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/sympy/matrices/common.py:
+    76	    def _eval_col_del(self, col):
+    77	        def entry(i, j):
+    78	            return self[i, j] if j < col else self[i, j + 1]
+    79	        return self._new(self.rows, self.cols - 1, entry)
+    80	
+    81	    def _eval_col_insert(self, pos, other):
+    82	        entries = []
+    83	        for i in range(self.rows):
+    84	            entries.extend(self[i, :pos])
+    85	            entries.extend(other[i, :])
+    86	            entries.extend(self[i, pos:])
+    87	        return self._new(self.rows, self.cols + other.cols, entries)
+    88	
+    89	    def _eval_col_join(self, other):
+    90	        rows = self.rows
+    91	
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-07 12:08:53,259 - INFO - swea-agent-sympy__sympy-13647 - ========================= STEP 13 =========================
+2026-03-07 12:08:54,222 - WARNING - swea-lm-sympy__sympy-13647 - Retrying LM query: attempt 1 (slept for 10.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 12:09:09,695 - INFO - swea-agent-sympy__sympy-13647 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python repro_col_insert.py && python - <<'PY'
+import sympy as sm
+# edge checks
+M = sm.eye(3)
+V = sm.ones(3,1)
+print(M.col_insert(0, V))
+print(M.col_insert(3, V))
+print(M.col_insert(-1, V))
+S = sm.SparseMatrix(sm.eye(3))
+print(S.col_insert(1, V))
+PY
+2026-03-07 12:09:11,278 - INFO - swea-agent-sympy__sympy-13647 - 🤖 MODEL INPUT
+OBSERVATION:
+/testbed/sympy/core/basic.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  from collections import Mapping, defaultdict
+/testbed/sympy/core/containers.py:271: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  class OrderedSet(collections.MutableSet):
+/testbed/sympy/plotting/plot.py:28: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  from collections import Callable
+Matrix([[1, 0, 0, 2, 2, 0, 0, 0], [0, 1, 0, 2, 2, 0, 0, 0], [0, 0, 1, 2, 2, 0, 0, 0], [0, 0, 0, 2, 2, 1, 0, 0], [0, 0, 0, 2, 2, 0, 1, 0], [0, 0, 0, 2, 2, 0, 0, 1]])
+equal? True
+/testbed/sympy/core/basic.py:3: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  from collections import Mapping, defaultdict
+/testbed/sympy/core/containers.py:271: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  class OrderedSet(collections.MutableSet):
+/testbed/sympy/plotting/plot.py:28: DeprecationWarning: Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3, and in 3.10 it will stop working
+  from collections import Callable
+Matrix([[1, 1, 0, 0], [1, 0, 1, 0], [1, 0, 0, 1]])
+Matrix([[1, 0, 0, 1], [0, 1, 0, 1], [0, 0, 1, 1]])
+Matrix([[1, 0, 1, 0], [0, 1, 1, 0], [0, 0, 1, 1]])
+Matrix([[1, 1, 0, 0], [0, 1, 1, 0], [0, 1, 0, 1]])
+
+2026-03-07 12:09:11,345 - INFO - swea-agent-sympy__sympy-13647 - ========================= STEP 14 =========================
+2026-03-07 12:09:15,801 - INFO - swea-agent-sympy__sympy-13647 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-07 12:09:16,288 - INFO - swea-agent-sympy__sympy-13647 - 🤖 MODEL INPUT
+OBSERVATION:
+Thank you for your work on this issue. Please carefully follow the steps below to help review your changes.
+
+1. If you made any changes to your code after running the reproduction script, please run the reproduction script again.
+  If the reproduction script is failing, please revisit your changes and make sure they are correct.
+  If you have already removed your reproduction script, please ignore this step.
+2. Remove your reproduction script (if you haven't done so already).
+3. If you have modified any TEST files, please revert them to the state they had before you started fixing the issue.
+  You can do this with `git checkout -- /path/to/test/file.py`. Use below <diff> to find the files you need to revert.
+4. Run the submit command again to confirm.
+
+Here is a list of all of your changes:
+
+<diff>
+diff --git a/repro_col_insert.py b/repro_col_insert.py
+new file mode 100644
+index 000000000..b28c3ad8d
+--- /dev/null
++++ b/repro_col_insert.py
+@@ -0,0 +1,14 @@
++import sympy as sm
++
++M = sm.eye(6)
++V = 2 * sm.ones(6, 2)
++R = M.col_insert(3, V)
++print(R)
++print('equal?', R == sm.Matrix([
++    [1, 0, 0, 2, 2, 0, 0, 0],
++    [0, 1, 0, 2, 2, 0, 0, 0],
++    [0, 0, 1, 2, 2, 0, 0, 0],
++    [0, 0, 0, 2, 2, 1, 0, 0],
++    [0, 0, 0, 2, 2, 0, 1, 0],
++    [0, 0, 0, 2, 2, 0, 0, 1],
++]))
+diff --git a/sympy/matrices/common.py b/sympy/matrices/common.py
+index 056d9bc49..523289ccd 100644
+--- a/sympy/matrices/common.py
++++ b/sympy/matrices/common.py
+@@ -79,17 +79,12 @@ def entry(i, j):
+         return self._new(self.rows, self.cols - 1, entry)
+ 
+     def _eval_col_insert(self, pos, other):
+-        cols = self.cols
+-
+-        def entry(i, j):
+-            if j < pos:
+-                return self[i, j]
+-            elif pos <= j < pos + other.cols:
+-                return other[i, j - pos]
+-            return self[i, j - pos - other.cols]
+-
+-        return self._new(self.rows, self.cols + other.cols,
+-                         lambda i, j: entry(i, j))
++        entries = []
++        for i in range(self.rows):
++            entries.extend(self[i, :pos])
++            entries.extend(other[i, :])
++            entries.extend(self[i, pos:])
++        return self._new(self.rows, self.cols + other.cols, entries)
+ 
+     def _eval_col_join(self, other):
+         rows = self.rows
+
+</diff>
+
+
+2026-03-07 12:09:16,334 - INFO - swea-agent-sympy__sympy-13647 - ========================= STEP 15 =========================
+2026-03-07 12:09:19,227 - WARNING - swea-lm-sympy__sympy-13647 - Token budget exhausted: 100604 > 100000
+2026-03-07 12:09:19,318 - WARNING - swea-agent-sympy__sympy-13647 - Exit due to token budget exhaustion
+2026-03-07 12:09:19,324 - WARNING - swea-agent-sympy__sympy-13647 - Attempting autosubmission after error
+2026-03-07 12:09:19,493 - INFO - swea-agent-sympy__sympy-13647 - Executing submission command git add -A && git diff --cached > /tmp/model.patch in /testbed
+2026-03-07 12:09:19,789 - INFO - swea-agent-sympy__sympy-13647 - Found submission: diff --git a/repro_col_insert.py b/repro_col_insert.py
+new file mode 100644
+index 000000000..b28c3ad8d
+--- /dev/null
++++ b/repro_col_insert.py
+@@ -0,0 +1,14 @@
++import sympy as sm
++
++M = sm.eye(6)
++V = 2 * sm.ones(6, 2)
++R = M.col_insert(3, V)
++print(R)
++print('equal?', R == sm.Matrix([
++    [1, 0, 0, 2, 2, 0, 0, 0],
++    [0, 1, 0, 2, 2, 0, 0, 0],
++    [0, 0, 1, 2, 2, 0, 0, 0],
++    [0, 0, 0, 2, 2, 1, 0, 0],
++    [0, 0, 0, 2, 2, 0, 1, 0],
++    [0, 0, 0, 2, 2, 0, 0, 1],
++]))
+diff --git a/sympy/matrices/common.py b/sympy/matrices/common.py
+index 056d9bc49..523289ccd 100644
+--- a/sympy/matrices/common.py
++++ b/sympy/matrices/common.py
+@@ -79,17 +79,12 @@ def entry(i, j):
+         return self._new(self.rows, self.cols - 1, entry)
+ 
+     def _eval_col_insert(self, pos, other):
+-        cols = self.cols
+-
+-        def entry(i, j):
+-            if j < pos:
+-                return self[i, j]
+-            elif pos <= j < pos + other.cols:
+-                return other[i, j - pos]
+-            return self[i, j - pos - other.cols]
+-
+-        return self._new(self.rows, self.cols + other.cols,
+-                         lambda i, j: entry(i, j))
++        entries = []
++        for i in range(self.rows):
++            entries.extend(self[i, :pos])
++            entries.extend(other[i, :])
++            entries.extend(self[i, pos:])
++        return self._new(self.rows, self.cols + other.cols, entries)
+ 
+     def _eval_col_join(self, other):
+         rows = self.rows
+
+2026-03-07 12:09:19,791 - INFO - swea-agent-sympy__sympy-13647 - Exiting with autosubmission
+2026-03-07 12:09:19,793 - INFO - swea-agent-sympy__sympy-13647 - 🤖 MODEL INPUT
+OBSERVATION:
+Exited (autosubmitted)
+2026-03-07 12:09:20,084 - INFO - swea-agent-sympy__sympy-13647 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.4__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok100k_mt8_probev3_gpt54_rerun1/sympy__sympy-13647/sympy__sympy-13647.traj
+2026-03-07 12:09:20,116 - INFO - swea-env-sympy__sympy-13647 - Beginning environment shutdown...

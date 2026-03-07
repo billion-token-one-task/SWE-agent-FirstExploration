@@ -1,0 +1,18 @@
+diff --git a/django/urls/resolvers.py b/django/urls/resolvers.py
+index 9b00e24509..afb1f710de 100644
+--- a/django/urls/resolvers.py
++++ b/django/urls/resolvers.py
+@@ -38,6 +38,13 @@ class ResolverMatch:
+         self.route = route
+         self.tried = tried
+ 
++        # Unwrap partials so that the underlying view and all arguments are
++        # represented in ResolverMatch.__repr__().
++        if isinstance(func, functools.partial):
++            self.args = func.args + self.args
++            self.kwargs = {**func.keywords, **self.kwargs} if func.keywords else self.kwargs
++            func = func.func
++
+         # If a URLRegexResolver doesn't have a namespace or app_name, it passes
+         # in an empty value.
+         self.app_names = [x for x in app_names if x] if app_names else []

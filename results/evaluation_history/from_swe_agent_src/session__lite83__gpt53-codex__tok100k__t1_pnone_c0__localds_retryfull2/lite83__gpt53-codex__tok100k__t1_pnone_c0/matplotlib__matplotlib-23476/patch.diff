@@ -1,0 +1,43 @@
+diff --git a/lib/matplotlib/figure.py b/lib/matplotlib/figure.py
+index c55864243a..290e2deeec 100644
+--- a/lib/matplotlib/figure.py
++++ b/lib/matplotlib/figure.py
+@@ -3043,9 +3043,18 @@ class Figure(FigureBase):
+ 
+         self.__dict__ = state
+ 
++        # Preserve the (unscaled) logical dpi when reattaching a canvas;
++        # FigureCanvasBase.__init__ will reset _original_dpi from self.dpi.
++        self._original_dpi = state.get('_original_dpi', self.dpi)
++
+         # re-initialise some of the unstored state information
+         FigureCanvasBase(self)  # Set self.canvas.
+ 
++        # FigureCanvasBase.__init__ initializes _original_dpi from the current
++        # (possibly device-scaled) figure dpi. Restore the unscaled value from
++        # the pickled state so high-dpi backends do not rescale repeatedly.
++        self._original_dpi = state.get('_original_dpi', self._original_dpi)
++
+         if restore_to_pylab:
+             # lazy import to avoid circularity
+             import matplotlib.pyplot as plt
+diff --git a/repro_pickle_dpi.py b/repro_pickle_dpi.py
+new file mode 100644
+index 0000000000..ee1fe7ff84
+--- /dev/null
++++ b/repro_pickle_dpi.py
+@@ -0,0 +1,14 @@
++import pickle
++import matplotlib
++matplotlib.use('MacOSX', force=True)
++import matplotlib.pyplot as plt
++
++print('backend:', matplotlib.get_backend())
++
++fig = plt.figure(dpi=200)
++for i in range(8):
++    print(i, fig.dpi, getattr(fig, '_original_dpi', None), fig.canvas.device_pixel_ratio)
++    with open('/testbed/tmp_fig.pkl', 'wb') as f:
++        pickle.dump(fig, f)
++    with open('/testbed/tmp_fig.pkl', 'rb') as f:
++        fig = pickle.load(f)

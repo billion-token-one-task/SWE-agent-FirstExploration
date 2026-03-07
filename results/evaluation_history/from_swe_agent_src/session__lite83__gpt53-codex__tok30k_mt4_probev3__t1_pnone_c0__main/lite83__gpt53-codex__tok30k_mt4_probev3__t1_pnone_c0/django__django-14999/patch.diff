@@ -1,0 +1,60 @@
+diff --git a/repro.py b/repro.py
+new file mode 100644
+index 0000000000..359ec19ffb
+--- /dev/null
++++ b/repro.py
+@@ -0,0 +1,54 @@
++from django.db.migrations.operations.models import RenameModel
++
++
++class Meta:
++    def __init__(self, db_table):
++        self.db_table = db_table
++        self.related_objects = []
++        self.local_many_to_many = []
++
++    def can_migrate(self, alias):
++        return True
++
++
++class DummyModel:
++    def __init__(self, db_table):
++        self._meta = Meta(db_table)
++
++
++class Apps:
++    def __init__(self, model):
++        self.model = model
++
++    def get_model(self, app_label, model_name):
++        return self.model
++
++
++class State:
++    def __init__(self, model):
++        self.apps = Apps(model)
++
++
++class Conn:
++    alias = 'default'
++
++
++class Editor:
++    def __init__(self):
++        self.connection = Conn()
++        self.calls = []
++
++    def alter_db_table(self, model, old_db_table, new_db_table):
++        self.calls.append(('alter_db_table', old_db_table, new_db_table))
++
++    def alter_field(self, *args, **kwargs):
++        self.calls.append(('alter_field',))
++
++
++op = RenameModel('Author', 'Writer')
++model = DummyModel('custom_table')
++from_state = State(model)
++to_state = State(model)
++editor = Editor()
++op.database_forwards('app', editor, from_state, to_state)
++print(editor.calls)

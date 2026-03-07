@@ -1,0 +1,38 @@
+diff --git a/django/db/migrations/operations/models.py b/django/db/migrations/operations/models.py
+index d17232e4ec..b7b6bf500e 100644
+--- a/django/db/migrations/operations/models.py
++++ b/django/db/migrations/operations/models.py
+@@ -932,6 +932,9 @@ class RenameIndex(IndexOperation):
+             )
+ 
+     def database_forwards(self, app_label, schema_editor, from_state, to_state):
++        self._rename_index(app_label, schema_editor, from_state, to_state)
++
++    def _rename_index(self, app_label, schema_editor, from_state, to_state):
+         model = to_state.apps.get_model(app_label, self.model_name)
+         if not self.allow_migrate_model(schema_editor.connection.alias, model):
+             return
+@@ -967,8 +970,12 @@ class RenameIndex(IndexOperation):
+ 
+     def database_backwards(self, app_label, schema_editor, from_state, to_state):
+         if self.old_fields:
+-            # Backward operation with unnamed index is a no-op.
+-            return
++            self.old_name = self.new_name
++            self.old_name_lower = self.old_name.lower()
++            to_model_state = to_state.models[app_label, self.model_name_lower]
++            new_index = to_model_state.get_index_by_fields(self.old_fields)
++            self.new_name = new_index.name
++            self.new_name_lower = self.new_name.lower()
+ 
+         self.new_name_lower, self.old_name_lower = (
+             self.old_name_lower,
+@@ -976,7 +983,7 @@ class RenameIndex(IndexOperation):
+         )
+         self.new_name, self.old_name = self.old_name, self.new_name
+ 
+-        self.database_forwards(app_label, schema_editor, from_state, to_state)
++        self._rename_index(app_label, schema_editor, from_state, to_state)
+ 
+         self.new_name_lower, self.old_name_lower = (
+             self.old_name_lower,

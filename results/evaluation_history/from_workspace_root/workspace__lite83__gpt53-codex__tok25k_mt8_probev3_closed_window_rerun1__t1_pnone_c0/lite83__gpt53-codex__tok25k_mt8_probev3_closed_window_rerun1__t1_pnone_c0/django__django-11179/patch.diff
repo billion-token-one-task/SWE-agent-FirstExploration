@@ -1,0 +1,48 @@
+diff --git a/django/db/models/deletion.py b/django/db/models/deletion.py
+index 92fe4affb9..3a462f1c4c 100644
+--- a/django/db/models/deletion.py
++++ b/django/db/models/deletion.py
+@@ -277,6 +277,7 @@ class Collector:
+             if self.can_fast_delete(instance):
+                 with transaction.mark_for_rollback_on_error():
+                     count = sql.DeleteQuery(model).delete_batch([instance.pk], self.using)
++                setattr(instance, model._meta.pk.attname, None)
+                 return count, {model._meta.label: count}
+ 
+         with transaction.atomic(using=self.using, savepoint=False):
+diff --git a/repro_delete_pk.py b/repro_delete_pk.py
+new file mode 100644
+index 0000000000..566c39ca94
+--- /dev/null
++++ b/repro_delete_pk.py
+@@ -0,0 +1,30 @@
++from django.conf import settings
++
++if not settings.configured:
++    settings.configure(
++        INSTALLED_APPS=[],
++        DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}},
++        USE_TZ=True,
++    )
++
++import django
++from django.db import connection, models
++
++django.setup()
++
++
++class SimpleModel(models.Model):
++    name = models.CharField(max_length=10)
++
++    class Meta:
++        app_label = "repro"
++
++
++with connection.schema_editor() as editor:
++    editor.create_model(SimpleModel)
++
++obj = SimpleModel.objects.create(name="x")
++print("before delete pk:", obj.pk)
++obj.delete()
++print("after delete pk:", obj.pk)
++print("is none:", obj.pk is None)

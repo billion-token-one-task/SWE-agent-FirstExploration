@@ -1,0 +1,115 @@
+2026-03-06 11:41:31,399 - INFO - rex-deploy-astropy__astropy-14995 - Starting container docker.ioswebenchsweb.eval.x86_64.astropy_1776_astropy-14995latest-f20e855a-b483-487d-8713-841e01a17d3f with image docker.io/swebench/sweb.eval.x86_64.astropy_1776_astropy-14995:latest serving on port 43055
+2026-03-06 11:41:31,401 - INFO - rex-deploy-astropy__astropy-14995 - Starting runtime at 43055
+2026-03-06 11:41:33,173 - INFO - rex-deploy-astropy__astropy-14995 - Runtime started in 1.77s
+2026-03-06 11:41:34,275 - INFO - swea-env-astropy__astropy-14995 - Environment Initialized
+2026-03-06 11:41:35,082 - INFO - swea-agent-astropy__astropy-14995 - Setting up agent for instance astropy__astropy-14995
+2026-03-06 11:41:35,082 - INFO - swea-agent-astropy__astropy-14995 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.4__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok25k_mt8_probev3_gpt54_rerun1/astropy__astropy-14995/astropy__astropy-14995.traj
+2026-03-06 11:43:30,134 - INFO - swea-tools-astropy__astropy-14995 - Resetting tools
+2026-03-06 11:43:30,553 - INFO - swea-agent-astropy__astropy-14995 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-06 11:43:30,769 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+In v5.3, NDDataRef mask propagation fails when one of the operand does not have a mask
+### Description
+
+This applies to v5.3. 
+
+It looks like when one of the operand does not have a mask, the mask propagation when doing arithmetic, in particular with `handle_mask=np.bitwise_or` fails.  This is not a problem in v5.2.
+
+I don't know enough about how all that works, but it seems from the error that the operand without a mask is set as a mask of None's and then the bitwise_or tries to operate on an integer and a None and fails.
+
+### Expected behavior
+
+When one of the operand does not have mask, the mask that exists should just be copied over to the output.  Or whatever was done in that situation in v5.2 where there's no problem.
+
+### How to Reproduce
+
+This is with v5.3.   With v5.2, there are no errors.
+
+```
+>>> import numpy as np
+>>> from astropy.nddata import NDDataRef
+
+>>> array = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])
+>>> mask = np.array([[0, 1, 64], [8, 0, 1], [2, 1, 0]])
+
+>>> nref_nomask = NDDataRef(array)
+>>> nref_mask = NDDataRef(array, mask=mask)
+
+# multiply no mask by constant (no mask * no mask)
+>>> nref_nomask.multiply(1., handle_mask=np.bitwise_or).mask   # returns nothing, no mask,  OK
+
+# multiply no mask by itself (no mask * no mask)
+>>> nref_nomask.multiply(nref_nomask, handle_mask=np.bitwise_or).mask # return nothing, no mask, OK
+
+# multiply mask by constant (mask * no mask)
+>>> nref_mask.multiply(1., handle_mask=np.bitwise_or).mask
+...
+TypeError: unsupported operand type(s) for |: 'int' and 'NoneType'
+
+# multiply mask by itself (mask * mask)
+>>> nref_mask.multiply(nref_mask, handle_mask=np.bitwise_or).mask
+array([[ 0,  1, 64],
+       [ 8,  0,  1],
+       [ 2,  1,  0]])
+
+# multiply mask by no mask (mask * no mask)
+>>> nref_mask.multiply(nref_nomask, handle_mask=np.bitwise_or).mask
+...
+TypeError: unsupported operand type(s) for |: 'int' and 'NoneType'
+```
+
+
+### Versions
+
+>>> import sys; print("Python", sys.version)
+Python 3.10.11 | packaged by conda-forge | (main, May 10 2023, 19:07:22) [Clang 14.0.6 ]
+>>> import astropy; print("astropy", astropy.__version__)
+astropy 5.3
+>>> import numpy; print("Numpy", numpy.__version__)
+Numpy 1.24.3
+>>> import erfa; print("pyerfa", erfa.__version__)
+pyerfa 2.0.0.3
+>>> import scipy; print("Scipy", scipy.__version__)
+Scipy 1.10.1
+>>> import matplotlib; print("Matplotlib", matplotlib.__version__)
+Matplotlib 3.7.1
+
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-06 11:43:30,770 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 1 =========================
+2026-03-06 11:43:40,237 - WARNING - swea-agent-astropy__astropy-14995 - Requerying model after FunctionCallingFormatError (1th requery)
+2026-03-06 11:43:40,284 - WARNING - swea-agent-astropy__astropy-14995 - Your action could not be parsed properly: Unexpected argument(s): path.
+Make sure your function call doesn't include any extra arguments that are not in the allowed arguments, and only use the allowed commands.
+2026-03-06 11:43:55,890 - WARNING - swea-agent-astropy__astropy-14995 - Requerying model after FunctionCallingFormatError (2th requery)
+2026-03-06 11:43:55,900 - WARNING - swea-agent-astropy__astropy-14995 - Your action could not be parsed properly: Required argument(s) missing: path.
+
+2026-03-06 11:43:59,683 - WARNING - swea-agent-astropy__astropy-14995 - Requerying model after FunctionCallingFormatError (3th requery)
+2026-03-06 11:43:59,691 - WARNING - swea-agent-astropy__astropy-14995 - Your action could not be parsed properly: Unexpected argument(s): path.
+Make sure your function call doesn't include any extra arguments that are not in the allowed arguments, and only use the allowed commands.
+2026-03-06 11:43:59,695 - ERROR - swea-agent-astropy__astropy-14995 - Exit due to repeated format/blocklist/bash syntax errors
+NoneType: None
+2026-03-06 11:43:59,698 - WARNING - swea-agent-astropy__astropy-14995 - Exit due to repeated format/blocklist/bash syntax errors
+2026-03-06 11:43:59,701 - WARNING - swea-agent-astropy__astropy-14995 - Attempting autosubmission after error
+2026-03-06 11:43:59,713 - INFO - swea-agent-astropy__astropy-14995 - Executing submission command git add -A && git diff --cached > /tmp/model.patch in /testbed
+2026-03-06 11:43:59,788 - INFO - swea-agent-astropy__astropy-14995 - Found submission: 
+2026-03-06 11:43:59,790 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+Your command ran successfully and did not produce any output.
+2026-03-06 11:43:59,795 - INFO - swea-agent-astropy__astropy-14995 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.4__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok25k_mt8_probev3_gpt54_rerun1/astropy__astropy-14995/astropy__astropy-14995.traj
+2026-03-06 11:43:59,797 - INFO - swea-env-astropy__astropy-14995 - Beginning environment shutdown...

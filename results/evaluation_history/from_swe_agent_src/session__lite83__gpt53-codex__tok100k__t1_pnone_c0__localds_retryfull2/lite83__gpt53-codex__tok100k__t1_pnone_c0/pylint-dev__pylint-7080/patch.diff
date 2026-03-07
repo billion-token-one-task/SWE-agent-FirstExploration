@@ -1,0 +1,46 @@
+diff --git a/pylint/lint/pylinter.py b/pylint/lint/pylinter.py
+index e2bbf061..29694b4c 100644
+--- a/pylint/lint/pylinter.py
++++ b/pylint/lint/pylinter.py
+@@ -614,6 +614,12 @@ class PyLinter(
+                             os.path.join(root, file)
+                             for file in files
+                             if file.endswith(".py")
++                            and not _is_ignored_file(
++                                os.path.join(root, file),
++                                self.config.ignore,
++                                self.config.ignore_patterns,
++                                self.config.ignore_paths,
++                            )
+                         )
+             else:
+                 yield something
+diff --git a/repro_recursive_ignore_paths.py b/repro_recursive_ignore_paths.py
+new file mode 100644
+index 00000000..ea18fcf0
+--- /dev/null
++++ b/repro_recursive_ignore_paths.py
+@@ -0,0 +1,23 @@
++from pylint.lint import Run
++from pathlib import Path
++import tempfile
++import textwrap
++
++with tempfile.TemporaryDirectory() as td:
++    root = Path(td)
++    src = root / "src"
++    gen = src / "gen"
++    gen.mkdir(parents=True)
++    (src / "ok.py").write_text("x=1\n")
++    (gen / "bad.py").write_text("x='" + "a"*200 + "'\n")
++
++    (root / "pyproject.toml").write_text(textwrap.dedent('''
++    [tool.pylint.MASTER]
++    ignore-paths = [
++      "^src/gen/.*$",
++    ]
++    recursive = "y"
++    '''))
++
++    print('Running pylint...')
++    Run([str(src), "--rcfile", str(root / "pyproject.toml")], exit=False)

@@ -1,0 +1,1057 @@
+2026-03-07 12:02:54,192 - INFO - rex-deploy-pytest-dev__pytest-7432 - Starting container docker.ioswebenchsweb.eval.x86_64.pytest-dev_1776_pytest-7432latest-dcb7b40c-c9d6-4645-bc17-a2d6fc160f97 with image docker.io/swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7432:latest serving on port 35757
+2026-03-07 12:02:54,213 - INFO - rex-deploy-pytest-dev__pytest-7432 - Starting runtime at 35757
+2026-03-07 12:02:55,742 - INFO - rex-deploy-pytest-dev__pytest-7432 - Runtime started in 1.53s
+2026-03-07 12:02:56,839 - INFO - swea-env-pytest-dev__pytest-7432 - Environment Initialized
+2026-03-07 12:02:57,455 - INFO - swea-agent-pytest-dev__pytest-7432 - Setting up agent for instance pytest-dev__pytest-7432
+2026-03-07 12:02:57,455 - INFO - swea-agent-pytest-dev__pytest-7432 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.4__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok100k_mt8_probev3_gpt54_rerun1/pytest-dev__pytest-7432/pytest-dev__pytest-7432.traj
+2026-03-07 12:03:35,225 - INFO - swea-tools-pytest-dev__pytest-7432 - Resetting tools
+2026-03-07 12:03:35,635 - INFO - swea-agent-pytest-dev__pytest-7432 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-07 12:03:36,001 - INFO - swea-agent-pytest-dev__pytest-7432 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+skipping: --runxfail breaks pytest.mark.skip location reporting
+pytest versions: 5.4.x, current master
+
+When `@pytest.mark.skip`/`skipif` marks are used to skip a test, for example
+
+```py
+import pytest
+@pytest.mark.skip
+def test_skip_location() -> None:
+    assert 0
+```
+
+the expected skip location reported should point to the item itself, and this is indeed what happens when running with `pytest -rs`:
+
+```
+SKIPPED [1] test_it.py:3: unconditional skip
+```
+
+However, adding `pytest -rs --runxfail` breaks this:
+
+```
+SKIPPED [1] src/_pytest/skipping.py:238: unconditional skip
+```
+
+The `--runxfail` is only about xfail and should not affect this at all.
+
+---
+
+Hint: the bug is in `src/_pytest/skipping.py`, the `pytest_runtest_makereport` hook.
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-07 12:03:36,002 - INFO - swea-agent-pytest-dev__pytest-7432 - ========================= STEP 1 =========================
+2026-03-07 12:03:40,796 - INFO - swea-agent-pytest-dev__pytest-7432 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && find . -maxdepth 2 -type f | sed 's#^./##' | sort | head -200
+2026-03-07 12:03:41,201 - INFO - swea-agent-pytest-dev__pytest-7432 - 🤖 MODEL INPUT
+OBSERVATION:
+.coveragerc
+.git/COMMIT_EDITMSG
+.git/FETCH_HEAD
+.git/HEAD
+.git/ORIG_HEAD
+.git/config
+.git/description
+.git/index
+.git/packed-refs
+.gitattributes
+.gitblameignore
+.github/FUNDING.yml
+.github/ISSUE_TEMPLATE.md
+.github/PULL_REQUEST_TEMPLATE.md
+.github/config.yml
+.github/labels.toml
+.gitignore
+.pre-commit-config.yaml
+.travis.yml
+AUTHORS
+CHANGELOG.rst
+CITATION
+CODE_OF_CONDUCT.md
+CONTRIBUTING.rst
+LICENSE
+OPENCOLLECTIVE.rst
+README.rst
+RELEASING.rst
+TIDELIFT.rst
+bench/bench.py
+bench/bench_argcomplete.py
+bench/empty.py
+bench/manyparam.py
+bench/skip.py
+changelog/1120.bugfix.rst
+changelog/1316.breaking.rst
+changelog/1556.feature.rst
+changelog/4049.feature.rst
+changelog/4375.improvement.rst
+changelog/4391.improvement.rst
+changelog/4583.bugfix.rst
+changelog/4675.improvement.rst
+changelog/4677.bugfix.rst
+changelog/5456.bugfix.rst
+changelog/5965.breaking.rst
+changelog/6240.bugfix.rst
+changelog/6285.feature.rst
+changelog/6428.bugfix.rst
+changelog/6433.feature.rst
+changelog/6471.feature.rst
+changelog/6505.breaking.rst
+changelog/6755.bugfix.rst
+changelog/6817.improvement.rst
+changelog/6856.feature.rst
+changelog/6871.bugfix.rst
+changelog/6903.breaking.rst
+changelog/6906.feature.rst
+changelog/6909.bugfix.rst
+changelog/6910.bugfix.rst
+changelog/6924.bugfix.rst
+changelog/6925.bugfix.rst
+changelog/6940.improvement.rst
+changelog/6947.bugfix.rst
+changelog/6951.bugfix.rst
+changelog/6956.bugfix.rst
+changelog/6981.deprecation.rst
+changelog/6991.bugfix.rst
+changelog/6991.improvement.rst
+changelog/6992.bugfix.rst
+changelog/7035.trivial.rst
+changelog/7040.breaking.rst
+changelog/7061.bugfix.rst
+changelog/7076.bugfix.rst
+changelog/7091.improvement.rst
+changelog/7097.deprecation.rst
+changelog/7110.bugfix.rst
+changelog/7119.improvement.rst
+changelog/7122.breaking.rst
+changelog/7126.bugfix.rst
+changelog/7128.improvement.rst
+changelog/7133.improvement.rst
+changelog/7135.breaking.rst
+changelog/7143.bugfix.rst
+changelog/7145.bugfix.rst
+changelog/7150.bugfix.rst
+changelog/7180.bugfix.rst
+changelog/7202.doc.rst
+changelog/7210.deprecation.rst
+changelog/7215.bugfix.rst
+changelog/7224.breaking.rst
+changelog/7226.breaking.rst
+changelog/7233.doc.rst
+changelog/7245.feature.rst
+changelog/7253.bugfix.rst
+changelog/7264.improvement.rst
+changelog/7291.trivial.rst
+changelog/7295.trivial.rst
+changelog/7305.feature.rst
+changelog/7345.doc.rst
+changelog/7346.feature.rst
+changelog/7356.trivial.rst
+changelog/7357.trivial.rst
+changelog/7360.bugfix.rst
+changelog/7383.bugfix.rst
+changelog/7385.improvement.rst
+changelog/7418.breaking.rst
+changelog/README.rst
+changelog/_template.rst
+codecov.yml
+extra/get_issues.py
+pyproject.toml
+scripts/append_codecov_token.py
+scripts/publish-gh-release-notes.py
+scripts/release-on-comment.py
+scripts/release.minor.rst
+scripts/release.patch.rst
+scripts/release.py
+scripts/report-coverage.sh
+scripts/towncrier-draft-to-file.py
+setup.cfg
+setup.py
+testing/acceptance_test.py
+testing/conftest.py
+testing/deprecated_test.py
+testing/test_argcomplete.py
+testing/test_assertion.py
+testing/test_assertrewrite.py
+testing/test_cacheprovider.py
+testing/test_capture.py
+testing/test_collection.py
+testing/test_compat.py
+testing/test_config.py
+testing/test_conftest.py
+testing/test_debugging.py
+testing/test_doctest.py
+testing/test_entry_points.py
+testing/test_error_diffs.py
+testing/test_faulthandler.py
+testing/test_findpaths.py
+testing/test_helpconfig.py
+testing/test_junitxml.py
+testing/test_link_resolve.py
+testing/test_main.py
+testing/test_mark.py
+testing/test_mark_expression.py
+testing/test_meta.py
+testing/test_monkeypatch.py
+testing/test_nodes.py
+testing/test_nose.py
+testing/test_parseopt.py
+testing/test_pastebin.py
+testing/test_pathlib.py
+testing/test_pluginmanager.py
+testing/test_pytester.py
+testing/test_recwarn.py
+testing/test_reports.py
+testing/test_resultlog.py
+testing/test_runner.py
+testing/test_runner_xunit.py
+testing/test_session.py
+testing/test_setuponly.py
+testing/test_setupplan.py
+testing/test_skipping.py
+testing/test_stepwise.py
+testing/test_store.py
+testing/test_terminal.py
+testing/test_tmpdir.py
+testing/test_unittest.py
+testing/test_warning_types.py
+testing/test_warnings.py
+tox.ini
+
+2026-03-07 12:03:41,218 - INFO - swea-agent-pytest-dev__pytest-7432 - ========================= STEP 2 =========================
+2026-03-07 12:03:41,576 - WARNING - swea-lm-pytest-dev__pytest-7432 - Retrying LM query: attempt 1 (slept for 10.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 12:03:53,896 - INFO - swea-agent-pytest-dev__pytest-7432 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/src/_pytest/skipping.py
+2026-03-07 12:03:54,374 - INFO - swea-agent-pytest-dev__pytest-7432 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/src/_pytest/skipping.py:
+     1	""" support for skip/xfail functions and markers. """
+     2	import os
+     3	import platform
+     4	import sys
+     5	import traceback
+     6	from typing import Generator
+     7	from typing import Optional
+     8	from typing import Tuple
+     9	
+    10	import attr
+    11	
+    12	import _pytest._code
+    13	from _pytest.compat import TYPE_CHECKING
+    14	from _pytest.config import Config
+    15	from _pytest.config import hookimpl
+    16	from _pytest.config.argparsing import Parser
+    17	from _pytest.mark.structures import Mark
+    18	from _pytest.nodes import Item
+    19	from _pytest.outcomes import fail
+    20	from _pytest.outcomes import skip
+    21	from _pytest.outcomes import xfail
+    22	from _pytest.reports import BaseReport
+    23	from _pytest.runner import CallInfo
+    24	from _pytest.store import StoreKey
+    25	
+    26	if TYPE_CHECKING:
+    27	    from typing import Type
+    28	
+    29	
+    30	def pytest_addoption(parser: Parser) -> None:
+    31	    group = parser.getgroup("general")
+    32	    group.addoption(
+    33	        "--runxfail",
+    34	        action="store_true",
+    35	        dest="runxfail",
+    36	        default=False,
+    37	        help="report the results of xfail tests as if they were not marked",
+    38	    )
+    39	
+    40	    parser.addini(
+    41	        "xfail_strict",
+    42	        "default for the strict parameter of xfail "
+    43	        "markers when not given explicitly (default: False)",
+    44	        default=False,
+    45	        type="bool",
+    46	    )
+    47	
+    48	
+    49	def pytest_configure(config: Config) -> None:
+    50	    if config.option.runxfail:
+    51	        # yay a hack
+    52	        import pytest
+    53	
+    54	        old = pytest.xfail
+    55	        config._cleanup.append(lambda: setattr(pytest, "xfail", old))
+    56	
+    57	        def nop(*args, **kwargs):
+    58	            pass
+    59	
+    60	        nop.Exception = xfail.Exception  # type: ignore[attr-defined] # noqa: F821
+    61	        setattr(pytest, "xfail", nop)
+    62	
+    63	    config.addinivalue_line(
+    64	        "markers",
+    65	        "skip(reason=None): skip the given test function with an optional reason. "
+    66	        'Example: skip(reason="no way of currently testing this") skips the '
+    67	        "test.",
+    68	    )
+    69	    config.addinivalue_line(
+    70	        "markers",
+    71	        "skipif(condition, ..., *, reason=...): "
+    72	        "skip the given test function if any of the conditions evaluate to True. "
+    73	        "Example: skipif(sys.platform == 'win32') skips the test if we are on the win32 platform. "
+    74	        "See https://docs.pytest.org/en/stable/reference.html#pytest-mark-skipif",
+    75	    )
+    76	    config.addinivalue_line(
+    77	        "markers",
+    78	        "xfail(condition, ..., *, reason=..., run=True, raises=None, strict=xfail_strict): "
+    79	        "mark the test function as an expected failure if any of the conditions "
+    80	        "evaluate to True. Optionally specify a reason for better reporting "
+    81	        "and run=False if you don't even want to execute the test function. "
+    82	        "If only specific exception(s) are expected, you can list them in "
+    83	        "raises, and if the test fails in other ways, it will be reported as "
+    84	        "a true failure. See https://docs.pytest.org/en/stable/reference.html#pytest-mark-xfail",
+    85	    )
+    86	
+    87	
+    88	def evaluate_condition(item: Item, mark: Mark, condition: object) -> Tuple[bool, str]:
+    89	    """Evaluate a single skipif/xfail condition.
+    90	
+    91	    If an old-style string condition is given, it is eval()'d, otherwise the
+    92	    condition is bool()'d. If this fails, an appropriately formatted pytest.fail
+    93	    is raised.
+    94	
+    95	    Returns (result, reason). The reason is only relevant if the result is True.
+    96	    """
+    97	    # String condition.
+    98	    if isinstance(condition, str):
+    99	        globals_ = {
+   100	            "os": os,
+   101	            "sys": sys,
+   102	            "platform": platform,
+   103	            "config": item.config,
+   104	        }
+   105	        if hasattr(item, "obj"):
+   106	            globals_.update(item.obj.__globals__)  # type: ignore[attr-defined]
+   107	        try:
+   108	            condition_code = _pytest._code.compile(condition, mode="eval")
+   109	            result = eval(condition_code, globals_)
+   110	        except SyntaxError as exc:
+   111	            msglines = [
+   112	                "Error evaluating %r condition" % mark.name,
+   113	                "    " + condition,
+   114	                "    " + " " * (exc.offset or 0) + "^",
+   115	                "SyntaxError: invalid syntax",
+   116	            ]
+   117	            fail("\n".join(msglines), pytrace=False)
+   118	        except Exception as exc:
+   119	            msglines = [
+   120	                "Error evaluating %r condition" % mark.name,
+   121	                "    " + condition,
+   122	                *traceback.format_exception_only(type(exc), exc),
+   123	            ]
+   124	            fail("\n".join(msglines), pytrace=False)
+   125	
+   126	    # Boolean condition.
+   127	    else:
+   128	        try:
+   129	            result = bool(condition)
+   130	        except Exception as exc:
+   131	            msglines = [
+   132	                "Error evaluating %r condition as a boolean" % mark.name,
+   133	                *traceback.format_exception_only(type(exc), exc),
+   134	            ]
+   135	            fail("\n".join(msglines), pytrace=False)
+   136	
+   137	    reason = mark.kwargs.get("reason", None)
+   138	    if reason is None:
+   139	        if isinstance(condition, str):
+   140	            reason = "condition: " + condition
+   141	        else:
+   142	            # XXX better be checked at collection time
+   143	            msg = (
+   144	                "Error evaluating %r: " % mark.name
+   145	                + "you need to specify reason=STRING when using booleans as conditions."
+   146	            )
+   147	            fail(msg, pytrace=False)
+   148	
+   149	    return result, reason
+   150	
+   151	
+   152	@attr.s(slots=True, frozen=True)
+   153	class Skip:
+   154	    """The result of evaluate_skip_marks()."""
+   155	
+   156	    reason = attr.ib(type=str)
+   157	
+   158	
+   159	def evaluate_skip_marks(item: Item) -> Optional[Skip]:
+   160	    """Evaluate skip and skipif marks on item, returning Skip if triggered."""
+   161	    for mark in item.iter_markers(name="skipif"):
+   162	        if "condition" not in mark.kwargs:
+   163	            conditions = mark.args
+   164	        else:
+   165	            conditions = (mark.kwargs["condition"],)
+   166	
+   167	        # Unconditional.
+   168	        if not conditions:
+   169	            reason = mark.kwargs.get("reason", "")
+   170	            return Skip(reason)
+   171	
+   172	        # If any of the conditions are true.
+   173	        for condition in conditions:
+   174	            result, reason = evaluate_condition(item, mark, condition)
+   175	            if result:
+   176	                return Skip(reason)
+   177	
+   178	    for mark in item.iter_markers(name="skip"):
+   179	        if "reason" in mark.kwargs:
+   180	            reason = mark.kwargs["reason"]
+   181	        elif mark.args:
+   182	            reason = mark.args[0]
+   183	        else:
+   184	            reason = "unconditional skip"
+   185	        return Skip(reason)
+   186	
+   187	    return None
+   188	
+   189	
+   190	@attr.s(slots=True, frozen=True)
+   191	class Xfail:
+   192	    """The result of evaluate_xfail_marks()."""
+   193	
+   194	    reason = attr.ib(type=str)
+   195	    run = attr.ib(type=bool)
+   196	    strict = attr.ib(type=bool)
+   197	    raises = attr.ib(type=Optional[Tuple["Type[BaseException]", ...]])
+   198	
+   199	
+   200	def evaluate_xfail_marks(item: Item) -> Optional[Xfail]:
+   201	    """Evaluate xfail marks on item, returning Xfail if triggered."""
+   202	    for mark in item.iter_markers(name="xfail"):
+   203	        run = mark.kwargs.get("run", True)
+   204	        strict = mark.kwargs.get("strict", item.config.getini("xfail_strict"))
+   205	        raises = mark.kwargs.get("raises", None)
+   206	        if "condition" not in mark.kwargs:
+   207	            conditions = mark.args
+   208	        else:
+   209	            conditions = (mark.kwargs["condition"],)
+   210	
+   211	        # Unconditional.
+   212	        if not conditions:
+   213	            reason = mark.kwargs.get("reason", "")
+   214	            return Xfail(reason, run, strict, raises)
+   215	
+   216	        # If any of the conditions are true.
+   217	        for condition in conditions:
+   218	            result, reason = evaluate_condition(item, mark, condition)
+   219	            if result:
+   220	                return Xfail(reason, run, strict, raises)
+   221	
+   222	    return None
+   223	
+   224	
+   225	# Whether skipped due to skip or skipif marks.
+   226	skipped_by_mark_key = StoreKey[bool]()
+   227	# Saves the xfail mark evaluation. Can be refreshed during call if None.
+   228	xfailed_key = StoreKey[Optional[Xfail]]()
+   229	unexpectedsuccess_key = StoreKey[str]()
+   230	
+   231	
+   232	@hookimpl(tryfirst=True)
+   233	def pytest_runtest_setup(item: Item) -> None:
+   234	    item._store[skipped_by_mark_key] = False
+   235	
+   236	    skipped = evaluate_skip_marks(item)
+   237	    if skipped:
+   238	        item._store[skipped_by_mark_key] = True
+   239	        skip(skipped.reason)
+   240	
+   241	    if not item.config.option.runxfail:
+   242	        item._store[xfailed_key] = xfailed = evaluate_xfail_marks(item)
+   243	        if xfailed and not xfailed.run:
+   244	            xfail("[NOTRUN] " + xfailed.reason)
+   245	
+   246	
+   247	@hookimpl(hookwrapper=True)
+   248	def pytest_runtest_call(item: Item) -> Generator[None, None, None]:
+   249	    xfailed = item._store.get(xfailed_key, None)
+   250	    if xfailed is None:
+   251	        item._store[xfailed_key] = xfailed = evaluate_xfail_marks(item)
+   252	
+   253	    if not item.config.option.runxfail:
+   254	        if xfailed and not xfailed.run:
+   255	            xfail("[NOTRUN] " + xfailed.reason)
+   256	
+   257	    yield
+   258	
+   259	
+   260	@hookimpl(hookwrapper=True)
+   261	def pytest_runtest_makereport(item: Item, call: CallInfo[None]):
+   262	    outcome = yield
+   263	    rep = outcome.get_result()
+   264	    xfailed = item._store.get(xfailed_key, None)
+   265	    # unittest special case, see setting of unexpectedsuccess_key
+   266	    if unexpectedsuccess_key in item._store and rep.when == "call":
+   267	        reason = item._store[unexpectedsuccess_key]
+   268	        if reason:
+   269	            rep.longrepr = "Unexpected success: {}".format(reason)
+   270	        else:
+   271	            rep.longrepr = "Unexpected success"
+   272	        rep.outcome = "failed"
+   273	    elif item.config.option.runxfail:
+   274	        pass  # don't interfere
+   275	    elif call.excinfo and isinstance(call.excinfo.value, xfail.Exception):
+   276	        assert call.excinfo.value.msg is not None
+   277	        rep.wasxfail = "reason: " + call.excinfo.value.msg
+   278	        rep.outcome = "skipped"
+   279	    elif not rep.skipped and xfailed:
+   280	        if call.excinfo:
+   281	            raises = xfailed.raises
+   282	            if raises is not None and not isinstance(call.excinfo.value, raises):
+   283	                rep.outcome = "failed"
+   284	            else:
+   285	                rep.outcome = "skipped"
+   286	                rep.wasxfail = xfailed.reason
+   287	        elif call.when == "call":
+   288	            if xfailed.strict:
+   289	                rep.outcome = "failed"
+   290	                rep.longrepr = "[XPASS(strict)] " + xfailed.reason
+   291	            else:
+   292	                rep.outcome = "passed"
+   293	                rep.wasxfail = xfailed.reason
+   294	    elif (
+   295	        item._store.get(skipped_by_mark_key, True)
+   296	        and rep.skipped
+   297	        and type(rep.longrepr) is tuple
+   298	    ):
+   299	        # skipped by mark.skipif; change the location of the failure
+   300	        # to point to the item definition, otherwise it will display
+   301	        # the location of where the skip exception was raised within pytest
+   302	        _, _, reason = rep.longrepr
+   303	        filename, line = item.reportinfo()[:2]
+   304	        assert line is not None
+   305	        rep.longrepr = str(filename), line + 1, reason
+   306	
+   307	
+   308	def pytest_report_teststatus(report: BaseReport) -> Optional[Tuple[str, str, str]]:
+   309	    if hasattr(report, "wasxfail"):
+   310	        if report.skipped:
+   311	            return "xfailed", "x", "XFAIL"
+   312	        elif report.passed:
+   313	            return "xpassed", "X", "XPASS"
+   314	    return None
+   315	
+
+
+2026-03-07 12:03:54,406 - INFO - swea-agent-pytest-dev__pytest-7432 - ========================= STEP 3 =========================
+2026-03-07 12:04:01,060 - INFO - swea-agent-pytest-dev__pytest-7432 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && cat > reproduce_skip_runxfail.py <<'PY'
+import subprocess, sys, tempfile, textwrap, os
+from pathlib import Path
+
+repo = Path(__file__).resolve().parent
+with tempfile.TemporaryDirectory() as td:
+    td = Path(td)
+    (td / 'test_it.py').write_text(textwrap.dedent('''\
+        import pytest
+
+        @pytest.mark.skip
+        def test_skip_location() -> None:
+            assert 0
+    '''))
+    env = os.environ.copy()
+    env['PYTHONPATH'] = str(repo / 'src') + os.pathsep + env.get('PYTHONPATH', '')
+    for args in ([sys.executable, '-m', 'pytest', '-rs', 'test_it.py'], [sys.executable, '-m', 'pytest', '-rs', '--runxfail', 'test_it.py']):
+        print('$', ' '.join(args[2:]))
+        proc = subprocess.run(args, cwd=td, env=env, text=True, capture_output=True)
+        print(proc.stdout)
+        if proc.stderr:
+            print('STDERR:', proc.stderr)
+PY
+python reproduce_skip_runxfail.py
+2026-03-07 12:04:02,368 - INFO - swea-agent-pytest-dev__pytest-7432 - 🤖 MODEL INPUT
+OBSERVATION:
+$ pytest -rs test_it.py
+
+STDERR: Traceback (most recent call last):
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/runpy.py", line 197, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  File "/testbed/src/pytest/__main__.py", line 7, in <module>
+    raise SystemExit(pytest.console_main())
+  File "/testbed/src/_pytest/config/__init__.py", line 180, in console_main
+    code = main()
+  File "/testbed/src/_pytest/config/__init__.py", line 136, in main
+    config = _prepareconfig(args, plugins)
+  File "/testbed/src/_pytest/config/__init__.py", line 313, in _prepareconfig
+    config = pluginmanager.hook.pytest_cmdline_parse(
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pluggy/hooks.py", line 286, in __call__
+    return self._hookexec(self, self.get_hookimpls(), kwargs)
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pluggy/manager.py", line 93, in _hookexec
+    return self._inner_hookexec(hook, methods, kwargs)
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pluggy/manager.py", line 84, in <lambda>
+    self._inner_hookexec = lambda hook, methods, kwargs: hook.multicall(
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pluggy/callers.py", line 203, in _multicall
+    gen.send(outcome)
+  File "/testbed/src/_pytest/helpconfig.py", line 99, in pytest_cmdline_parse
+    config = outcome.get_result()  # type: Config
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pluggy/callers.py", line 80, in get_result
+    raise ex[1].with_traceback(ex[2])
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pluggy/callers.py", line 187, in _multicall
+    res = hook_impl.function(*args)
+  File "/testbed/src/_pytest/config/__init__.py", line 932, in pytest_cmdline_parse
+    self.parse(args)
+  File "/testbed/src/_pytest/config/__init__.py", line 1204, in parse
+    self._preparse(args, addopts=addopts)
+  File "/testbed/src/_pytest/config/__init__.py", line 1097, in _preparse
+    self.pluginmanager.load_setuptools_entrypoints("pytest11")
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pluggy/manager.py", line 299, in load_setuptools_entrypoints
+    plugin = ep.load()
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/importlib/metadata.py", line 86, in load
+    module = import_module(match.group('module'))
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/importlib/__init__.py", line 127, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1030, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1007, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 972, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1030, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1007, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 986, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 680, in _load_unlocked
+  File "/testbed/src/_pytest/assertion/rewrite.py", line 170, in exec_module
+    exec(co, module.__dict__)
+  File "/opt/sweagent_deps/anyio/__init__.py", line 5, in <module>
+    from ._core._eventloop import current_time as current_time
+  File "/testbed/src/_pytest/assertion/rewrite.py", line 170, in exec_module
+    exec(co, module.__dict__)
+  File "/opt/sweagent_deps/anyio/_core/_eventloop.py", line 12, in <module>
+    from ._exceptions import NoEventLoopError
+  File "/testbed/src/_pytest/assertion/rewrite.py", line 170, in exec_module
+    exec(co, module.__dict__)
+  File "/opt/sweagent_deps/anyio/_core/_exceptions.py", line 9, in <module>
+    from exceptiongroup import BaseExceptionGroup
+ModuleNotFoundError: No module named 'exceptiongroup'
+
+$ pytest -rs --runxfail test_it.py
+
+STDERR: Traceback (most recent call last):
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/runpy.py", line 197, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  File "/testbed/src/pytest/__main__.py", line 7, in <module>
+    raise SystemExit(pytest.console_main())
+  File "/testbed/src/_pytest/config/__init__.py", line 180, in console_main
+    code = main()
+  File "/testbed/src/_pytest/config/__init__.py", line 136, in main
+    config = _prepareconfig(args, plugins)
+  File "/testbed/src/_pytest/config/__init__.py", line 313, in _prepareconfig
+    config = pluginmanager.hook.pytest_cmdline_parse(
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pluggy/hooks.py", line 286, in __call__
+    return self._hookexec(self, self.get_hookimpls(), kwargs)
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pluggy/manager.py", line 93, in _hookexec
+    return self._inner_hookexec(hook, methods, kwargs)
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pluggy/manager.py", line 84, in <lambda>
+    self._inner_hookexec = lambda hook, methods, kwargs: hook.multicall(
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pluggy/callers.py", line 203, in _multicall
+    gen.send(outcome)
+  File "/testbed/src/_pytest/helpconfig.py", line 99, in pytest_cmdline_parse
+    config = outcome.get_result()  # type: Config
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pluggy/callers.py", line 80, in get_result
+    raise ex[1].with_traceback(ex[2])
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pluggy/callers.py", line 187, in _multicall
+    res = hook_impl.function(*args)
+  File "/testbed/src/_pytest/config/__init__.py", line 932, in pytest_cmdline_parse
+    self.parse(args)
+  File "/testbed/src/_pytest/config/__init__.py", line 1204, in parse
+    self._preparse(args, addopts=addopts)
+  File "/testbed/src/_pytest/config/__init__.py", line 1097, in _preparse
+    self.pluginmanager.load_setuptools_entrypoints("pytest11")
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/pluggy/manager.py", line 299, in load_setuptools_entrypoints
+    plugin = ep.load()
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/importlib/metadata.py", line 86, in load
+    module = import_module(match.group('module'))
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/importlib/__init__.py", line 127, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1030, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1007, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 972, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 1030, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1007, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 986, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 680, in _load_unlocked
+  File "/testbed/src/_pytest/assertion/rewrite.py", line 170, in exec_module
+    exec(co, module.__dict__)
+  File "/opt/sweagent_deps/anyio/__init__.py", line 5, in <module>
+    from ._core._eventloop import current_time as current_time
+  File "/testbed/src/_pytest/assertion/rewrite.py", line 170, in exec_module
+    exec(co, module.__dict__)
+  File "/opt/sweagent_deps/anyio/_core/_eventloop.py", line 12, in <module>
+    from ._exceptions import NoEventLoopError
+  File "/testbed/src/_pytest/assertion/rewrite.py", line 170, in exec_module
+    exec(co, module.__dict__)
+  File "/opt/sweagent_deps/anyio/_core/_exceptions.py", line 9, in <module>
+    from exceptiongroup import BaseExceptionGroup
+ModuleNotFoundError: No module named 'exceptiongroup'
+
+
+2026-03-07 12:04:02,376 - INFO - swea-agent-pytest-dev__pytest-7432 - ========================= STEP 4 =========================
+2026-03-07 12:04:10,751 - INFO - swea-agent-pytest-dev__pytest-7432 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && cat > reproduce_skip_runxfail.py <<'PY'
+import subprocess, sys, tempfile, textwrap, os
+from pathlib import Path
+
+repo = Path(__file__).resolve().parent
+with tempfile.TemporaryDirectory() as td:
+    td = Path(td)
+    (td / 'test_it.py').write_text(textwrap.dedent('''\
+        import pytest
+
+        @pytest.mark.skip
+        def test_skip_location() -> None:
+            assert 0
+    '''))
+    env = os.environ.copy()
+    env['PYTHONPATH'] = str(repo / 'src') + os.pathsep + env.get('PYTHONPATH', '')
+    env['PYTEST_DISABLE_PLUGIN_AUTOLOAD'] = '1'
+    for args in ([sys.executable, '-m', 'pytest', '-rs', 'test_it.py'], [sys.executable, '-m', 'pytest', '-rs', '--runxfail', 'test_it.py']):
+        print('$', ' '.join(args[2:]))
+        proc = subprocess.run(args, cwd=td, env=env, text=True, capture_output=True)
+        print(proc.stdout)
+        if proc.stderr:
+            print('STDERR:', proc.stderr)
+PY
+python reproduce_skip_runxfail.py
+2026-03-07 12:04:11,906 - INFO - swea-agent-pytest-dev__pytest-7432 - 🤖 MODEL INPUT
+OBSERVATION:
+$ pytest -rs test_it.py
+============================= test session starts ==============================
+platform linux -- Python 3.9.20, pytest-5.4.1.dev593+ge6e300e72, py-1.11.0, pluggy-0.13.1
+rootdir: /tmp/tmpgeqipkno
+collected 1 item
+
+test_it.py s                                                             [100%]
+
+=========================== short test summary info ============================
+SKIPPED [1] test_it.py:3: unconditional skip
+============================== 1 skipped in 0.01s ==============================
+
+$ pytest -rs --runxfail test_it.py
+============================= test session starts ==============================
+platform linux -- Python 3.9.20, pytest-5.4.1.dev593+ge6e300e72, py-1.11.0, pluggy-0.13.1
+rootdir: /tmp/tmpgeqipkno
+collected 1 item
+
+test_it.py s                                                             [100%]
+
+=========================== short test summary info ============================
+SKIPPED [1] ../../testbed/src/_pytest/skipping.py:239: unconditional skip
+============================== 1 skipped in 0.01s ==============================
+
+
+2026-03-07 12:04:11,917 - INFO - swea-agent-pytest-dev__pytest-7432 - ========================= STEP 5 =========================
+2026-03-07 12:04:18,959 - INFO - swea-agent-pytest-dev__pytest-7432 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/src/_pytest/skipping.py   --old_str '    elif item.config.option.runxfail:
+        pass  # don'"'"'t interfere
+    elif call.excinfo and isinstance(call.excinfo.value, xfail.Exception):
+        assert call.excinfo.value.msg is not None
+        rep.wasxfail = "reason: " + call.excinfo.value.msg
+        rep.outcome = "skipped"
+    elif not rep.skipped and xfailed:
+' --new_str '    elif call.excinfo and isinstance(call.excinfo.value, xfail.Exception):
+        if not item.config.option.runxfail:
+            assert call.excinfo.value.msg is not None
+            rep.wasxfail = "reason: " + call.excinfo.value.msg
+            rep.outcome = "skipped"
+    elif not rep.skipped and xfailed and not item.config.option.runxfail:
+'
+2026-03-07 12:04:19,525 - INFO - swea-agent-pytest-dev__pytest-7432 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/src/_pytest/skipping.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/src/_pytest/skipping.py:
+   268	        if reason:
+   269	            rep.longrepr = "Unexpected success: {}".format(reason)
+   270	        else:
+   271	            rep.longrepr = "Unexpected success"
+   272	        rep.outcome = "failed"
+   273	    elif call.excinfo and isinstance(call.excinfo.value, xfail.Exception):
+   274	        if not item.config.option.runxfail:
+   275	            assert call.excinfo.value.msg is not None
+   276	            rep.wasxfail = "reason: " + call.excinfo.value.msg
+   277	            rep.outcome = "skipped"
+   278	    elif not rep.skipped and xfailed and not item.config.option.runxfail:
+   279	        if call.excinfo:
+   280	            raises = xfailed.raises
+   281	            if raises is not None and not isinstance(call.excinfo.value, raises):
+   282	                rep.outcome = "failed"
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-07 12:04:19,537 - INFO - swea-agent-pytest-dev__pytest-7432 - ========================= STEP 6 =========================
+2026-03-07 12:04:22,691 - INFO - swea-agent-pytest-dev__pytest-7432 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python reproduce_skip_runxfail.py
+2026-03-07 12:04:23,870 - INFO - swea-agent-pytest-dev__pytest-7432 - 🤖 MODEL INPUT
+OBSERVATION:
+$ pytest -rs test_it.py
+============================= test session starts ==============================
+platform linux -- Python 3.9.20, pytest-5.4.1.dev593+ge6e300e72, py-1.11.0, pluggy-0.13.1
+rootdir: /tmp/tmph6lb3qys
+collected 1 item
+
+test_it.py s                                                             [100%]
+
+=========================== short test summary info ============================
+SKIPPED [1] test_it.py:3: unconditional skip
+============================== 1 skipped in 0.01s ==============================
+
+$ pytest -rs --runxfail test_it.py
+============================= test session starts ==============================
+platform linux -- Python 3.9.20, pytest-5.4.1.dev593+ge6e300e72, py-1.11.0, pluggy-0.13.1
+rootdir: /tmp/tmph6lb3qys
+collected 1 item
+
+test_it.py s                                                             [100%]
+
+=========================== short test summary info ============================
+SKIPPED [1] test_it.py:3: unconditional skip
+============================== 1 skipped in 0.01s ==============================
+
+
+2026-03-07 12:04:23,949 - INFO - swea-agent-pytest-dev__pytest-7432 - ========================= STEP 7 =========================
+2026-03-07 12:04:30,825 - INFO - swea-agent-pytest-dev__pytest-7432 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+import subprocess, sys, tempfile, textwrap, os
+from pathlib import Path
+repo = Path('/testbed')
+with tempfile.TemporaryDirectory() as td:
+    td = Path(td)
+    (td / 'test_x.py').write_text(textwrap.dedent('''\
+        import pytest
+        @pytest.mark.xfail(reason='nope', run=False)
+        def test_x():
+            assert 0
+    '''))
+    env = os.environ.copy(); env['PYTHONPATH']=str(repo/'src'); env['PYTEST_DISABLE_PLUGIN_AUTOLOAD']='1'
+    for cmd in ([sys.executable,'-m','pytest','-rx','test_x.py'], [sys.executable,'-m','pytest','-rx','--runxfail','test_x.py']):
+        p = subprocess.run(cmd,cwd=td,env=env,text=True,capture_output=True)
+        print('$',' '.join(cmd[2:]))
+        print(p.stdout)
+        if p.stderr: print('STDERR', p.stderr)
+PY
+2026-03-07 12:04:31,939 - INFO - swea-agent-pytest-dev__pytest-7432 - 🤖 MODEL INPUT
+OBSERVATION:
+$ pytest -rx test_x.py
+============================= test session starts ==============================
+platform linux -- Python 3.9.20, pytest-5.4.1.dev593+ge6e300e72, py-1.11.0, pluggy-0.13.1
+rootdir: /tmp/tmpu8ccbhv3
+collected 1 item
+
+test_x.py x                                                              [100%]
+
+=========================== short test summary info ============================
+XFAIL test_x.py::test_x
+  reason: [NOTRUN] nope
+============================== 1 xfailed in 0.05s ==============================
+
+$ pytest -rx --runxfail test_x.py
+============================= test session starts ==============================
+platform linux -- Python 3.9.20, pytest-5.4.1.dev593+ge6e300e72, py-1.11.0, pluggy-0.13.1
+rootdir: /tmp/tmpu8ccbhv3
+collected 1 item
+
+test_x.py F                                                              [100%]
+
+=================================== FAILURES ===================================
+____________________________________ test_x ____________________________________
+
+    @pytest.mark.xfail(reason='nope', run=False)
+    def test_x():
+>       assert 0
+E       assert 0
+
+test_x.py:4: AssertionError
+============================== 1 failed in 0.02s ===============================
+
+
+2026-03-07 12:04:31,954 - INFO - swea-agent-pytest-dev__pytest-7432 - ========================= STEP 8 =========================
+2026-03-07 12:04:35,126 - INFO - swea-agent-pytest-dev__pytest-7432 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-07 12:04:35,598 - INFO - swea-agent-pytest-dev__pytest-7432 - 🤖 MODEL INPUT
+OBSERVATION:
+Thank you for your work on this issue. Please carefully follow the steps below to help review your changes.
+
+1. If you made any changes to your code after running the reproduction script, please run the reproduction script again.
+  If the reproduction script is failing, please revisit your changes and make sure they are correct.
+  If you have already removed your reproduction script, please ignore this step.
+2. Remove your reproduction script (if you haven't done so already).
+3. If you have modified any TEST files, please revert them to the state they had before you started fixing the issue.
+  You can do this with `git checkout -- /path/to/test/file.py`. Use below <diff> to find the files you need to revert.
+4. Run the submit command again to confirm.
+
+Here is a list of all of your changes:
+
+<diff>
+diff --git a/reproduce_skip_runxfail.py b/reproduce_skip_runxfail.py
+new file mode 100644
+index 000000000..65f528127
+--- /dev/null
++++ b/reproduce_skip_runxfail.py
+@@ -0,0 +1,22 @@
++import subprocess, sys, tempfile, textwrap, os
++from pathlib import Path
++
++repo = Path(__file__).resolve().parent
++with tempfile.TemporaryDirectory() as td:
++    td = Path(td)
++    (td / 'test_it.py').write_text(textwrap.dedent('''\
++        import pytest
++
++        @pytest.mark.skip
++        def test_skip_location() -> None:
++            assert 0
++    '''))
++    env = os.environ.copy()
++    env['PYTHONPATH'] = str(repo / 'src') + os.pathsep + env.get('PYTHONPATH', '')
++    env['PYTEST_DISABLE_PLUGIN_AUTOLOAD'] = '1'
++    for args in ([sys.executable, '-m', 'pytest', '-rs', 'test_it.py'], [sys.executable, '-m', 'pytest', '-rs', '--runxfail', 'test_it.py']):
++        print('$', ' '.join(args[2:]))
++        proc = subprocess.run(args, cwd=td, env=env, text=True, capture_output=True)
++        print(proc.stdout)
++        if proc.stderr:
++            print('STDERR:', proc.stderr)
+diff --git a/src/_pytest/skipping.py b/src/_pytest/skipping.py
+index 7bd975e5a..bd5bb7a40 100644
+--- a/src/_pytest/skipping.py
++++ b/src/_pytest/skipping.py
+@@ -270,13 +270,12 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]):
+         else:
+             rep.longrepr = "Unexpected success"
+         rep.outcome = "failed"
+-    elif item.config.option.runxfail:
+-        pass  # don't interfere
+     elif call.excinfo and isinstance(call.excinfo.value, xfail.Exception):
+-        assert call.excinfo.value.msg is not None
+-        rep.wasxfail = "reason: " + call.excinfo.value.msg
+-        rep.outcome = "skipped"
+-    elif not rep.skipped and xfailed:
++        if not item.config.option.runxfail:
++            assert call.excinfo.value.msg is not None
++            rep.wasxfail = "reason: " + call.excinfo.value.msg
++            rep.outcome = "skipped"
++    elif not rep.skipped and xfailed and not item.config.option.runxfail:
+         if call.excinfo:
+             raises = xfailed.raises
+             if raises is not None and not isinstance(call.excinfo.value, raises):
+
+</diff>
+
+
+2026-03-07 12:04:35,620 - INFO - swea-agent-pytest-dev__pytest-7432 - ========================= STEP 9 =========================
+2026-03-07 12:04:39,246 - INFO - swea-agent-pytest-dev__pytest-7432 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && rm -f reproduce_skip_runxfail.py && git diff -- src/_pytest/skipping.py && test ! -e reproduce_skip_runxfail.py && echo removed
+2026-03-07 12:04:39,619 - INFO - swea-agent-pytest-dev__pytest-7432 - 🤖 MODEL INPUT
+OBSERVATION:
+removed
+
+2026-03-07 12:04:39,641 - INFO - swea-agent-pytest-dev__pytest-7432 - ========================= STEP 10 =========================
+2026-03-07 12:04:40,292 - WARNING - swea-lm-pytest-dev__pytest-7432 - Retrying LM query: attempt 1 (slept for 10.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 12:04:50,962 - WARNING - swea-lm-pytest-dev__pytest-7432 - Retrying LM query: attempt 2 (slept for 20.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 12:05:05,922 - INFO - swea-agent-pytest-dev__pytest-7432 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-07 12:05:06,399 - INFO - swea-agent-pytest-dev__pytest-7432 - Found submission: diff --git a/src/_pytest/skipping.py b/src/_pytest/skipping.py
+index 7bd975e5a..bd5bb7a40 100644
+--- a/src/_pytest/skipping.py
++++ b/src/_pytest/skipping.py
+@@ -270,13 +270,12 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]):
+         else:
+             rep.longrepr = "Unexpected success"
+         rep.outcome = "failed"
+-    elif item.config.option.runxfail:
+-        pass  # don't interfere
+     elif call.excinfo and isinstance(call.excinfo.value, xfail.Exception):
+-        assert call.excinfo.value.msg is not None
+-        rep.wasxfail = "reason: " + call.excinfo.value.msg
+-        rep.outcome = "skipped"
+-    elif not rep.skipped and xfailed:
++        if not item.config.option.runxfail:
++            assert call.excinfo.value.msg is not None
++            rep.wasxfail = "reason: " + call.excinfo.value.msg
++            rep.outcome = "skipped"
++    elif not rep.skipped and xfailed and not item.config.option.runxfail:
+         if call.excinfo:
+             raises = xfailed.raises
+             if raises is not None and not isinstance(call.excinfo.value, raises):
+
+2026-03-07 12:05:06,404 - INFO - swea-agent-pytest-dev__pytest-7432 - 🤖 MODEL INPUT
+OBSERVATION:
+diff --git a/src/_pytest/skipping.py b/src/_pytest/skipping.py
+index 7bd975e5a..bd5bb7a40 100644
+--- a/src/_pytest/skipping.py
++++ b/src/_pytest/skipping.py
+@@ -270,13 +270,12 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]):
+         else:
+             rep.longrepr = "Unexpected success"
+         rep.outcome = "failed"
+-    elif item.config.option.runxfail:
+-        pass  # don't interfere
+     elif call.excinfo and isinstance(call.excinfo.value, xfail.Exception):
+-        assert call.excinfo.value.msg is not None
+-        rep.wasxfail = "reason: " + call.excinfo.value.msg
+-        rep.outcome = "skipped"
+-    elif not rep.skipped and xfailed:
++        if not item.config.option.runxfail:
++            assert call.excinfo.value.msg is not None
++            rep.wasxfail = "reason: " + call.excinfo.value.msg
++            rep.outcome = "skipped"
++    elif not rep.skipped and xfailed and not item.config.option.runxfail:
+         if call.excinfo:
+             raises = xfailed.raises
+             if raises is not None and not isinstance(call.excinfo.value, raises):
+
+2026-03-07 12:05:06,441 - INFO - swea-agent-pytest-dev__pytest-7432 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.4__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok100k_mt8_probev3_gpt54_rerun1/pytest-dev__pytest-7432/pytest-dev__pytest-7432.traj
+2026-03-07 12:05:06,451 - INFO - swea-env-pytest-dev__pytest-7432 - Beginning environment shutdown...

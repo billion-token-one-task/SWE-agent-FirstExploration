@@ -1,0 +1,331 @@
+2026-03-04 21:34:24,715 - INFO - rex-deploy-sympy__sympy-21379 - Starting container docker.ioswebenchsweb.eval.x86_64.sympy_1776_sympy-21379latest-e800bf4c-d0f8-42e0-8799-67455322db0f with image docker.io/swebench/sweb.eval.x86_64.sympy_1776_sympy-21379:latest serving on port 42655
+2026-03-04 21:34:24,718 - INFO - rex-deploy-sympy__sympy-21379 - Starting runtime at 42655
+2026-03-04 21:34:26,301 - INFO - rex-deploy-sympy__sympy-21379 - Runtime started in 1.58s
+2026-03-04 21:34:27,326 - INFO - swea-env-sympy__sympy-21379 - Environment Initialized
+2026-03-04 21:34:28,073 - INFO - swea-agent-sympy__sympy-21379 - Setting up agent for instance sympy__sympy-21379
+2026-03-04 21:34:28,073 - INFO - swea-agent-sympy__sympy-21379 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok10k_mt4_probev2/sympy__sympy-21379/sympy__sympy-21379.traj
+2026-03-04 21:38:22,036 - INFO - swea-tools-sympy__sympy-21379 - Resetting tools
+2026-03-04 21:38:22,580 - INFO - swea-agent-sympy__sympy-21379 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-04 21:38:22,794 - INFO - swea-agent-sympy__sympy-21379 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+Unexpected `PolynomialError` when using simple `subs()` for particular expressions
+I am seeing weird behavior with `subs` for particular expressions with hyperbolic sinusoids with piecewise arguments. When applying `subs`, I obtain an unexpected `PolynomialError`. For context, I was umbrella-applying a casting from int to float of all int atoms for a bunch of random expressions before using a tensorflow lambdify to avoid potential tensorflow type errors. You can pretend the expression below has a `+ 1` at the end, but below is the MWE that I could produce.
+
+See the expression below, and the conditions in which the exception arises.
+
+Sympy version: 1.8.dev
+
+```python
+from sympy import *
+from sympy.core.cache import clear_cache
+
+x, y, z = symbols('x y z')
+
+clear_cache()
+expr = exp(sinh(Piecewise((x, y > x), (y, True)) / z))
+# This works fine
+expr.subs({1: 1.0})
+
+clear_cache()
+x, y, z = symbols('x y z', real=True)
+expr = exp(sinh(Piecewise((x, y > x), (y, True)) / z))
+# This fails with "PolynomialError: Piecewise generators do not make sense"
+expr.subs({1: 1.0})  # error
+# Now run it again (isympy...) w/o clearing cache and everything works as expected without error
+expr.subs({1: 1.0})
+```
+
+I am not really sure where the issue is, but I think it has something to do with the order of assumptions in this specific type of expression. Here is what I found-
+
+- The error only (AFAIK) happens with `cosh` or `tanh` in place of `sinh`, otherwise it succeeds
+- The error goes away if removing the division by `z`
+- The error goes away if removing `exp` (but stays for most unary functions, `sin`, `log`, etc.)
+- The error only happens with real symbols for `x` and `y` (`z` does not have to be real)
+
+Not too sure how to debug this one.
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-04 21:38:22,794 - INFO - swea-agent-sympy__sympy-21379 - ========================= STEP 1 =========================
+2026-03-04 21:38:29,169 - INFO - swea-agent-sympy__sympy-21379 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+from sympy import *
+from sympy.core.cache import clear_cache
+
+x, y, z = symbols('x y z')
+clear_cache()
+expr = exp(sinh(Piecewise((x, y > x), (y, True)) / z))
+print('non-real ok', expr.subs({1:1.0}))
+
+clear_cache()
+x, y, z = symbols('x y z', real=True)
+expr = exp(sinh(Piecewise((x, y > x), (y, True)) / z))
+print('about to subs real')
+try:
+    print(expr.subs({1:1.0}))
+except Exception as e:
+    import traceback; traceback.print_exc()
+PY
+2026-03-04 21:38:31,087 - INFO - swea-agent-sympy__sympy-21379 - 🤖 MODEL INPUT
+OBSERVATION:
+non-real ok exp(sinh(z**(-1.0)*Piecewise((x, x < y), (y, True))))
+about to subs real
+Traceback (most recent call last):
+  File "/testbed/sympy/core/assumptions.py", line 454, in getit
+    return self._assumptions[fact]
+KeyError: 'zero'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<stdin>", line 14, in <module>
+  File "/testbed/sympy/core/basic.py", line 949, in subs
+    rv = rv._subs(old, new, **kwargs)
+  File "/testbed/sympy/core/cache.py", line 72, in wrapper
+    retval = cfunc(*args, **kwargs)
+  File "/testbed/sympy/core/basic.py", line 1063, in _subs
+    rv = fallback(self, old, new)
+  File "/testbed/sympy/core/basic.py", line 1040, in fallback
+    rv = self.func(*args)
+  File "/testbed/sympy/core/cache.py", line 72, in wrapper
+    retval = cfunc(*args, **kwargs)
+  File "/testbed/sympy/core/function.py", line 473, in __new__
+    result = super().__new__(cls, *args, **options)
+  File "/testbed/sympy/core/cache.py", line 72, in wrapper
+    retval = cfunc(*args, **kwargs)
+  File "/testbed/sympy/core/function.py", line 285, in __new__
+    evaluated = cls.eval(*args)
+  File "/testbed/sympy/functions/elementary/exponential.py", line 369, in eval
+    if arg.is_zero:
+  File "/testbed/sympy/core/assumptions.py", line 458, in getit
+    return _ask(fact, self)
+  File "/testbed/sympy/core/assumptions.py", line 513, in _ask
+    _ask(pk, obj)
+  File "/testbed/sympy/core/assumptions.py", line 513, in _ask
+    _ask(pk, obj)
+  File "/testbed/sympy/core/assumptions.py", line 513, in _ask
+    _ask(pk, obj)
+  [Previous line repeated 1 more time]
+  File "/testbed/sympy/core/assumptions.py", line 501, in _ask
+    a = evaluate(obj)
+  File "/testbed/sympy/functions/elementary/hyperbolic.py", line 251, in _eval_is_real
+    return (im%pi).is_zero
+  File "/testbed/sympy/core/decorators.py", line 266, in _func
+    return func(self, other)
+  File "/testbed/sympy/core/decorators.py", line 136, in binary_op_wrapper
+    return func(self, other)
+  File "/testbed/sympy/core/expr.py", line 280, in __mod__
+    return Mod(self, other)
+  File "/testbed/sympy/core/cache.py", line 72, in wrapper
+    retval = cfunc(*args, **kwargs)
+  File "/testbed/sympy/core/function.py", line 473, in __new__
+    result = super().__new__(cls, *args, **options)
+  File "/testbed/sympy/core/cache.py", line 72, in wrapper
+    retval = cfunc(*args, **kwargs)
+  File "/testbed/sympy/core/function.py", line 285, in __new__
+    evaluated = cls.eval(*args)
+  File "/testbed/sympy/core/mod.py", line 169, in eval
+    G = gcd(p, q)
+  File "/testbed/sympy/polys/polytools.py", line 5306, in gcd
+    (F, G), opt = parallel_poly_from_expr((f, g), *gens, **args)
+  File "/testbed/sympy/polys/polytools.py", line 4340, in parallel_poly_from_expr
+    return _parallel_poly_from_expr(exprs, opt)
+  File "/testbed/sympy/polys/polytools.py", line 4399, in _parallel_poly_from_expr
+    raise PolynomialError("Piecewise generators do not make sense")
+sympy.polys.polyerrors.PolynomialError: Piecewise generators do not make sense
+
+2026-03-04 21:38:31,090 - INFO - swea-agent-sympy__sympy-21379 - ========================= STEP 2 =========================
+2026-03-04 21:38:33,419 - INFO - swea-agent-sympy__sympy-21379 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -R "def _eval_is_real" -n sympy/functions/elementary/hyperbolic.py
+2026-03-04 21:38:33,765 - INFO - swea-agent-sympy__sympy-21379 - 🤖 MODEL INPUT
+OBSERVATION:
+243:    def _eval_is_real(self):
+429:    def _eval_is_real(self):
+653:    def _eval_is_real(self):
+
+2026-03-04 21:38:33,772 - INFO - swea-agent-sympy__sympy-21379 - ========================= STEP 3 =========================
+2026-03-04 21:38:35,933 - INFO - swea-agent-sympy__sympy-21379 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/sympy/functions/elementary/hyperbolic.py  --view_range 220 280
+2026-03-04 21:38:36,378 - INFO - swea-agent-sympy__sympy-21379 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/sympy/functions/elementary/hyperbolic.py:
+   220	    def _eval_rewrite_as_exp(self, arg, **kwargs):
+   221	        return (exp(arg) - exp(-arg)) / 2
+   222	
+   223	    def _eval_rewrite_as_cosh(self, arg, **kwargs):
+   224	        return -S.ImaginaryUnit*cosh(arg + S.Pi*S.ImaginaryUnit/2)
+   225	
+   226	    def _eval_rewrite_as_tanh(self, arg, **kwargs):
+   227	        tanh_half = tanh(S.Half*arg)
+   228	        return 2*tanh_half/(1 - tanh_half**2)
+   229	
+   230	    def _eval_rewrite_as_coth(self, arg, **kwargs):
+   231	        coth_half = coth(S.Half*arg)
+   232	        return 2*coth_half/(coth_half**2 - 1)
+   233	
+   234	    def _eval_as_leading_term(self, x, cdir=0):
+   235	        from sympy import Order
+   236	        arg = self.args[0].as_leading_term(x)
+   237	
+   238	        if x in arg.free_symbols and Order(1, x).contains(arg):
+   239	            return arg
+   240	        else:
+   241	            return self.func(arg)
+   242	
+   243	    def _eval_is_real(self):
+   244	        arg = self.args[0]
+   245	        if arg.is_real:
+   246	            return True
+   247	
+   248	        # if `im` is of the form n*pi
+   249	        # else, check if it is a number
+   250	        re, im = arg.as_real_imag()
+   251	        return (im%pi).is_zero
+   252	
+   253	    def _eval_is_extended_real(self):
+   254	        if self.args[0].is_extended_real:
+   255	            return True
+   256	
+   257	    def _eval_is_positive(self):
+   258	        if self.args[0].is_extended_real:
+   259	            return self.args[0].is_positive
+   260	
+   261	    def _eval_is_negative(self):
+   262	        if self.args[0].is_extended_real:
+   263	            return self.args[0].is_negative
+   264	
+   265	    def _eval_is_finite(self):
+   266	        arg = self.args[0]
+   267	        return arg.is_finite
+   268	
+   269	    def _eval_is_zero(self):
+   270	        arg = self.args[0]
+   271	        if arg.is_zero:
+   272	            return True
+   273	
+   274	
+   275	class cosh(HyperbolicFunction):
+   276	    r"""
+   277	    cosh(x) is the hyperbolic cosine of x.
+   278	
+   279	    The hyperbolic cosine function is $\frac{e^x + e^{-x}}{2}$.
+   280	
+
+
+2026-03-04 21:38:36,383 - INFO - swea-agent-sympy__sympy-21379 - ========================= STEP 4 =========================
+2026-03-04 21:38:39,446 - INFO - swea-agent-sympy__sympy-21379 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/sympy/functions/elementary/hyperbolic.py  --view_range 400 470
+2026-03-04 21:38:39,888 - INFO - swea-agent-sympy__sympy-21379 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/sympy/functions/elementary/hyperbolic.py:
+   400	            return (cosh(x)*cosh(y) + sinh(x)*sinh(y)).expand(trig=True)
+   401	        return cosh(arg)
+   402	
+   403	    def _eval_rewrite_as_tractable(self, arg, limitvar=None, **kwargs):
+   404	        return (exp(arg) + exp(-arg)) / 2
+   405	
+   406	    def _eval_rewrite_as_exp(self, arg, **kwargs):
+   407	        return (exp(arg) + exp(-arg)) / 2
+   408	
+   409	    def _eval_rewrite_as_sinh(self, arg, **kwargs):
+   410	        return -S.ImaginaryUnit*sinh(arg + S.Pi*S.ImaginaryUnit/2)
+   411	
+   412	    def _eval_rewrite_as_tanh(self, arg, **kwargs):
+   413	        tanh_half = tanh(S.Half*arg)**2
+   414	        return (1 + tanh_half)/(1 - tanh_half)
+   415	
+   416	    def _eval_rewrite_as_coth(self, arg, **kwargs):
+   417	        coth_half = coth(S.Half*arg)**2
+   418	        return (coth_half + 1)/(coth_half - 1)
+   419	
+   420	    def _eval_as_leading_term(self, x, cdir=0):
+   421	        from sympy import Order
+   422	        arg = self.args[0].as_leading_term(x)
+   423	
+   424	        if x in arg.free_symbols and Order(1, x).contains(arg):
+   425	            return S.One
+   426	        else:
+   427	            return self.func(arg)
+   428	
+   429	    def _eval_is_real(self):
+   430	        arg = self.args[0]
+   431	
+   432	        # `cosh(x)` is real for real OR purely imaginary `x`
+   433	        if arg.is_real or arg.is_imaginary:
+   434	            return True
+   435	
+   436	        # cosh(a+ib) = cos(b)*cosh(a) + i*sin(b)*sinh(a)
+   437	        # the imaginary part can be an expression like n*pi
+   438	        # if not, check if the imaginary part is a number
+   439	        re, im = arg.as_real_imag()
+   440	        return (im%pi).is_zero
+   441	
+   442	    def _eval_is_positive(self):
+   443	        # cosh(x+I*y) = cos(y)*cosh(x) + I*sin(y)*sinh(x)
+   444	        # cosh(z) is positive iff it is real and the real part is positive.
+   445	        # So we need sin(y)*sinh(x) = 0 which gives x=0 or y=n*pi
+   446	        # Case 1 (y=n*pi): cosh(z) = (-1)**n * cosh(x) -> positive for n even
+   447	        # Case 2 (x=0): cosh(z) = cos(y) -> positive when cos(y) is positive
+   448	        z = self.args[0]
+   449	
+   450	        x, y = z.as_real_imag()
+   451	        ymod = y % (2*pi)
+   452	
+   453	        yzero = ymod.is_zero
+   454	        # shortcut if ymod is zero
+   455	        if yzero:
+   456	            return True
+   457	
+   458	        xzero = x.is_zero
+   459	        # shortcut x is not zero
+   460	        if xzero is False:
+   461	            return yzero
+   462	
+   463	        return fuzzy_or([
+   464	                # Case 1:
+   465	                yzero,
+   466	                # Case 2:
+   467	                fuzzy_and([
+   468	                    xzero,
+   469	                    fuzzy_or([ymod < pi/2, ymod > 3*pi/2])
+   470	                ])
+
+
+2026-03-04 21:38:39,895 - INFO - swea-agent-sympy__sympy-21379 - ========================= STEP 5 =========================
+2026-03-04 21:38:42,309 - WARNING - swea-lm-sympy__sympy-21379 - Token budget exhausted: 11371 > 10000
+2026-03-04 21:38:42,312 - WARNING - swea-agent-sympy__sympy-21379 - Exit due to token budget exhaustion
+2026-03-04 21:38:42,315 - WARNING - swea-agent-sympy__sympy-21379 - Attempting autosubmission after error
+2026-03-04 21:38:42,326 - INFO - swea-agent-sympy__sympy-21379 - Executing submission command git add -A && git diff --cached > /tmp/model.patch in /testbed
+2026-03-04 21:38:42,385 - INFO - swea-agent-sympy__sympy-21379 - Found submission: 
+2026-03-04 21:38:42,387 - INFO - swea-agent-sympy__sympy-21379 - 🤖 MODEL INPUT
+Your command ran successfully and did not produce any output.
+2026-03-04 21:38:42,394 - INFO - swea-agent-sympy__sympy-21379 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok10k_mt4_probev2/sympy__sympy-21379/sympy__sympy-21379.traj
+2026-03-04 21:38:42,397 - INFO - swea-env-sympy__sympy-21379 - Beginning environment shutdown...

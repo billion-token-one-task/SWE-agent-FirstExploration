@@ -1,0 +1,64 @@
+diff --git a/repro_limit_choices.py b/repro_limit_choices.py
+new file mode 100644
+index 0000000000..a559b6cd0a
+--- /dev/null
++++ b/repro_limit_choices.py
+@@ -0,0 +1,58 @@
++from django import forms
++from django.conf import settings
++from django.db import models, connection
++from django.db.models import Q
++
++if not settings.configured:
++    settings.configure(
++        DEBUG=True,
++        SECRET_KEY='x',
++        DATABASES={'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'}},
++        INSTALLED_APPS=['django.contrib.contenttypes'],
++    )
++
++import django
++
++django.setup()
++
++
++class Target(models.Model):
++    name = models.CharField(max_length=20)
++
++    class Meta:
++        app_label = 'testapp'
++
++
++class Extra(models.Model):
++    target = models.ForeignKey(Target, on_delete=models.CASCADE, related_name='extras')
++    flag = models.BooleanField(default=False)
++
++    class Meta:
++        app_label = 'testapp'
++
++
++class Holder(models.Model):
++    target = models.ForeignKey(Target, on_delete=models.CASCADE, limit_choices_to=Q(extras__flag=True))
++
++    class Meta:
++        app_label = 'testapp'
++
++
++with connection.schema_editor() as schema:
++    schema.create_model(Target)
++    schema.create_model(Extra)
++    schema.create_model(Holder)
++
++t = Target.objects.create(name='A')
++Extra.objects.create(target=t, flag=True)
++Extra.objects.create(target=t, flag=True)
++
++class HolderForm(forms.ModelForm):
++    class Meta:
++        model = Holder
++        fields = ['target']
++
++f = HolderForm()
++choices = list(f.fields['target'].queryset.values_list('pk', flat=True))
++print('raw pks from queryset:', choices)
++print('choice tuples:', list(f.fields['target'].choices))

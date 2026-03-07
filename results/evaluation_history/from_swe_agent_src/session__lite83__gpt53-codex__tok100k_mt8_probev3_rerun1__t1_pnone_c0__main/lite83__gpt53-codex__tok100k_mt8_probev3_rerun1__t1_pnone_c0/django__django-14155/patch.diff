@@ -1,0 +1,35 @@
+diff --git a/django/urls/resolvers.py b/django/urls/resolvers.py
+index 9b00e24509..f9649cfd35 100644
+--- a/django/urls/resolvers.py
++++ b/django/urls/resolvers.py
+@@ -38,6 +38,10 @@ class ResolverMatch:
+         self.route = route
+         self.tried = tried
+ 
++        if isinstance(func, functools.partial):
++            self._func_path = func.func.__module__ + '.' + func.func.__name__
++            self.args = func.args + args
++            self.kwargs = {**func.keywords, **kwargs} if func.keywords else kwargs
+         # If a URLRegexResolver doesn't have a namespace or app_name, it passes
+         # in an empty value.
+         self.app_names = [x for x in app_names if x] if app_names else []
+@@ -45,12 +49,13 @@ class ResolverMatch:
+         self.namespaces = [x for x in namespaces if x] if namespaces else []
+         self.namespace = ':'.join(self.namespaces)
+ 
+-        if not hasattr(func, '__name__'):
+-            # A class-based view
+-            self._func_path = func.__class__.__module__ + '.' + func.__class__.__name__
+-        else:
+-            # A function-based view
+-            self._func_path = func.__module__ + '.' + func.__name__
++        if not isinstance(func, functools.partial):
++            if not hasattr(func, '__name__'):
++                # A class-based view
++                self._func_path = func.__class__.__module__ + '.' + func.__class__.__name__
++            else:
++                # A function-based view
++                self._func_path = func.__module__ + '.' + func.__name__
+ 
+         view_path = url_name or self._func_path
+         self.view_name = ':'.join(self.namespaces + [view_path])

@@ -1,0 +1,45 @@
+diff --git a/repro_limit_choices_dup.py b/repro_limit_choices_dup.py
+new file mode 100644
+index 0000000000..228a7a3792
+--- /dev/null
++++ b/repro_limit_choices_dup.py
+@@ -0,0 +1,39 @@
++from django import forms
++from django.db import models
++from django.db.models import Q
++
++
++class Author(models.Model):
++    name = models.CharField(max_length=20)
++
++
++class Book(models.Model):
++    author = models.ForeignKey(
++        Author,
++        on_delete=models.CASCADE,
++        limit_choices_to=Q(book__id__isnull=False),
++    )
++
++
++class BookForm(forms.ModelForm):
++    class Meta:
++        model = Book
++        fields = ['author']
++
++
++def run():
++    Author.objects.all().delete()
++    Book.objects.all().delete()
++
++    a = Author.objects.create(name='A')
++    Book.objects.create(author=a)
++    Book.objects.create(author=a)
++
++    form = BookForm()
++    qs = form.fields['author'].queryset
++    print('count=', qs.count())
++    print('pks=', list(qs.values_list('pk', flat=True)))
++
++
++if __name__ == '__main__':
++    run()

@@ -1,0 +1,71 @@
+diff --git a/django/contrib/auth/tokens.py b/django/contrib/auth/tokens.py
+index 93e2d71af2..22f6bf6af0 100644
+--- a/django/contrib/auth/tokens.py
++++ b/django/contrib/auth/tokens.py
+@@ -78,13 +78,14 @@ class PasswordResetTokenGenerator:
+ 
+     def _make_hash_value(self, user, timestamp):
+         """
+-        Hash the user's primary key and some user state that's sure to change
+-        after a password reset to produce a token that invalidated when it's
+-        used:
++        Hash the user's primary key, email (if available), and some user state
++        that's sure to change after a password reset to produce a token that is
++        invalidated when it's used:
+         1. The password field will change upon a password reset (even if the
+            same password is chosen, due to password salting).
+         2. The last_login field will usually be updated very shortly after
+            a password reset.
++        3. The email field will change if a user updates their email address.
+         Failing those things, settings.PASSWORD_RESET_TIMEOUT eventually
+         invalidates the token.
+ 
+@@ -94,7 +95,9 @@ class PasswordResetTokenGenerator:
+         # Truncate microseconds so that tokens are consistent even if the
+         # database doesn't support microseconds.
+         login_timestamp = '' if user.last_login is None else user.last_login.replace(microsecond=0, tzinfo=None)
+-        return str(user.pk) + user.password + str(login_timestamp) + str(timestamp)
++        email_field = user.get_email_field_name()
++        email = getattr(user, email_field, '') or ''
++        return str(user.pk) + user.password + str(login_timestamp) + str(timestamp) + str(email)
+ 
+     def _num_seconds(self, dt):
+         return int((dt - datetime(2001, 1, 1)).total_seconds())
+diff --git a/repro_token_email_change.py b/repro_token_email_change.py
+new file mode 100644
+index 0000000000..0c5f43384d
+--- /dev/null
++++ b/repro_token_email_change.py
+@@ -0,0 +1,32 @@
++from django.conf import settings
++
++if not settings.configured:
++    settings.configure(
++        SECRET_KEY='test-secret-key',
++        INSTALLED_APPS=[
++            'django.contrib.auth',
++            'django.contrib.contenttypes',
++        ],
++        DATABASES={'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'}},
++        MIDDLEWARE=[],
++        USE_TZ=False,
++    )
++
++import django
++django.setup()
++
++from django.core.management import call_command
++call_command('migrate', run_syncdb=True, verbosity=0)
++
++from django.contrib.auth import get_user_model
++from django.contrib.auth.tokens import PasswordResetTokenGenerator
++
++User = get_user_model()
++u = User.objects.create_user(username='u1', email='foo@example.com', password='pw12345')
++gen = PasswordResetTokenGenerator()
++token = gen.make_token(u)
++
++u.email = 'bar@example.com'
++u.save(update_fields=['email'])
++
++print('token valid after email change?', gen.check_token(u, token))

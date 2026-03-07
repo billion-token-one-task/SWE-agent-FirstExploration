@@ -1,0 +1,30 @@
+diff --git a/reproduce_max_mcode.py b/reproduce_max_mcode.py
+new file mode 100644
+index 000000000..28c24f509
+--- /dev/null
++++ b/reproduce_max_mcode.py
+@@ -0,0 +1,6 @@
++from sympy import symbols, Max
++from sympy.printing.mathematica import mathematica_code
++
++x = symbols('x')
++exprs = [Max(x, 2), Max(x, 2, 3), Max(2, x), Max(x, y) if False else None]
++print(mathematica_code(Max(x, 2)))
+diff --git a/sympy/printing/mathematica.py b/sympy/printing/mathematica.py
+index ea7e3a2d9..4c76e21af 100644
+--- a/sympy/printing/mathematica.py
++++ b/sympy/printing/mathematica.py
+@@ -94,12 +94,7 @@ def _print_list(self, expr):
+     _print_Tuple = _print_list
+ 
+     def _print_Function(self, expr):
+-        if expr.func.__name__ in self.known_functions:
+-            cond_mfunc = self.known_functions[expr.func.__name__]
+-            for cond, mfunc in cond_mfunc:
+-                if cond(*expr.args):
+-                    return "%s[%s]" % (mfunc, self.stringify(expr.args, ", "))
+-        return expr.func.__name__ + "[%s]" % self.stringify(expr.args, ", ")
++        return expr.func.__name__ + "[%s]" % ', '.join(self._print(arg) for arg in expr.args)
+ 
+     def _print_Integral(self, expr):
+         if len(expr.variables) == 1 and not expr.limits[0][1:]:

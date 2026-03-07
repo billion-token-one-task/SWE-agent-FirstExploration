@@ -1,0 +1,1111 @@
+2026-03-07 01:36:18,518 - INFO - rex-deploy-django__django-13964 - Starting container docker.ioswebenchsweb.eval.x86_64.django_1776_django-13964latest-8f29e906-5be8-4e03-a995-8c30743a4e96 with image docker.io/swebench/sweb.eval.x86_64.django_1776_django-13964:latest serving on port 50319
+2026-03-07 01:36:18,569 - INFO - rex-deploy-django__django-13964 - Starting runtime at 50319
+2026-03-07 01:36:20,039 - INFO - rex-deploy-django__django-13964 - Runtime started in 1.47s
+2026-03-07 01:36:21,176 - INFO - swea-env-django__django-13964 - Environment Initialized
+2026-03-07 01:36:22,557 - INFO - swea-agent-django__django-13964 - Setting up agent for instance django__django-13964
+2026-03-07 01:36:22,558 - INFO - swea-agent-django__django-13964 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.4__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok200k_mt8_probev3_gpt54_rerun3/django__django-13964/django__django-13964.traj
+2026-03-07 01:36:55,212 - INFO - swea-tools-django__django-13964 - Resetting tools
+2026-03-07 01:36:55,617 - INFO - swea-agent-django__django-13964 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-07 01:36:55,820 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+Saving parent object after setting on child leads to data loss for parents with non-numeric primary key.
+Description
+	 
+		(last modified by Charlie DeTar)
+	 
+Given a model with a foreign key relation to another model that has a non-auto CharField as its primary key:
+class Product(models.Model):
+	sku = models.CharField(primary_key=True, max_length=50)
+class Order(models.Model):
+	product = models.ForeignKey(Product, on_delete=models.CASCADE)
+If the relation is initialized on the parent with an empty instance that does not yet specify its primary key, and the primary key is subsequently defined, the parent does not "see" the primary key's change:
+with transaction.atomic():
+	order = Order()
+	order.product = Product()
+	order.product.sku = "foo"
+	order.product.save()
+	order.save()
+	assert Order.objects.filter(product_id="").exists() # Succeeds, but shouldn't
+	assert Order.objects.filter(product=order.product).exists() # Fails
+Instead of product_id being populated with product.sku, it is set to emptystring. The foreign key constraint which would enforce the existence of a product with sku="" is deferred until the transaction commits. The transaction does correctly fail on commit with a ForeignKeyViolation due to the non-existence of a product with emptystring as its primary key.
+On the other hand, if the related unsaved instance is initialized with its primary key before assignment to the parent, it is persisted correctly:
+with transaction.atomic():
+	order = Order()
+	order.product = Product(sku="foo")
+	order.product.save()
+	order.save()
+	assert Order.objects.filter(product=order.product).exists() # succeeds
+Committing the transaction also succeeds.
+This may have something to do with how the Order.product_id field is handled at assignment, together with something about handling fetching of auto vs non-auto primary keys from the related instance.
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-07 01:36:55,821 - INFO - swea-agent-django__django-13964 - ========================= STEP 1 =========================
+2026-03-07 01:36:58,914 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -R "ForeignKeyDeferredAttribute\|DeferredAttribute\|related instance" -n django | head -50
+2026-03-07 01:36:59,472 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+django/contrib/auth/apps.py:3:from django.db.models.query_utils import DeferredAttribute
+django/contrib/auth/apps.py:25:        if isinstance(last_login_field, DeferredAttribute):
+django/contrib/gis/db/models/proxy.py:8:from django.db.models.query_utils import DeferredAttribute
+django/contrib/gis/db/models/proxy.py:11:class SpatialProxy(DeferredAttribute):
+django/db/models/base.py:480:                # If we are passed a related instance, set it using the
+django/db/models/base.py:929:                    # Remove the object from a related instance cache.
+django/db/models/fields/__init__.py:17:from django.db.models.query_utils import DeferredAttribute, RegisterLookupMixin
+django/db/models/fields/__init__.py:122:    descriptor_class = DeferredAttribute
+django/db/models/fields/files.py:11:from django.db.models.query_utils import DeferredAttribute
+django/db/models/fields/files.py:144:class FileDescriptor(DeferredAttribute):
+django/db/models/fields/related.py:22:    ForeignKeyDeferredAttribute, ForwardManyToOneDescriptor,
+django/db/models/fields/related.py:779:    descriptor_class = ForeignKeyDeferredAttribute
+django/db/models/fields/related_descriptors.py:5:an attribute to access related instances of the other model class (unless the
+django/db/models/fields/related_descriptors.py:48:4. Related objects manager for related instances on the reverse side of a
+django/db/models/fields/related_descriptors.py:54:5. Related objects manager for related instances on the forward or reverse
+django/db/models/fields/related_descriptors.py:70:from django.db.models.query_utils import DeferredAttribute
+django/db/models/fields/related_descriptors.py:75:class ForeignKeyDeferredAttribute(DeferredAttribute):
+django/db/models/fields/related_descriptors.py:158:        Get the related instance through the forward relation.
+django/db/models/fields/related_descriptors.py:169:        # The related instance is loaded from the database and then cached
+django/db/models/fields/related_descriptors.py:205:        Set the related instance through the forward relation.
+django/db/models/fields/related_descriptors.py:259:        # Set the related instance cache used by __get__ to avoid an SQL query
+django/db/models/fields/related_descriptors.py:385:        Get the related instance through the reverse relation.
+django/db/models/fields/related_descriptors.py:398:        # The related instance is loaded from the database and then cached
+django/db/models/fields/related_descriptors.py:432:        Set the related instance through the reverse relation.
+django/db/models/fields/related_descriptors.py:447:            # Update the cached related instance (if any) & clear the cache.
+django/db/models/fields/related_descriptors.py:481:            # Set the related instance cache used by __get__ to avoid an SQL query
+django/db/models/query_utils.py:99:class DeferredAttribute:
+django/forms/models.py:841:                # If we're adding the related instance, ignore its primary key
+django/forms/models.py:955:        # Ensure the latest copy of the related instance is present on each
+
+2026-03-07 01:36:59,476 - INFO - swea-agent-django__django-13964 - ========================= STEP 2 =========================
+2026-03-07 01:37:06,146 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/django/db/models/fields/related_descriptors.py  --view_range 1 320
+2026-03-07 01:37:06,686 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/django/db/models/fields/related_descriptors.py:
+     1	"""
+     2	Accessors for related objects.
+     3	
+     4	When a field defines a relation between two models, each model class provides
+     5	an attribute to access related instances of the other model class (unless the
+     6	reverse accessor has been disabled with related_name='+').
+     7	
+     8	Accessors are implemented as descriptors in order to customize access and
+     9	assignment. This module defines the descriptor classes.
+    10	
+    11	Forward accessors follow foreign keys. Reverse accessors trace them back. For
+    12	example, with the following models::
+    13	
+    14	    class Parent(Model):
+    15	        pass
+    16	
+    17	    class Child(Model):
+    18	        parent = ForeignKey(Parent, related_name='children')
+    19	
+    20	 ``child.parent`` is a forward many-to-one relation. ``parent.children`` is a
+    21	reverse many-to-one relation.
+    22	
+    23	There are three types of relations (many-to-one, one-to-one, and many-to-many)
+    24	and two directions (forward and reverse) for a total of six combinations.
+    25	
+    26	1. Related instance on the forward side of a many-to-one relation:
+    27	   ``ForwardManyToOneDescriptor``.
+    28	
+    29	   Uniqueness of foreign key values is irrelevant to accessing the related
+    30	   instance, making the many-to-one and one-to-one cases identical as far as
+    31	   the descriptor is concerned. The constraint is checked upstream (unicity
+    32	   validation in forms) or downstream (unique indexes in the database).
+    33	
+    34	2. Related instance on the forward side of a one-to-one
+    35	   relation: ``ForwardOneToOneDescriptor``.
+    36	
+    37	   It avoids querying the database when accessing the parent link field in
+    38	   a multi-table inheritance scenario.
+    39	
+    40	3. Related instance on the reverse side of a one-to-one relation:
+    41	   ``ReverseOneToOneDescriptor``.
+    42	
+    43	   One-to-one relations are asymmetrical, despite the apparent symmetry of the
+    44	   name, because they're implemented in the database with a foreign key from
+    45	   one table to another. As a consequence ``ReverseOneToOneDescriptor`` is
+    46	   slightly different from ``ForwardManyToOneDescriptor``.
+    47	
+    48	4. Related objects manager for related instances on the reverse side of a
+    49	   many-to-one relation: ``ReverseManyToOneDescriptor``.
+    50	
+    51	   Unlike the previous two classes, this one provides access to a collection
+    52	   of objects. It returns a manager rather than an instance.
+    53	
+    54	5. Related objects manager for related instances on the forward or reverse
+    55	   sides of a many-to-many relation: ``ManyToManyDescriptor``.
+    56	
+    57	   Many-to-many relations are symmetrical. The syntax of Django models
+    58	   requires declaring them on one side but that's an implementation detail.
+    59	   They could be declared on the other side without any change in behavior.
+    60	   Therefore the forward and reverse descriptors can be the same.
+    61	
+    62	   If you're looking for ``ForwardManyToManyDescriptor`` or
+    63	   ``ReverseManyToManyDescriptor``, use ``ManyToManyDescriptor`` instead.
+    64	"""
+    65	
+    66	from django.core.exceptions import FieldError
+    67	from django.db import connections, router, transaction
+    68	from django.db.models import Q, signals
+    69	from django.db.models.query import QuerySet
+    70	from django.db.models.query_utils import DeferredAttribute
+    71	from django.db.models.utils import resolve_callables
+    72	from django.utils.functional import cached_property
+    73	
+    74	
+    75	class ForeignKeyDeferredAttribute(DeferredAttribute):
+    76	    def __set__(self, instance, value):
+    77	        if instance.__dict__.get(self.field.attname) != value and self.field.is_cached(instance):
+    78	            self.field.delete_cached_value(instance)
+    79	        instance.__dict__[self.field.attname] = value
+    80	
+    81	
+    82	class ForwardManyToOneDescriptor:
+    83	    """
+    84	    Accessor to the related object on the forward side of a many-to-one or
+    85	    one-to-one (via ForwardOneToOneDescriptor subclass) relation.
+    86	
+    87	    In the example::
+    88	
+    89	        class Child(Model):
+    90	            parent = ForeignKey(Parent, related_name='children')
+    91	
+    92	    ``Child.parent`` is a ``ForwardManyToOneDescriptor`` instance.
+    93	    """
+    94	
+    95	    def __init__(self, field_with_rel):
+    96	        self.field = field_with_rel
+    97	
+    98	    @cached_property
+    99	    def RelatedObjectDoesNotExist(self):
+   100	        # The exception can't be created at initialization time since the
+   101	        # related model might not be resolved yet; `self.field.model` might
+   102	        # still be a string model reference.
+   103	        return type(
+   104	            'RelatedObjectDoesNotExist',
+   105	            (self.field.remote_field.model.DoesNotExist, AttributeError), {
+   106	                '__module__': self.field.model.__module__,
+   107	                '__qualname__': '%s.%s.RelatedObjectDoesNotExist' % (
+   108	                    self.field.model.__qualname__,
+   109	                    self.field.name,
+   110	                ),
+   111	            }
+   112	        )
+   113	
+   114	    def is_cached(self, instance):
+   115	        return self.field.is_cached(instance)
+   116	
+   117	    def get_queryset(self, **hints):
+   118	        return self.field.remote_field.model._base_manager.db_manager(hints=hints).all()
+   119	
+   120	    def get_prefetch_queryset(self, instances, queryset=None):
+   121	        if queryset is None:
+   122	            queryset = self.get_queryset()
+   123	        queryset._add_hints(instance=instances[0])
+   124	
+   125	        rel_obj_attr = self.field.get_foreign_related_value
+   126	        instance_attr = self.field.get_local_related_value
+   127	        instances_dict = {instance_attr(inst): inst for inst in instances}
+   128	        related_field = self.field.foreign_related_fields[0]
+   129	        remote_field = self.field.remote_field
+   130	
+   131	        # FIXME: This will need to be revisited when we introduce support for
+   132	        # composite fields. In the meantime we take this practical approach to
+   133	        # solve a regression on 1.6 when the reverse manager in hidden
+   134	        # (related_name ends with a '+'). Refs #21410.
+   135	        # The check for len(...) == 1 is a special case that allows the query
+   136	        # to be join-less and smaller. Refs #21760.
+   137	        if remote_field.is_hidden() or len(self.field.foreign_related_fields) == 1:
+   138	            query = {'%s__in' % related_field.name: {instance_attr(inst)[0] for inst in instances}}
+   139	        else:
+   140	            query = {'%s__in' % self.field.related_query_name(): instances}
+   141	        queryset = queryset.filter(**query)
+   142	
+   143	        # Since we're going to assign directly in the cache,
+   144	        # we must manage the reverse relation cache manually.
+   145	        if not remote_field.multiple:
+   146	            for rel_obj in queryset:
+   147	                instance = instances_dict[rel_obj_attr(rel_obj)]
+   148	                remote_field.set_cached_value(rel_obj, instance)
+   149	        return queryset, rel_obj_attr, instance_attr, True, self.field.get_cache_name(), False
+   150	
+   151	    def get_object(self, instance):
+   152	        qs = self.get_queryset(instance=instance)
+   153	        # Assuming the database enforces foreign keys, this won't fail.
+   154	        return qs.get(self.field.get_reverse_related_filter(instance))
+   155	
+   156	    def __get__(self, instance, cls=None):
+   157	        """
+   158	        Get the related instance through the forward relation.
+   159	
+   160	        With the example above, when getting ``child.parent``:
+   161	
+   162	        - ``self`` is the descriptor managing the ``parent`` attribute
+   163	        - ``instance`` is the ``child`` instance
+   164	        - ``cls`` is the ``Child`` class (we don't need it)
+   165	        """
+   166	        if instance is None:
+   167	            return self
+   168	
+   169	        # The related instance is loaded from the database and then cached
+   170	        # by the field on the model instance state. It can also be pre-cached
+   171	        # by the reverse accessor (ReverseOneToOneDescriptor).
+   172	        try:
+   173	            rel_obj = self.field.get_cached_value(instance)
+   174	        except KeyError:
+   175	            has_value = None not in self.field.get_local_related_value(instance)
+   176	            ancestor_link = instance._meta.get_ancestor_link(self.field.model) if has_value else None
+   177	            if ancestor_link and ancestor_link.is_cached(instance):
+   178	                # An ancestor link will exist if this field is defined on a
+   179	                # multi-table inheritance parent of the instance's class.
+   180	                ancestor = ancestor_link.get_cached_value(instance)
+   181	                # The value might be cached on an ancestor if the instance
+   182	                # originated from walking down the inheritance chain.
+   183	                rel_obj = self.field.get_cached_value(ancestor, default=None)
+   184	            else:
+   185	                rel_obj = None
+   186	            if rel_obj is None and has_value:
+   187	                rel_obj = self.get_object(instance)
+   188	                remote_field = self.field.remote_field
+   189	                # If this is a one-to-one relation, set the reverse accessor
+   190	                # cache on the related object to the current instance to avoid
+   191	                # an extra SQL query if it's accessed later on.
+   192	                if not remote_field.multiple:
+   193	                    remote_field.set_cached_value(rel_obj, instance)
+   194	            self.field.set_cached_value(instance, rel_obj)
+   195	
+   196	        if rel_obj is None and not self.field.null:
+   197	            raise self.RelatedObjectDoesNotExist(
+   198	                "%s has no %s." % (self.field.model.__name__, self.field.name)
+   199	            )
+   200	        else:
+   201	            return rel_obj
+   202	
+   203	    def __set__(self, instance, value):
+   204	        """
+   205	        Set the related instance through the forward relation.
+   206	
+   207	        With the example above, when setting ``child.parent = parent``:
+   208	
+   209	        - ``self`` is the descriptor managing the ``parent`` attribute
+   210	        - ``instance`` is the ``child`` instance
+   211	        - ``value`` is the ``parent`` instance on the right of the equal sign
+   212	        """
+   213	        # An object must be an instance of the related class.
+   214	        if value is not None and not isinstance(value, self.field.remote_field.model._meta.concrete_model):
+   215	            raise ValueError(
+   216	                'Cannot assign "%r": "%s.%s" must be a "%s" instance.' % (
+   217	                    value,
+   218	                    instance._meta.object_name,
+   219	                    self.field.name,
+   220	                    self.field.remote_field.model._meta.object_name,
+   221	                )
+   222	            )
+   223	        elif value is not None:
+   224	            if instance._state.db is None:
+   225	                instance._state.db = router.db_for_write(instance.__class__, instance=value)
+   226	            if value._state.db is None:
+   227	                value._state.db = router.db_for_write(value.__class__, instance=instance)
+   228	            if not router.allow_relation(value, instance):
+   229	                raise ValueError('Cannot assign "%r": the current database router prevents this relation.' % value)
+   230	
+   231	        remote_field = self.field.remote_field
+   232	        # If we're setting the value of a OneToOneField to None, we need to clear
+   233	        # out the cache on any old related object. Otherwise, deleting the
+   234	        # previously-related object will also cause this object to be deleted,
+   235	        # which is wrong.
+   236	        if value is None:
+   237	            # Look up the previously-related object, which may still be available
+   238	            # since we've not yet cleared out the related field.
+   239	            # Use the cache directly, instead of the accessor; if we haven't
+   240	            # populated the cache, then we don't care - we're only accessing
+   241	            # the object to invalidate the accessor cache, so there's no
+   242	            # need to populate the cache just to expire it again.
+   243	            related = self.field.get_cached_value(instance, default=None)
+   244	
+   245	            # If we've got an old related object, we need to clear out its
+   246	            # cache. This cache also might not exist if the related object
+   247	            # hasn't been accessed yet.
+   248	            if related is not None:
+   249	                remote_field.set_cached_value(related, None)
+   250	
+   251	            for lh_field, rh_field in self.field.related_fields:
+   252	                setattr(instance, lh_field.attname, None)
+   253	
+   254	        # Set the values of the related field.
+   255	        else:
+   256	            for lh_field, rh_field in self.field.related_fields:
+   257	                setattr(instance, lh_field.attname, getattr(value, rh_field.attname))
+   258	
+   259	        # Set the related instance cache used by __get__ to avoid an SQL query
+   260	        # when accessing the attribute we just set.
+   261	        self.field.set_cached_value(instance, value)
+   262	
+   263	        # If this is a one-to-one relation, set the reverse accessor cache on
+   264	        # the related object to the current instance to avoid an extra SQL
+   265	        # query if it's accessed later on.
+   266	        if value is not None and not remote_field.multiple:
+   267	            remote_field.set_cached_value(value, instance)
+   268	
+   269	    def __reduce__(self):
+   270	        """
+   271	        Pickling should return the instance attached by self.field on the
+   272	        model, not a new copy of that descriptor. Use getattr() to retrieve
+   273	        the instance directly from the model.
+   274	        """
+   275	        return getattr, (self.field.model, self.field.name)
+   276	
+   277	
+   278	class ForwardOneToOneDescriptor(ForwardManyToOneDescriptor):
+   279	    """
+   280	    Accessor to the related object on the forward side of a one-to-one relation.
+   281	
+   282	    In the example::
+   283	
+   284	        class Restaurant(Model):
+   285	            place = OneToOneField(Place, related_name='restaurant')
+   286	
+   287	    ``Restaurant.place`` is a ``ForwardOneToOneDescriptor`` instance.
+   288	    """
+   289	
+   290	    def get_object(self, instance):
+   291	        if self.field.remote_field.parent_link:
+   292	            deferred = instance.get_deferred_fields()
+   293	            # Because it's a parent link, all the data is available in the
+   294	            # instance, so populate the parent model with this data.
+   295	            rel_model = self.field.remote_field.model
+   296	            fields = [field.attname for field in rel_model._meta.concrete_fields]
+   297	
+   298	            # If any of the related model's fields are deferred, fallback to
+   299	            # fetching all fields from the related model. This avoids a query
+   300	            # on the related model for every deferred field.
+   301	            if not any(field in fields for field in deferred):
+   302	                kwargs = {field: getattr(instance, field) for field in fields}
+   303	                obj = rel_model(**kwargs)
+   304	                obj._state.adding = instance._state.adding
+   305	                obj._state.db = instance._state.db
+   306	                return obj
+   307	        return super().get_object(instance)
+   308	
+   309	    def __set__(self, instance, value):
+   310	        super().__set__(instance, value)
+   311	        # If the primary key is a link to a parent model and a parent instance
+   312	        # is being set, update the value of the inherited pk(s).
+   313	        if self.field.primary_key and self.field.remote_field.parent_link:
+   314	            opts = instance._meta
+   315	            # Inherited primary key fields from this object's base classes.
+   316	            inherited_pk_fields = [
+   317	                field for field in opts.concrete_fields
+   318	                if field.primary_key and field.remote_field
+   319	            ]
+   320	            for field in inherited_pk_fields:
+
+
+2026-03-07 01:37:06,691 - INFO - swea-agent-django__django-13964 - ========================= STEP 3 =========================
+2026-03-07 01:37:11,288 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/django/db/models/base.py  --view_range 900 980
+2026-03-07 01:37:11,868 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/django/db/models/base.py:
+   900	
+   901	    def _do_insert(self, manager, using, fields, returning_fields, raw):
+   902	        """
+   903	        Do an INSERT. If returning_fields is defined then this method should
+   904	        return the newly created data for the model.
+   905	        """
+   906	        return manager._insert(
+   907	            [self], fields=fields, returning_fields=returning_fields,
+   908	            using=using, raw=raw,
+   909	        )
+   910	
+   911	    def _prepare_related_fields_for_save(self, operation_name):
+   912	        # Ensure that a model instance without a PK hasn't been assigned to
+   913	        # a ForeignKey or OneToOneField on this model. If the field is
+   914	        # nullable, allowing the save would result in silent data loss.
+   915	        for field in self._meta.concrete_fields:
+   916	            # If the related field isn't cached, then an instance hasn't been
+   917	            # assigned and there's no need to worry about this check.
+   918	            if field.is_relation and field.is_cached(self):
+   919	                obj = getattr(self, field.name, None)
+   920	                if not obj:
+   921	                    continue
+   922	                # A pk may have been assigned manually to a model instance not
+   923	                # saved to the database (or auto-generated in a case like
+   924	                # UUIDField), but we allow the save to proceed and rely on the
+   925	                # database to raise an IntegrityError if applicable. If
+   926	                # constraints aren't supported by the database, there's the
+   927	                # unavoidable risk of data corruption.
+   928	                if obj.pk is None:
+   929	                    # Remove the object from a related instance cache.
+   930	                    if not field.remote_field.multiple:
+   931	                        field.remote_field.delete_cached_value(obj)
+   932	                    raise ValueError(
+   933	                        "%s() prohibited to prevent data loss due to unsaved "
+   934	                        "related object '%s'." % (operation_name, field.name)
+   935	                    )
+   936	                elif getattr(self, field.attname) is None:
+   937	                    # Use pk from related object if it has been saved after
+   938	                    # an assignment.
+   939	                    setattr(self, field.attname, obj.pk)
+   940	                # If the relationship's pk/to_field was changed, clear the
+   941	                # cached relationship.
+   942	                if getattr(obj, field.target_field.attname) != getattr(self, field.attname):
+   943	                    field.delete_cached_value(self)
+   944	
+   945	    def delete(self, using=None, keep_parents=False):
+   946	        using = using or router.db_for_write(self.__class__, instance=self)
+   947	        assert self.pk is not None, (
+   948	            "%s object can't be deleted because its %s attribute is set to None." %
+   949	            (self._meta.object_name, self._meta.pk.attname)
+   950	        )
+   951	
+   952	        collector = Collector(using=using)
+   953	        collector.collect([self], keep_parents=keep_parents)
+   954	        return collector.delete()
+   955	
+   956	    delete.alters_data = True
+   957	
+   958	    def _get_FIELD_display(self, field):
+   959	        value = getattr(self, field.attname)
+   960	        choices_dict = dict(make_hashable(field.flatchoices))
+   961	        # force_str() to coerce lazy strings.
+   962	        return force_str(choices_dict.get(make_hashable(value), value), strings_only=True)
+   963	
+   964	    def _get_next_or_previous_by_FIELD(self, field, is_next, **kwargs):
+   965	        if not self.pk:
+   966	            raise ValueError("get_next/get_previous cannot be used on unsaved objects.")
+   967	        op = 'gt' if is_next else 'lt'
+   968	        order = '' if is_next else '-'
+   969	        param = getattr(self, field.attname)
+   970	        q = Q(**{'%s__%s' % (field.name, op): param})
+   971	        q = q | Q(**{field.name: param, 'pk__%s' % op: self.pk})
+   972	        qs = self.__class__._default_manager.using(self._state.db).filter(**kwargs).filter(q).order_by(
+   973	            '%s%s' % (order, field.name), '%spk' % order
+   974	        )
+   975	        try:
+   976	            return qs[0]
+   977	        except IndexError:
+   978	            raise self.DoesNotExist("%s matching query does not exist." % self.__class__._meta.object_name)
+   979	
+   980	    def _get_next_or_previous_in_order(self, is_next):
+
+
+2026-03-07 01:37:11,918 - INFO - swea-agent-django__django-13964 - ========================= STEP 4 =========================
+2026-03-07 01:37:16,547 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+from pathlib import Path
+for p in Path('tests').rglob('*.py'):
+    txt=p.read_text()
+    if 'non-numeric primary key' in txt or 'product_id=""' in txt or 'prohibited to prevent data loss' in txt:
+        print(p)
+PY
+2026-03-07 01:37:17,234 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+tests/bulk_create/tests.py
+tests/many_to_one/tests.py
+tests/one_to_one/tests.py
+
+2026-03-07 01:37:17,243 - INFO - swea-agent-django__django-13964 - ========================= STEP 5 =========================
+2026-03-07 01:37:20,535 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && sed -n '1,240p' tests/many_to_one/tests.py | grep -n "product_id=\"\"\|CharField(primary_key=True\|prevent data loss\|assigned to" -n -C 3
+2026-03-07 01:37:21,015 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+Your command ran successfully and did not produce any output.
+2026-03-07 01:37:21,046 - INFO - swea-agent-django__django-13964 - ========================= STEP 6 =========================
+2026-03-07 01:37:27,427 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -n "CharField(primary_key=True\|product_id=\"\"\|prevent data loss\|assigned to the relationship" -n tests/many_to_one/tests.py tests/one_to_one/tests.py tests/bulk_create/tests.py -C 3
+2026-03-07 01:37:28,026 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+tests/many_to_one/tests.py-517-
+tests/many_to_one/tests.py-518-        # Creation using keyword argument and unsaved related instance (#8070).
+tests/many_to_one/tests.py-519-        p = Parent()
+tests/many_to_one/tests.py:520:        msg = "save() prohibited to prevent data loss due to unsaved related object 'parent'."
+tests/many_to_one/tests.py-521-        with self.assertRaisesMessage(ValueError, msg):
+tests/many_to_one/tests.py-522-            Child.objects.create(parent=p)
+tests/many_to_one/tests.py-523-
+tests/many_to_one/tests.py:524:        msg = "save() prohibited to prevent data loss due to unsaved related object 'parent'."
+tests/many_to_one/tests.py-525-        with self.assertRaisesMessage(ValueError, msg):
+tests/many_to_one/tests.py-526-            ToFieldChild.objects.create(parent=p)
+tests/many_to_one/tests.py-527-
+--
+tests/one_to_one/tests.py-129-        place = Place(name='User', address='London')
+tests/one_to_one/tests.py-130-        with self.assertRaises(Restaurant.DoesNotExist):
+tests/one_to_one/tests.py-131-            place.restaurant
+tests/one_to_one/tests.py:132:        msg = "save() prohibited to prevent data loss due to unsaved related object 'place'."
+tests/one_to_one/tests.py-133-        with self.assertRaisesMessage(ValueError, msg):
+tests/one_to_one/tests.py-134-            Restaurant.objects.create(place=place, serves_hot_dogs=True, serves_pizza=False)
+tests/one_to_one/tests.py-135-        # place should not cache restaurant
+--
+tests/one_to_one/tests.py-414-        p.undergroundbar = b
+tests/one_to_one/tests.py-415-
+tests/one_to_one/tests.py-416-        # However saving the object is not allowed.
+tests/one_to_one/tests.py:417:        msg = "save() prohibited to prevent data loss due to unsaved related object 'place'."
+tests/one_to_one/tests.py-418-        with self.assertNumQueries(0):
+tests/one_to_one/tests.py-419-            with self.assertRaisesMessage(ValueError, msg):
+tests/one_to_one/tests.py-420-                b.save()
+--
+tests/bulk_create/tests.py-342-    def test_unsaved_parent(self):
+tests/bulk_create/tests.py-343-        parent = NoFields()
+tests/bulk_create/tests.py-344-        msg = (
+tests/bulk_create/tests.py:345:            "bulk_create() prohibited to prevent data loss due to unsaved "
+tests/bulk_create/tests.py-346-            "related object 'auto_field'."
+tests/bulk_create/tests.py-347-        )
+tests/bulk_create/tests.py-348-        with self.assertRaisesMessage(ValueError, msg):
+
+2026-03-07 01:37:28,109 - INFO - swea-agent-django__django-13964 - ========================= STEP 7 =========================
+2026-03-07 01:37:31,763 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -R "class .*CharField(primary_key=True\|to_field=.*CharField\|primary_key=True, max_length" -n tests | head -50
+2026-03-07 01:37:32,227 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+tests/generic_relations_regress/models.py:126:    name = models.CharField(primary_key=True, max_length=25)
+tests/invalid_models_tests/test_ordinary_fields.py:47:            auto = models.AutoField(primary_key=True, max_length=2)
+tests/m2m_regress/models.py:60:    id = models.CharField(primary_key=True, max_length=100)
+tests/migrations/test_migrations_atomic_operation/0001_initial.py:18:                ("name", models.CharField(primary_key=True, max_length=255)),
+tests/migrations/test_migrations_non_atomic/0001_initial.py:18:                ("name", models.CharField(primary_key=True, max_length=255)),
+tests/migrations/test_migrations_non_atomic/0001_initial.py:25:                ("title", models.CharField(primary_key=True, max_length=255)),
+tests/migrations/test_operations.py:1573:                ('id', models.CharField(primary_key=True, max_length=100)),
+tests/migrations/test_operations.py:1576:                ('id', models.CharField(primary_key=True, max_length=100)),
+tests/migrations/test_operations.py:1585:            migrations.AlterField('Rider', 'id', models.CharField(primary_key=True, max_length=99)),
+tests/migrations/test_operations.py:1586:            migrations.AlterField('Pony', 'id', models.CharField(primary_key=True, max_length=99)),
+tests/migrations/test_operations.py:1598:                ('id', models.CharField(primary_key=True, max_length=100)),
+tests/migrations/test_operations.py:1602:                ('id', models.CharField(primary_key=True, max_length=100)),
+tests/migrations/test_operations.py:1625:                ('id', models.CharField(primary_key=True, max_length=100)),
+tests/migrations/test_operations.py:1628:                ('id', models.CharField(primary_key=True, max_length=100)),
+tests/migrations/test_operations.py:1638:            migrations.AlterField('Pony', 'id', models.CharField(primary_key=True, max_length=99)),
+tests/postgres_tests/migrations/0002_create_test_models.py:163:                ('name', CICharField(primary_key=True, max_length=255)),
+tests/postgres_tests/models.py:113:    name = CICharField(primary_key=True, max_length=255)
+tests/schema/tests.py:712:        new_field = CharField(primary_key=True, max_length=50)
+
+2026-03-07 01:37:32,240 - INFO - swea-agent-django__django-13964 - ========================= STEP 8 =========================
+2026-03-07 01:37:42,981 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && cat > /tmp/repro_fk_pk.py <<'PY'
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.test_sqlite')
+import django
+django.setup()
+
+from django.db import connection, models, transaction
+
+class Product(models.Model):
+    sku = models.CharField(primary_key=True, max_length=50)
+    class Meta:
+        app_label = 'tests'
+
+class Order(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    class Meta:
+        app_label = 'tests'
+
+with connection.schema_editor() as editor:
+    editor.create_model(Product)
+    editor.create_model(Order)
+
+try:
+    with transaction.atomic():
+        order = Order()
+        order.product = Product()
+        order.product.sku = 'foo'
+        order.product.save()
+        order.save()
+        print('order.product_id:', repr(order.product_id))
+        print('filter(product_id="").exists():', Order.objects.filter(product_id='').exists())
+        print('filter(product=order.product).exists():', Order.objects.filter(product=order.product).exists())
+finally:
+    with connection.schema_editor() as editor:
+        editor.delete_model(Order)
+        editor.delete_model(Product)
+PY
+python /tmp/repro_fk_pk.py
+2026-03-07 01:37:43,872 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+Traceback (most recent call last):
+  File "/tmp/repro_fk_pk.py", line 4, in <module>
+    django.setup()
+  File "/testbed/django/__init__.py", line 14, in setup
+    from django.apps import apps
+  File "/testbed/django/apps/__init__.py", line 1, in <module>
+    from .config import AppConfig
+  File "/testbed/django/apps/config.py", line 7, in <module>
+    from django.utils.deprecation import RemovedInDjango41Warning
+  File "/testbed/django/utils/deprecation.py", line 5, in <module>
+    from asgiref.sync import sync_to_async
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/asgiref/sync.py", line 27, in <module>
+    from .current_thread_executor import CurrentThreadExecutor
+  File "/opt/miniconda3/envs/testbed/lib/python3.8/site-packages/asgiref/current_thread_executor.py", line 10, in <module>
+    from typing_extensions import ParamSpec
+  File "/opt/sweagent_deps/typing_extensions.py", line 526, in <module>
+    class _SpecialGenericAlias(typing._SpecialGenericAlias, _root=True):
+AttributeError: module 'typing' has no attribute '_SpecialGenericAlias'
+
+2026-03-07 01:37:43,939 - INFO - swea-agent-django__django-13964 - ========================= STEP 9 =========================
+2026-03-07 01:37:44,771 - WARNING - swea-lm-django__django-13964 - Retrying LM query: attempt 1 (slept for 10.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 01:37:58,062 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && PYTHONPATH= python - <<'PY'
+import typing,sys
+print(sys.version)
+print(hasattr(typing,'_SpecialGenericAlias'))
+PY
+2026-03-07 01:37:58,647 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+3.8.20 (default, Oct  3 2024, 15:24:27) 
+[GCC 11.2.0]
+False
+
+2026-03-07 01:37:58,666 - INFO - swea-agent-django__django-13964 - ========================= STEP 10 =========================
+2026-03-07 01:38:02,509 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && find . -name 'typing.py' -o -path '*/typing/*' | head
+2026-03-07 01:38:03,118 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+Your command ran successfully and did not produce any output.
+2026-03-07 01:38:03,209 - INFO - swea-agent-django__django-13964 - ========================= STEP 11 =========================
+2026-03-07 01:38:07,832 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+import os, sys
+for p in sys.path:
+    if 'sweagent_deps' in p:
+        print(p)
+PY
+2026-03-07 01:38:08,498 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+/opt/sweagent_deps
+
+2026-03-07 01:38:08,630 - INFO - swea-agent-django__django-13964 - ========================= STEP 12 =========================
+2026-03-07 01:38:13,425 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && PYTHONPATH=/opt/miniconda3/envs/testbed/lib/python3.8/site-packages:/testbed python /tmp/repro_fk_pk.py
+2026-03-07 01:38:14,655 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+Traceback (most recent call last):
+  File "/tmp/repro_fk_pk.py", line 18, in <module>
+    with connection.schema_editor() as editor:
+  File "/testbed/django/db/backends/sqlite3/schema.py", line 24, in __enter__
+    if not self.connection.disable_constraint_checking():
+  File "/testbed/django/db/backends/sqlite3/base.py", line 305, in disable_constraint_checking
+    with self.cursor() as cursor:
+  File "/testbed/django/utils/asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "/testbed/django/db/backends/base/base.py", line 259, in cursor
+    return self._cursor()
+  File "/testbed/django/db/backends/base/base.py", line 235, in _cursor
+    self.ensure_connection()
+  File "/testbed/django/utils/asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "/testbed/django/db/backends/base/base.py", line 219, in ensure_connection
+    self.connect()
+  File "/testbed/django/utils/asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "/testbed/django/db/backends/base/base.py", line 199, in connect
+    conn_params = self.get_connection_params()
+  File "/testbed/django/db/backends/sqlite3/base.py", line 179, in get_connection_params
+    raise ImproperlyConfigured(
+django.core.exceptions.ImproperlyConfigured: settings.DATABASES is improperly configured. Please supply the NAME value.
+
+2026-03-07 01:38:14,686 - INFO - swea-agent-django__django-13964 - ========================= STEP 13 =========================
+2026-03-07 01:38:18,822 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && ls tests | head && find tests -maxdepth 1 -type f | sed -n '1,20p'
+2026-03-07 01:38:19,166 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+README.rst
+__pycache__
+absolute_url_overrides
+admin_autodiscover
+admin_changelist
+admin_checks
+admin_custom_urls
+admin_default_site
+admin_docs
+admin_filters
+tests/.coveragerc
+tests/README.rst
+tests/runtests.py
+tests/test_sqlite.py
+tests/urls.py
+
+2026-03-07 01:38:19,194 - INFO - swea-agent-django__django-13964 - ========================= STEP 14 =========================
+2026-03-07 01:38:22,315 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && sed -n '1,220p' tests/test_sqlite.py
+2026-03-07 01:38:22,709 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+# This is an example test settings file for use with the Django test suite.
+#
+# The 'sqlite3' backend requires only the ENGINE setting (an in-
+# memory database will be used). All other backends will require a
+# NAME and potentially authentication information. See the
+# following section in the docs for more information:
+#
+# https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/unit-tests/
+#
+# The different databases that Django supports behave differently in certain
+# situations, so it is recommended to run the test suite against as many
+# database backends as possible.  You may want to create a separate settings
+# file for each of the backends you test against.
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+    },
+    'other': {
+        'ENGINE': 'django.db.backends.sqlite3',
+    }
+}
+
+SECRET_KEY = "django_tests_secret_key"
+
+# Use a fast hasher to speed up tests.
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.MD5PasswordHasher',
+]
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+2026-03-07 01:38:22,785 - INFO - swea-agent-django__django-13964 - ========================= STEP 15 =========================
+2026-03-07 01:38:32,706 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && cat > /tmp/repro_fk_pk.py <<'PY'
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.test_sqlite')
+import django
+from django.conf import settings
+settings.DATABASES['default']['NAME'] = ':memory:'
+settings.DATABASES['other']['NAME'] = ':memory:'
+django.setup()
+
+from django.db import connection, models, transaction
+
+class Product(models.Model):
+    sku = models.CharField(primary_key=True, max_length=50)
+    class Meta:
+        app_label = 'tests'
+
+class Order(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    class Meta:
+        app_label = 'tests'
+
+with connection.schema_editor() as editor:
+    editor.create_model(Product)
+    editor.create_model(Order)
+
+try:
+    with transaction.atomic():
+        order = Order()
+        order.product = Product()
+        order.product.sku = 'foo'
+        order.product.save()
+        order.save()
+        print('order.product_id:', repr(order.product_id))
+        print('filter(product_id="").exists():', Order.objects.filter(product_id='').exists())
+        print('filter(product=order.product).exists():', Order.objects.filter(product=order.product).exists())
+finally:
+    with connection.schema_editor() as editor:
+        editor.delete_model(Order)
+        editor.delete_model(Product)
+PY
+PYTHONPATH=/opt/miniconda3/envs/testbed/lib/python3.8/site-packages:/testbed python /tmp/repro_fk_pk.py
+2026-03-07 01:38:33,621 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+order.product_id: ''
+filter(product_id="").exists(): True
+Traceback (most recent call last):
+  File "/testbed/django/db/models/fields/related_descriptors.py", line 173, in __get__
+    rel_obj = self.field.get_cached_value(instance)
+  File "/testbed/django/db/models/fields/mixins.py", line 15, in get_cached_value
+    return instance._state.fields_cache[cache_name]
+KeyError: 'product'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/tmp/repro_fk_pk.py", line 34, in <module>
+    print('filter(product=order.product).exists():', Order.objects.filter(product=order.product).exists())
+  File "/testbed/django/db/models/fields/related_descriptors.py", line 187, in __get__
+    rel_obj = self.get_object(instance)
+  File "/testbed/django/db/models/fields/related_descriptors.py", line 154, in get_object
+    return qs.get(self.field.get_reverse_related_filter(instance))
+  File "/testbed/django/db/models/query.py", line 435, in get
+    raise self.model.DoesNotExist(
+__main__.DoesNotExist: Product matching query does not exist.
+
+2026-03-07 01:38:33,667 - INFO - swea-agent-django__django-13964 - ========================= STEP 16 =========================
+2026-03-07 01:38:34,364 - WARNING - swea-lm-django__django-13964 - Retrying LM query: attempt 1 (slept for 10.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 01:38:45,586 - WARNING - swea-lm-django__django-13964 - Retrying LM query: attempt 2 (slept for 20.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 01:39:02,819 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/django/db/models/base.py   --old_str '                elif getattr(self, field.attname) is None:
+                    # Use pk from related object if it has been saved after
+                    # an assignment.
+                    setattr(self, field.attname, obj.pk)
+' --new_str '                elif getattr(self, field.attname) in field.empty_values:
+                    # Use pk from related object if it has been saved after
+                    # an assignment. CharField and other non-numeric primary
+                    # keys may be initialized to an empty value instead of None.
+                    setattr(self, field.attname, obj.pk)
+'
+2026-03-07 01:39:03,489 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/django/db/models/base.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/django/db/models/base.py:
+   931	                        field.remote_field.delete_cached_value(obj)
+   932	                    raise ValueError(
+   933	                        "%s() prohibited to prevent data loss due to unsaved "
+   934	                        "related object '%s'." % (operation_name, field.name)
+   935	                    )
+   936	                elif getattr(self, field.attname) in field.empty_values:
+   937	                    # Use pk from related object if it has been saved after
+   938	                    # an assignment. CharField and other non-numeric primary
+   939	                    # keys may be initialized to an empty value instead of None.
+   940	                    setattr(self, field.attname, obj.pk)
+   941	                # If the relationship's pk/to_field was changed, clear the
+   942	                # cached relationship.
+   943	                if getattr(obj, field.target_field.attname) != getattr(self, field.attname):
+   944	                    field.delete_cached_value(self)
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-07 01:39:03,593 - INFO - swea-agent-django__django-13964 - ========================= STEP 17 =========================
+2026-03-07 01:39:08,571 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && PYTHONPATH=/opt/miniconda3/envs/testbed/lib/python3.8/site-packages:/testbed python /tmp/repro_fk_pk.py
+2026-03-07 01:39:09,430 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+order.product_id: 'foo'
+filter(product_id="").exists(): False
+filter(product=order.product).exists(): True
+
+2026-03-07 01:39:09,590 - INFO - swea-agent-django__django-13964 - ========================= STEP 18 =========================
+2026-03-07 01:39:23,149 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && cat > /tmp/repro_fk_pk_cases.py <<'PY'
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.test_sqlite')
+import django
+from django.conf import settings
+settings.DATABASES['default']['NAME'] = ':memory:'
+settings.DATABASES['other']['NAME'] = ':memory:'
+django.setup()
+
+from django.db import connection, models
+
+class Product(models.Model):
+    sku = models.CharField(primary_key=True, max_length=50)
+    class Meta:
+        app_label = 'tests'
+
+class Order(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    class Meta:
+        app_label = 'tests'
+
+with connection.schema_editor() as editor:
+    editor.create_model(Product)
+    editor.create_model(Order)
+
+try:
+    # Original failing case.
+    order = Order()
+    order.product = Product()
+    order.product.sku = 'foo'
+    order.product.save()
+    order.save()
+    print('case1', repr(order.product_id), Order.objects.filter(product=order.product).exists())
+
+    # Existing behavior: preset pk before assignment still works.
+    order2 = Order()
+    order2.product = Product(sku='bar')
+    order2.product.save()
+    order2.save()
+    print('case2', repr(order2.product_id), Order.objects.filter(product=order2.product).exists())
+
+    # Unsaved related object with empty pk should still error.
+    order3 = Order(product=Product())
+    try:
+        order3.save()
+    except Exception as e:
+        print('case3', type(e).__name__, str(e))
+    else:
+        print('case3 unexpected success')
+finally:
+    with connection.schema_editor() as editor:
+        editor.delete_model(Order)
+        editor.delete_model(Product)
+PY
+PYTHONPATH=/opt/miniconda3/envs/testbed/lib/python3.8/site-packages:/testbed python /tmp/repro_fk_pk_cases.py
+2026-03-07 01:39:24,120 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+case1 'foo' True
+case2 'bar' True
+case3 IntegrityError FOREIGN KEY constraint failed
+
+2026-03-07 01:39:24,163 - INFO - swea-agent-django__django-13964 - ========================= STEP 19 =========================
+2026-03-07 01:39:29,300 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+from pathlib import Path
+text=Path('django/db/models/fields/__init__.py').read_text()
+start=text.index('empty_values =')
+print(text[start:start+120])
+PY
+2026-03-07 01:39:29,977 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+empty_values = list(validators.EMPTY_VALUES)
+
+    # These track each time a Field instance is created. Used to retain or
+
+2026-03-07 01:39:30,208 - INFO - swea-agent-django__django-13964 - ========================= STEP 20 =========================
+2026-03-07 01:39:36,801 - WARNING - swea-agent-django__django-13964 - Requerying model after FunctionCallingFormatError (1th requery)
+2026-03-07 01:39:36,809 - WARNING - swea-agent-django__django-13964 - Your action could not be parsed properly: Unexpected argument(s): timeout.
+Make sure your function call doesn't include any extra arguments that are not in the allowed arguments, and only use the allowed commands.
+2026-03-07 01:39:40,604 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-07 01:39:41,382 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+Thank you for your work on this issue. Please carefully follow the steps below to help review your changes.
+
+1. If you made any changes to your code after running the reproduction script, please run the reproduction script again.
+  If the reproduction script is failing, please revisit your changes and make sure they are correct.
+  If you have already removed your reproduction script, please ignore this step.
+2. Remove your reproduction script (if you haven't done so already).
+3. If you have modified any TEST files, please revert them to the state they had before you started fixing the issue.
+  You can do this with `git checkout -- /path/to/test/file.py`. Use below <diff> to find the files you need to revert.
+4. Run the submit command again to confirm.
+
+Here is a list of all of your changes:
+
+<diff>
+diff --git a/django/db/models/base.py b/django/db/models/base.py
+index 2428218696..b304bc17ff 100644
+--- a/django/db/models/base.py
++++ b/django/db/models/base.py
+@@ -933,9 +933,10 @@ class Model(metaclass=ModelBase):
+                         "%s() prohibited to prevent data loss due to unsaved "
+                         "related object '%s'." % (operation_name, field.name)
+                     )
+-                elif getattr(self, field.attname) is None:
++                elif getattr(self, field.attname) in field.empty_values:
+                     # Use pk from related object if it has been saved after
+-                    # an assignment.
++                    # an assignment. CharField and other non-numeric primary
++                    # keys may be initialized to an empty value instead of None.
+                     setattr(self, field.attname, obj.pk)
+                 # If the relationship's pk/to_field was changed, clear the
+                 # cached relationship.
+
+</diff>
+
+
+2026-03-07 01:39:41,505 - INFO - swea-agent-django__django-13964 - ========================= STEP 22 =========================
+2026-03-07 01:39:42,421 - WARNING - swea-lm-django__django-13964 - Retrying LM query: attempt 1 (slept for 10.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 01:39:53,598 - WARNING - swea-lm-django__django-13964 - Retrying LM query: attempt 2 (slept for 20.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 01:40:06,654 - INFO - swea-agent-django__django-13964 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-07 01:40:07,370 - INFO - swea-agent-django__django-13964 - Found submission: diff --git a/django/db/models/base.py b/django/db/models/base.py
+index 2428218696..b304bc17ff 100644
+--- a/django/db/models/base.py
++++ b/django/db/models/base.py
+@@ -933,9 +933,10 @@ class Model(metaclass=ModelBase):
+                         "%s() prohibited to prevent data loss due to unsaved "
+                         "related object '%s'." % (operation_name, field.name)
+                     )
+-                elif getattr(self, field.attname) is None:
++                elif getattr(self, field.attname) in field.empty_values:
+                     # Use pk from related object if it has been saved after
+-                    # an assignment.
++                    # an assignment. CharField and other non-numeric primary
++                    # keys may be initialized to an empty value instead of None.
+                     setattr(self, field.attname, obj.pk)
+                 # If the relationship's pk/to_field was changed, clear the
+                 # cached relationship.
+
+2026-03-07 01:40:07,377 - INFO - swea-agent-django__django-13964 - 🤖 MODEL INPUT
+OBSERVATION:
+diff --git a/django/db/models/base.py b/django/db/models/base.py
+index 2428218696..b304bc17ff 100644
+--- a/django/db/models/base.py
++++ b/django/db/models/base.py
+@@ -933,9 +933,10 @@ class Model(metaclass=ModelBase):
+                         "%s() prohibited to prevent data loss due to unsaved "
+                         "related object '%s'." % (operation_name, field.name)
+                     )
+-                elif getattr(self, field.attname) is None:
++                elif getattr(self, field.attname) in field.empty_values:
+                     # Use pk from related object if it has been saved after
+-                    # an assignment.
++                    # an assignment. CharField and other non-numeric primary
++                    # keys may be initialized to an empty value instead of None.
+                     setattr(self, field.attname, obj.pk)
+                 # If the relationship's pk/to_field was changed, clear the
+                 # cached relationship.
+
+2026-03-07 01:40:07,564 - INFO - swea-agent-django__django-13964 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.4__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok200k_mt8_probev3_gpt54_rerun3/django__django-13964/django__django-13964.traj
+2026-03-07 01:40:07,823 - INFO - swea-env-django__django-13964 - Beginning environment shutdown...

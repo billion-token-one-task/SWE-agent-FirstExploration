@@ -1,0 +1,50 @@
+diff --git a/django/db/models/fields/__init__.py b/django/db/models/fields/__init__.py
+index 28374272f4..652f6ceece 100644
+--- a/django/db/models/fields/__init__.py
++++ b/django/db/models/fields/__init__.py
+@@ -516,17 +516,22 @@ class Field(RegisterLookupMixin):
+     def __eq__(self, other):
+         # Needed for @total_ordering
+         if isinstance(other, Field):
+-            return self.creation_counter == other.creation_counter
++            return (
++                self.creation_counter == other.creation_counter and
++                getattr(self, 'model', None) == getattr(other, 'model', None)
++            )
+         return NotImplemented
+ 
+     def __lt__(self, other):
+         # This is needed because bisect does not take a comparison function.
+         if isinstance(other, Field):
+-            return self.creation_counter < other.creation_counter
++            if self.creation_counter != other.creation_counter:
++                return self.creation_counter < other.creation_counter
++            return getattr(self, 'model', None) < getattr(other, 'model', None)
+         return NotImplemented
+ 
+     def __hash__(self):
+-        return hash(self.creation_counter)
++        return hash((self.creation_counter, getattr(self, 'model', None)))
+ 
+     def __deepcopy__(self, memodict):
+         # We don't have to deepcopy very much here, since most things are not
+diff --git a/repro_field_eq.py b/repro_field_eq.py
+new file mode 100644
+index 0000000000..8e3182b6d1
+--- /dev/null
++++ b/repro_field_eq.py
+@@ -0,0 +1,14 @@
++from django.db.models import Field
++
++f1 = Field()
++f2 = Field()
++
++# simulate cloned abstract fields: same creation counter, different model
++f2.creation_counter = f1.creation_counter
++f1.model = type('B', (), {})
++f2.model = type('C', (), {})
++
++print('Equal:', f1 == f2)
++print('Set size:', len({f1, f2}))
++print('LT both ways:', f1 < f2, f2 < f1)
++print('Hashes:', hash(f1), hash(f2))

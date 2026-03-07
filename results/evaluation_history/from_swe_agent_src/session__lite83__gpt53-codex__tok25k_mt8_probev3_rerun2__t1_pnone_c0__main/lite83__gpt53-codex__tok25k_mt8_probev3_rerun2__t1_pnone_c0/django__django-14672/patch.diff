@@ -1,0 +1,52 @@
+diff --git a/repro_m2m_hash.py b/repro_m2m_hash.py
+new file mode 100644
+index 0000000000..889380f858
+--- /dev/null
++++ b/repro_m2m_hash.py
+@@ -0,0 +1,46 @@
++from django.conf import settings
++
++if not settings.configured:
++    settings.configure(
++        SECRET_KEY='test',
++        INSTALLED_APPS=['__main__'],
++        DATABASES={'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'}},
++    )
++
++import django
++from django.db import models
++
++
++django.setup()
++
++
++class Parent(models.Model):
++    name = models.CharField(max_length=256)
++
++
++class ProxyParent(Parent):
++    class Meta:
++        proxy = True
++
++
++class Child(models.Model):
++    parent = models.ForeignKey(Parent, on_delete=models.CASCADE)
++    many_to_many_field = models.ManyToManyField(
++        to=Parent,
++        through='ManyToManyModel',
++        through_fields=['child', 'parent'],
++        related_name='something',
++    )
++
++
++class ManyToManyModel(models.Model):
++    parent = models.ForeignKey(Parent, on_delete=models.CASCADE, related_name='+')
++    child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='+')
++    second_child = models.ForeignKey(Child, on_delete=models.CASCADE, null=True, default=None)
++
++
++if __name__ == '__main__':
++    rel = Child._meta.get_field('many_to_many_field').remote_field
++    print('About to hash relation identity...')
++    print(hash(rel))
++    print('OK')

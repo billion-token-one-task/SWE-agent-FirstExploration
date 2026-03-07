@@ -1,0 +1,36 @@
+diff --git a/repro_delete_pk.py b/repro_delete_pk.py
+new file mode 100644
+index 0000000000..eaabb5baf6
+--- /dev/null
++++ b/repro_delete_pk.py
+@@ -0,0 +1,30 @@
++from django.conf import settings
++
++if not settings.configured:
++    settings.configure(
++        DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}},
++        INSTALLED_APPS=[],
++        SECRET_KEY="x",
++    )
++
++import django
++
++django.setup()
++
++from django.db import connection, models
++
++
++class SimpleModel(models.Model):
++    name = models.CharField(max_length=20)
++
++    class Meta:
++        app_label = "testapp"
++
++
++with connection.schema_editor() as schema_editor:
++    schema_editor.create_model(SimpleModel)
++
++obj = SimpleModel.objects.create(name="a")
++print("before delete pk:", obj.pk)
++obj.delete()
++print("after delete pk:", obj.pk)

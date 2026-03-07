@@ -1,0 +1,717 @@
+2026-03-06 02:54:12,380 - DEBUG - free_port-matplotlib__matplotlib-23299 - Found free port 59561
+2026-03-06 02:54:12,380 - INFO - rex-deploy-matplotlib__matplotlib-23299 - Starting container docker.ioswebenchsweb.eval.x86_64.matplotlib_1776_matplotlib-23299latest-cc040241-3598-450e-9f2c-72bcc4392c29 with image docker.io/swebench/sweb.eval.x86_64.matplotlib_1776_matplotlib-23299:latest serving on port 59561
+2026-03-06 02:54:12,381 - DEBUG - rex-deploy-matplotlib__matplotlib-23299 - Command: 'docker run --rm -p 59561:8000 -e SWEREX_FALLBACK_PYTHONPATH=/opt/sweagent_deps -v /data/liora/sweagent_deps:/opt/sweagent_deps:ro --name docker.ioswebenchsweb.eval.x86_64.matplotlib_1776_matplotlib-23299latest-cc040241-3598-450e-9f2c-72bcc4392c29 docker.io/swebench/sweb.eval.x86_64.matplotlib_1776_matplotlib-23299:latest /bin/sh -c \'swerex-remote --auth-token d7cb615d-4300-4ac9-8813-b3abf63f50e2 || (if [ -n "$SWEREX_FALLBACK_PYTHONPATH" ]; then PYTHONPATH="$SWEREX_FALLBACK_PYTHONPATH" python3 -m swerex --auth-token d7cb615d-4300-4ac9-8813-b3abf63f50e2; fi) || (python3 -m pip install pipx && python3 -m pipx ensurepath && pipx run swe-rex --auth-token d7cb615d-4300-4ac9-8813-b3abf63f50e2)\''
+2026-03-06 02:54:12,415 - INFO - rex-deploy-matplotlib__matplotlib-23299 - Starting runtime at 59561
+2026-03-06 02:54:14,061 - INFO - rex-deploy-matplotlib__matplotlib-23299 - Runtime started in 1.65s
+2026-03-06 02:54:15,085 - INFO - swea-env-matplotlib__matplotlib-23299 - Environment Initialized
+2026-03-06 02:54:15,336 - DEBUG - swea-env-matplotlib__matplotlib-23299 - Resetting repository testbed to commit 3eadeacc06c9f2ddcdac6ae39819faa9fbee9e39
+2026-03-06 02:54:16,485 - INFO - swea-agent-matplotlib__matplotlib-23299 - Setting up agent for instance matplotlib__matplotlib-23299
+2026-03-06 02:54:16,485 - INFO - swea-agent-matplotlib__matplotlib-23299 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_nobudget_mt8_probev3_rerun1/matplotlib__matplotlib-23299/matplotlib__matplotlib-23299.traj
+2026-03-06 02:54:16,731 - DEBUG - rex-runtime-matplotlib__matplotlib-23299 - Uploading file from /data/liora/SWE-agent-src/tools/registry to /root/tools/registry
+2026-03-06 02:54:16,735 - DEBUG - rex-runtime-matplotlib__matplotlib-23299 - Created zip file at /tmp/tmphaed3o97/zipped_transfer.zip
+2026-03-06 02:54:16,738 - DEBUG - rex-runtime-matplotlib__matplotlib-23299 - Uploading file from /data/liora/SWE-agent-src/tools/edit_anthropic to /root/tools/edit_anthropic
+2026-03-06 02:54:16,744 - DEBUG - rex-runtime-matplotlib__matplotlib-23299 - Created zip file at /tmp/tmpdcoyorws/zipped_transfer.zip
+2026-03-06 02:54:16,746 - DEBUG - rex-runtime-matplotlib__matplotlib-23299 - Uploading file from /data/liora/SWE-agent-src/tools/review_on_submit_m to /root/tools/review_on_submit_m
+2026-03-06 02:54:16,749 - DEBUG - rex-runtime-matplotlib__matplotlib-23299 - Created zip file at /tmp/tmpf09lqjzp/zipped_transfer.zip
+2026-03-06 02:56:15,419 - INFO - swea-tools-matplotlib__matplotlib-23299 - Resetting tools
+2026-03-06 02:56:15,947 - INFO - swea-agent-matplotlib__matplotlib-23299 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-06 02:56:16,157 - DEBUG - swea-tools-matplotlib__matplotlib-23299 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-06 02:56:16,160 - INFO - swea-agent-matplotlib__matplotlib-23299 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+[Bug]: get_backend() clears figures from Gcf.figs if they were created under rc_context
+### Bug summary
+
+calling `matplotlib.get_backend()` removes all figures from `Gcf` if the *first* figure in `Gcf.figs` was created in an `rc_context`.
+
+### Code for reproduction
+
+```python
+import matplotlib.pyplot as plt
+from matplotlib import get_backend, rc_context
+
+# fig1 = plt.figure()  # <- UNCOMMENT THIS LINE AND IT WILL WORK
+# plt.ion()            # <- ALTERNATIVELY, UNCOMMENT THIS LINE AND IT WILL ALSO WORK
+with rc_context():
+    fig2 = plt.figure()
+before = f'{id(plt._pylab_helpers.Gcf)} {plt._pylab_helpers.Gcf.figs!r}'
+get_backend()
+after = f'{id(plt._pylab_helpers.Gcf)} {plt._pylab_helpers.Gcf.figs!r}'
+
+assert before == after, '\n' + before + '\n' + after
+```
+
+
+### Actual outcome
+
+```
+---------------------------------------------------------------------------
+AssertionError                            Traceback (most recent call last)
+<ipython-input-1-fa4d099aa289> in <cell line: 11>()
+      9 after = f'{id(plt._pylab_helpers.Gcf)} {plt._pylab_helpers.Gcf.figs!r}'
+     10 
+---> 11 assert before == after, '\n' + before + '\n' + after
+     12 
+
+AssertionError: 
+94453354309744 OrderedDict([(1, <matplotlib.backends.backend_qt.FigureManagerQT object at 0x7fb33e26c220>)])
+94453354309744 OrderedDict()
+```
+
+### Expected outcome
+
+The figure should not be missing from `Gcf`.  Consequences of this are, e.g, `plt.close(fig2)` doesn't work because `Gcf.destroy_fig()` can't find it.
+
+### Additional information
+
+_No response_
+
+### Operating system
+
+Xubuntu
+
+### Matplotlib Version
+
+3.5.2
+
+### Matplotlib Backend
+
+QtAgg
+
+### Python version
+
+Python 3.10.4
+
+### Jupyter version
+
+n/a
+
+### Installation
+
+conda
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-06 02:56:16,161 - INFO - swea-agent-matplotlib__matplotlib-23299 - ========================= STEP 1 =========================
+2026-03-06 02:56:16,161 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - n_cache_control: 1
+2026-03-06 02:56:19,157 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - Response: ModelResponse(id='chatcmpl-0ff37e71-7d96-48a4-aab0-749107ca6086', created=1772736979, model='gpt-5.3-codex', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"ls -la /testbed"}', name='bash'), id='call_j5hJ6lEJAnevoc0QlwZstgGG', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=46, prompt_tokens=0, total_tokens=46, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-06 02:56:19,158 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - input_tokens=753, output_tokens=0, instance_cost=0.00, cost=0.00
+2026-03-06 02:56:19,158 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - total_tokens_sent=753, total_tokens_received=0, total_cost=0.75, total_api_calls=1
+2026-03-06 02:56:19,161 - INFO - swea-agent-matplotlib__matplotlib-23299 - 💭 THOUGHT
+
+
+🎬 ACTION
+ls -la /testbed
+2026-03-06 02:56:19,498 - DEBUG - swea-tools-matplotlib__matplotlib-23299 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-06 02:56:19,503 - INFO - swea-agent-matplotlib__matplotlib-23299 - 🤖 MODEL INPUT
+OBSERVATION:
+total 184
+drwxrwxrwx  1 root root    18 Sep 10 14:25 .
+drwxr-xr-x  1 root root    55 Mar  5 18:54 ..
+-rw-r--r--  1 root root  3711 Sep 10 14:10 .appveyor.yml
+drwxrwxrwx  2 root root    46 Sep 10 14:10 .circleci
+-rw-r--r--  1 root root   227 Sep 10 14:10 .coveragerc
+drwxr-xr-x  3 root root    75 Sep 10 14:25 .eggs
+-rw-r--r--  1 root root  5213 Sep 10 14:10 .flake8
+drwxrwxrwx  1 root root   105 Mar  5 18:54 .git
+-rw-r--r--  1 root root   331 Sep 10 14:10 .git-blame-ignore-revs
+-rw-r--r--  1 root root    23 Sep 10 14:10 .git_archival.txt
+-rw-r--r--  1 root root   112 Sep 10 14:10 .gitattributes
+drwxrwxrwx  4 root root   160 Sep 10 14:10 .github
+-rw-r--r--  1 root root  1777 Sep 10 14:10 .gitignore
+-rw-r--r--  1 root root   639 Sep 10 14:10 .lgtm.yml
+-rw-r--r--  1 root root  8849 Sep 10 14:10 .mailmap
+-rw-r--r--  1 root root   164 Sep 10 14:10 .matplotlib-repo
+-rw-r--r--  1 root root    44 Sep 10 14:10 .meeseeksdev.yml
+-rw-r--r--  1 root root  1136 Sep 10 14:10 .pre-commit-config.yaml
+-rw-r--r--  1 root root   529 Sep 10 14:10 CITATION.bib
+-rw-r--r--  1 root root  5609 Sep 10 14:10 CODE_OF_CONDUCT.md
+-rw-r--r--  1 root root    35 Sep 10 14:10 INSTALL.rst
+drwxrwxrwx  2 root root  4096 Sep 10 14:25 LICENSE
+-rw-r--r--  1 root root  4775 Sep 10 14:10 README.rst
+-rw-r--r--  1 root root  1001 Sep 10 14:10 SECURITY.md
+drwxr-xr-x  2 root root    38 Sep 10 14:25 __pycache__
+-rw-r--r--  1 root root  5220 Sep 10 14:10 azure-pipelines.yml
+drwxr-xr-x  6 root root   121 Sep 10 14:25 build
+drwxrwxrwx  2 root root    86 Sep 10 14:10 ci
+drwxrwxrwx  9 root root  4096 Sep 10 14:10 doc
+-rw-r--r--  1 root root  1118 Sep 10 14:10 environment.yml
+drwxr-xr-x 27 root root  4096 Sep 10 14:10 examples
+drwxrwxrwx  4 root root    37 Sep 10 14:10 extern
+drwxrwxrwx  5 root root    87 Sep 10 14:25 lib
+-rw-r--r--  1 root root  1390 Sep 10 14:10 mplsetup.cfg.template
+drwxr-xr-x  6 root root    84 Sep 10 14:10 plot_types
+-rw-r--r--  1 root root   446 Sep 10 14:10 pytest.ini
+drwxrwxrwx  5 root root    43 Sep 10 14:10 requirements
+-rw-r--r--  1 root root   132 Sep 10 14:10 setup.cfg
+-rw-r--r--  1 root root 12886 Sep 10 14:10 setup.py
+-rw-r--r--  1 root root 27170 Sep 10 14:10 setupext.py
+drwxrwxrwx  4 root root  4096 Sep 10 14:10 src
+-rwxr-xr-x  1 root root  1069 Sep 10 14:10 tests.py
+drwxr-xr-x  2 root root    69 Sep 10 14:25 tmp
+drwxrwxrwx  2 root root  4096 Sep 10 14:10 tools
+-rw-r--r--  1 root root   583 Sep 10 14:10 tox.ini
+drwxr-xr-x  9 root root   141 Sep 10 14:10 tutorials
+
+2026-03-06 02:56:19,506 - INFO - swea-agent-matplotlib__matplotlib-23299 - ========================= STEP 2 =========================
+2026-03-06 02:56:19,507 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - n_cache_control: 2
+2026-03-06 02:56:21,492 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - Response: ModelResponse(id='chatcmpl-5ea44ce3-f736-4df8-9bc9-670dd0184447', created=1772736981, model='gpt-5.3-codex', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"grep -R \\"def get_backend\\" -n /testbed/lib/matplotlib | head"}', name='bash'), id='call_RvKPgYeGkHAEEZFPBgvsfEct', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=59, prompt_tokens=0, total_tokens=59, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-06 02:56:21,493 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - input_tokens=1,947, output_tokens=0, instance_cost=0.00, cost=0.00
+2026-03-06 02:56:21,493 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - total_tokens_sent=2,700, total_tokens_received=0, total_cost=0.75, total_api_calls=2
+2026-03-06 02:56:21,495 - INFO - swea-agent-matplotlib__matplotlib-23299 - 💭 THOUGHT
+
+
+🎬 ACTION
+grep -R "def get_backend" -n /testbed/lib/matplotlib | head
+2026-03-06 02:56:21,999 - DEBUG - swea-tools-matplotlib__matplotlib-23299 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-06 02:56:22,001 - INFO - swea-agent-matplotlib__matplotlib-23299 - 🤖 MODEL INPUT
+OBSERVATION:
+/testbed/lib/matplotlib/__init__.py:1170:def get_backend():
+
+2026-03-06 02:56:22,006 - INFO - swea-agent-matplotlib__matplotlib-23299 - ========================= STEP 3 =========================
+2026-03-06 02:56:22,007 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - n_cache_control: 2
+2026-03-06 02:56:25,155 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - Response: ModelResponse(id='chatcmpl-5aff1d26-bb88-4490-a0f3-42d58a7bbd22', created=1772736984, model='gpt-5.3-codex', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"view","path":"/testbed/lib/matplotlib/__init__.py","view_range":[1130,1225]}', name='str_replace_editor'), id='call_twjTZR3XXe6HAxRuHd1PILF5', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=66, prompt_tokens=0, total_tokens=66, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-06 02:56:25,156 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - input_tokens=2,015, output_tokens=0, instance_cost=0.00, cost=0.00
+2026-03-06 02:56:25,156 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - total_tokens_sent=4,715, total_tokens_received=0, total_cost=0.75, total_api_calls=3
+2026-03-06 02:56:25,161 - INFO - swea-agent-matplotlib__matplotlib-23299 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/lib/matplotlib/__init__.py  --view_range 1130 1225
+2026-03-06 02:56:25,607 - DEBUG - swea-tools-matplotlib__matplotlib-23299 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-06 02:56:25,612 - INFO - swea-agent-matplotlib__matplotlib-23299 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/lib/matplotlib/__init__.py:
+  1130	
+  1131	    See Also
+  1132	    --------
+  1133	    :ref:`backends`
+  1134	    matplotlib.get_backend
+  1135	    """
+  1136	    name = validate_backend(backend)
+  1137	    # don't (prematurely) resolve the "auto" backend setting
+  1138	    if rcParams._get_backend_or_none() == name:
+  1139	        # Nothing to do if the requested backend is already set
+  1140	        pass
+  1141	    else:
+  1142	        # if pyplot is not already imported, do not import it.  Doing
+  1143	        # so may trigger a `plt.switch_backend` to the _default_ backend
+  1144	        # before we get a chance to change to the one the user just requested
+  1145	        plt = sys.modules.get('matplotlib.pyplot')
+  1146	        # if pyplot is imported, then try to change backends
+  1147	        if plt is not None:
+  1148	            try:
+  1149	                # we need this import check here to re-raise if the
+  1150	                # user does not have the libraries to support their
+  1151	                # chosen backend installed.
+  1152	                plt.switch_backend(name)
+  1153	            except ImportError:
+  1154	                if force:
+  1155	                    raise
+  1156	        # if we have not imported pyplot, then we can set the rcParam
+  1157	        # value which will be respected when the user finally imports
+  1158	        # pyplot
+  1159	        else:
+  1160	            rcParams['backend'] = backend
+  1161	    # if the user has asked for a given backend, do not helpfully
+  1162	    # fallback
+  1163	    rcParams['backend_fallback'] = False
+  1164	
+  1165	
+  1166	if os.environ.get('MPLBACKEND'):
+  1167	    rcParams['backend'] = os.environ.get('MPLBACKEND')
+  1168	
+  1169	
+  1170	def get_backend():
+  1171	    """
+  1172	    Return the name of the current backend.
+  1173	
+  1174	    See Also
+  1175	    --------
+  1176	    matplotlib.use
+  1177	    """
+  1178	    return rcParams['backend']
+  1179	
+  1180	
+  1181	def interactive(b):
+  1182	    """
+  1183	    Set whether to redraw after every plotting command (e.g. `.pyplot.xlabel`).
+  1184	    """
+  1185	    rcParams['interactive'] = b
+  1186	
+  1187	
+  1188	def is_interactive():
+  1189	    """
+  1190	    Return whether to redraw after every plotting command.
+  1191	
+  1192	    .. note::
+  1193	
+  1194	        This function is only intended for use in backends. End users should
+  1195	        use `.pyplot.isinteractive` instead.
+  1196	    """
+  1197	    return rcParams['interactive']
+  1198	
+  1199	
+  1200	default_test_modules = [
+  1201	    'matplotlib.tests',
+  1202	    'mpl_toolkits.tests',
+  1203	]
+  1204	
+  1205	
+  1206	def _init_tests():
+  1207	    # The version of FreeType to install locally for running the
+  1208	    # tests.  This must match the value in `setupext.py`
+  1209	    LOCAL_FREETYPE_VERSION = '2.6.1'
+  1210	
+  1211	    from matplotlib import ft2font
+  1212	    if (ft2font.__freetype_version__ != LOCAL_FREETYPE_VERSION or
+  1213	            ft2font.__freetype_build_type__ != 'local'):
+  1214	        _log.warning(
+  1215	            f"Matplotlib is not built with the correct FreeType version to "
+  1216	            f"run tests.  Rebuild without setting system_freetype=1 in "
+  1217	            f"mplsetup.cfg.  Expect many image comparison failures below.  "
+  1218	            f"Expected freetype version {LOCAL_FREETYPE_VERSION}.  "
+  1219	            f"Found freetype version {ft2font.__freetype_version__}.  "
+  1220	            "Freetype build type is {}local".format(
+  1221	                "" if ft2font.__freetype_build_type__ == 'local' else "not "))
+  1222	
+  1223	
+  1224	@_api.deprecated("3.5", alternative='pytest')
+  1225	def test(verbosity=None, coverage=False, **kwargs):
+
+
+2026-03-06 02:56:25,617 - INFO - swea-agent-matplotlib__matplotlib-23299 - ========================= STEP 4 =========================
+2026-03-06 02:56:25,619 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - n_cache_control: 2
+2026-03-06 02:56:31,262 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - Response: ModelResponse(id='chatcmpl-cadf69c7-7843-457c-a4fb-4053bc771fe2', created=1772736988, model='gpt-5.3-codex', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"cat > /testbed/repro_backend_bug.py <<\'PY\'\\nimport matplotlib\\nmatplotlib.use(\'Agg\')\\nimport matplotlib.pyplot as plt\\nfrom matplotlib import get_backend, rc_context\\n\\nwith rc_context():\\n    fig2 = plt.figure()\\nbefore = f\'{id(plt._pylab_helpers.Gcf)} {plt._pylab_helpers.Gcf.figs!r}\'\\nget_backend()\\nafter = f\'{id(plt._pylab_helpers.Gcf)} {plt._pylab_helpers.Gcf.figs!r}\'\\nprint(\'before\', before)\\nprint(\'after \', after)\\nassert before == after, \'\\\\n\' + before + \'\\\\n\' + after\\nprint(\'OK\')\\nPY\\npython /testbed/repro_backend_bug.py"}', name='bash'), id='call_d6z7OWdWcZNHQo8GDmpxSQB6', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=220, prompt_tokens=0, total_tokens=220, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-06 02:56:31,263 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - input_tokens=3,208, output_tokens=0, instance_cost=0.01, cost=0.00
+2026-03-06 02:56:31,263 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - total_tokens_sent=7,923, total_tokens_received=0, total_cost=0.75, total_api_calls=4
+2026-03-06 02:56:31,265 - INFO - swea-agent-matplotlib__matplotlib-23299 - 💭 THOUGHT
+
+
+🎬 ACTION
+cat > /testbed/repro_backend_bug.py <<'PY'
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from matplotlib import get_backend, rc_context
+
+with rc_context():
+    fig2 = plt.figure()
+before = f'{id(plt._pylab_helpers.Gcf)} {plt._pylab_helpers.Gcf.figs!r}'
+get_backend()
+after = f'{id(plt._pylab_helpers.Gcf)} {plt._pylab_helpers.Gcf.figs!r}'
+print('before', before)
+print('after ', after)
+assert before == after, '\n' + before + '\n' + after
+print('OK')
+PY
+python /testbed/repro_backend_bug.py
+2026-03-06 02:56:32,101 - DEBUG - swea-tools-matplotlib__matplotlib-23299 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-06 02:56:32,105 - INFO - swea-agent-matplotlib__matplotlib-23299 - 🤖 MODEL INPUT
+OBSERVATION:
+
+A module that was compiled using NumPy 1.x cannot be run in
+NumPy 2.4.2 as it may crash. To support both 1.x and 2.x
+versions of NumPy, modules must be compiled with NumPy 2.0.
+Some module may need to rebuild instead e.g. with 'pybind11>=2.12'.
+
+If you are a user of the module, the easiest solution will be to
+downgrade to 'numpy<2' or try to upgrade the affected module.
+We expect that some modules will need time to support NumPy 2.
+
+Traceback (most recent call last):  File "/testbed/repro_backend_bug.py", line 1, in <module>
+    import matplotlib
+  File "/testbed/lib/matplotlib/__init__.py", line 113, in <module>
+    from . import _api, _version, cbook, _docstring, rcsetup
+  File "/testbed/lib/matplotlib/rcsetup.py", line 27, in <module>
+    from matplotlib.colors import Colormap, is_color_like
+  File "/testbed/lib/matplotlib/colors.py", line 56, in <module>
+    from matplotlib import _api, _cm, cbook, scale
+  File "/testbed/lib/matplotlib/scale.py", line 22, in <module>
+    from matplotlib.ticker import (
+  File "/testbed/lib/matplotlib/ticker.py", line 138, in <module>
+    from matplotlib import transforms as mtransforms
+  File "/testbed/lib/matplotlib/transforms.py", line 49, in <module>
+    from matplotlib._path import (
+AttributeError: _ARRAY_API not found
+Traceback (most recent call last):
+  File "/testbed/repro_backend_bug.py", line 1, in <module>
+    import matplotlib
+  File "/testbed/lib/matplotlib/__init__.py", line 113, in <module>
+    from . import _api, _version, cbook, _docstring, rcsetup
+  File "/testbed/lib/matplotlib/rcsetup.py", line 27, in <module>
+    from matplotlib.colors import Colormap, is_color_like
+  File "/testbed/lib/matplotlib/colors.py", line 56, in <module>
+    from matplotlib import _api, _cm, cbook, scale
+  File "/testbed/lib/matplotlib/scale.py", line 22, in <module>
+    from matplotlib.ticker import (
+  File "/testbed/lib/matplotlib/ticker.py", line 138, in <module>
+    from matplotlib import transforms as mtransforms
+  File "/testbed/lib/matplotlib/transforms.py", line 49, in <module>
+    from matplotlib._path import (
+ImportError: numpy.core.multiarray failed to import
+
+2026-03-06 02:56:32,113 - INFO - swea-agent-matplotlib__matplotlib-23299 - ========================= STEP 5 =========================
+2026-03-06 02:56:32,114 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - n_cache_control: 2
+2026-03-06 02:56:34,927 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - Response: ModelResponse(id='chatcmpl-80739f04-143f-482b-9832-a0c84d0fb83e', created=1772736994, model='gpt-5.3-codex', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"grep -R \\"_get_backend_or_none\\" -n /testbed/lib/matplotlib | head -n 20"}', name='bash'), id='call_eeV5QB7DDLjskxrLhIdbfI24', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=65, prompt_tokens=0, total_tokens=65, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-06 02:56:34,928 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - input_tokens=3,996, output_tokens=0, instance_cost=0.01, cost=0.00
+2026-03-06 02:56:34,928 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - total_tokens_sent=11,919, total_tokens_received=0, total_cost=0.75, total_api_calls=5
+2026-03-06 02:56:34,930 - INFO - swea-agent-matplotlib__matplotlib-23299 - 💭 THOUGHT
+
+
+🎬 ACTION
+grep -R "_get_backend_or_none" -n /testbed/lib/matplotlib | head -n 20
+2026-03-06 02:56:35,427 - DEBUG - swea-tools-matplotlib__matplotlib-23299 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-06 02:56:35,430 - INFO - swea-agent-matplotlib__matplotlib-23299 - 🤖 MODEL INPUT
+OBSERVATION:
+grep: /testbed/lib/matplotlib/__pycache__/__init__.cpython-311.pyc: binary file matches
+/testbed/lib/matplotlib/__init__.py:681:    def _get_backend_or_none(self):
+/testbed/lib/matplotlib/__init__.py:1138:    if rcParams._get_backend_or_none() == name:
+/testbed/lib/matplotlib/backends/qt_compat.py:50:# requested backend actually matches).  Use _get_backend_or_none to avoid
+/testbed/lib/matplotlib/backends/qt_compat.py:53:elif (mpl.rcParams._get_backend_or_none() or "").lower().startswith("qt5"):
+/testbed/lib/matplotlib/pyplot.py:2198:        and rcParams._get_backend_or_none() in (
+
+2026-03-06 02:56:35,438 - INFO - swea-agent-matplotlib__matplotlib-23299 - ========================= STEP 6 =========================
+2026-03-06 02:56:35,440 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - n_cache_control: 2
+2026-03-06 02:56:37,643 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - Response: ModelResponse(id='chatcmpl-457e2a61-62ee-4521-8e9f-2d1c738b2644', created=1772736997, model='gpt-5.3-codex', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"view","path":"/testbed/lib/matplotlib/__init__.py","view_range":[620,730]}', name='str_replace_editor'), id='call_QlAw6ggh1yum9uuJeArttMu8', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=61, prompt_tokens=0, total_tokens=61, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-06 02:56:37,644 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - input_tokens=4,211, output_tokens=0, instance_cost=0.01, cost=0.00
+2026-03-06 02:56:37,645 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - total_tokens_sent=16,130, total_tokens_received=0, total_cost=0.76, total_api_calls=6
+2026-03-06 02:56:37,649 - INFO - swea-agent-matplotlib__matplotlib-23299 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/lib/matplotlib/__init__.py  --view_range 620 730
+2026-03-06 02:56:38,095 - DEBUG - swea-tools-matplotlib__matplotlib-23299 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-06 02:56:38,104 - INFO - swea-agent-matplotlib__matplotlib-23299 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/lib/matplotlib/__init__.py:
+   620	    """
+   621	
+   622	    validate = rcsetup._validators
+   623	
+   624	    # validate values on the way in
+   625	    def __init__(self, *args, **kwargs):
+   626	        self.update(*args, **kwargs)
+   627	
+   628	    def __setitem__(self, key, val):
+   629	        try:
+   630	            if key in _deprecated_map:
+   631	                version, alt_key, alt_val, inverse_alt = _deprecated_map[key]
+   632	                _api.warn_deprecated(
+   633	                    version, name=key, obj_type="rcparam", alternative=alt_key)
+   634	                key = alt_key
+   635	                val = alt_val(val)
+   636	            elif key in _deprecated_remain_as_none and val is not None:
+   637	                version, = _deprecated_remain_as_none[key]
+   638	                _api.warn_deprecated(version, name=key, obj_type="rcparam")
+   639	            elif key in _deprecated_ignore_map:
+   640	                version, alt_key = _deprecated_ignore_map[key]
+   641	                _api.warn_deprecated(
+   642	                    version, name=key, obj_type="rcparam", alternative=alt_key)
+   643	                return
+   644	            elif key == 'backend':
+   645	                if val is rcsetup._auto_backend_sentinel:
+   646	                    if 'backend' in self:
+   647	                        return
+   648	            try:
+   649	                cval = self.validate[key](val)
+   650	            except ValueError as ve:
+   651	                raise ValueError(f"Key {key}: {ve}") from None
+   652	            dict.__setitem__(self, key, cval)
+   653	        except KeyError as err:
+   654	            raise KeyError(
+   655	                f"{key} is not a valid rc parameter (see rcParams.keys() for "
+   656	                f"a list of valid parameters)") from err
+   657	
+   658	    def __getitem__(self, key):
+   659	        if key in _deprecated_map:
+   660	            version, alt_key, alt_val, inverse_alt = _deprecated_map[key]
+   661	            _api.warn_deprecated(
+   662	                version, name=key, obj_type="rcparam", alternative=alt_key)
+   663	            return inverse_alt(dict.__getitem__(self, alt_key))
+   664	
+   665	        elif key in _deprecated_ignore_map:
+   666	            version, alt_key = _deprecated_ignore_map[key]
+   667	            _api.warn_deprecated(
+   668	                version, name=key, obj_type="rcparam", alternative=alt_key)
+   669	            return dict.__getitem__(self, alt_key) if alt_key else None
+   670	
+   671	        # In theory, this should only ever be used after the global rcParams
+   672	        # has been set up, but better be safe e.g. in presence of breakpoints.
+   673	        elif key == "backend" and self is globals().get("rcParams"):
+   674	            val = dict.__getitem__(self, key)
+   675	            if val is rcsetup._auto_backend_sentinel:
+   676	                from matplotlib import pyplot as plt
+   677	                plt.switch_backend(rcsetup._auto_backend_sentinel)
+   678	
+   679	        return dict.__getitem__(self, key)
+   680	
+   681	    def _get_backend_or_none(self):
+   682	        """Get the requested backend, if any, without triggering resolution."""
+   683	        backend = dict.__getitem__(self, "backend")
+   684	        return None if backend is rcsetup._auto_backend_sentinel else backend
+   685	
+   686	    def __repr__(self):
+   687	        class_name = self.__class__.__name__
+   688	        indent = len(class_name) + 1
+   689	        with _api.suppress_matplotlib_deprecation_warning():
+   690	            repr_split = pprint.pformat(dict(self), indent=1,
+   691	                                        width=80 - indent).split('\n')
+   692	        repr_indented = ('\n' + ' ' * indent).join(repr_split)
+   693	        return '{}({})'.format(class_name, repr_indented)
+   694	
+   695	    def __str__(self):
+   696	        return '\n'.join(map('{0[0]}: {0[1]}'.format, sorted(self.items())))
+   697	
+   698	    def __iter__(self):
+   699	        """Yield sorted list of keys."""
+   700	        with _api.suppress_matplotlib_deprecation_warning():
+   701	            yield from sorted(dict.__iter__(self))
+   702	
+   703	    def __len__(self):
+   704	        return dict.__len__(self)
+   705	
+   706	    def find_all(self, pattern):
+   707	        """
+   708	        Return the subset of this RcParams dictionary whose keys match,
+   709	        using :func:`re.search`, the given ``pattern``.
+   710	
+   711	        .. note::
+   712	
+   713	            Changes to the returned dictionary are *not* propagated to
+   714	            the parent RcParams dictionary.
+   715	
+   716	        """
+   717	        pattern_re = re.compile(pattern)
+   718	        return RcParams((key, value)
+   719	                        for key, value in self.items()
+   720	                        if pattern_re.search(key))
+   721	
+   722	    def copy(self):
+   723	        rccopy = RcParams()
+   724	        for k in self:  # Skip deprecations and revalidation.
+   725	            dict.__setitem__(rccopy, k, dict.__getitem__(self, k))
+   726	        return rccopy
+   727	
+   728	
+   729	def rc_params(fail_on_error=False):
+   730	    """Construct a `RcParams` instance from the default Matplotlib rc file."""
+
+
+2026-03-06 02:56:38,116 - INFO - swea-agent-matplotlib__matplotlib-23299 - ========================= STEP 7 =========================
+2026-03-06 02:56:38,118 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - n_cache_control: 2
+2026-03-06 02:56:42,114 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - Response: ModelResponse(id='chatcmpl-aaf1ccc6-3c68-413b-a66f-bf0094b73998', created=1772737000, model='gpt-5.3-codex', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"str_replace","path":"/testbed/lib/matplotlib/__init__.py","old_str":"def get_backend():\\n    \\"\\"\\"\\n    Return the name of the current backend.\\n\\n    See Also\\n    --------\\n    matplotlib.use\\n    \\"\\"\\"\\n    return rcParams[\'backend\']\\n","new_str":"def get_backend():\\n    \\"\\"\\"\\n    Return the name of the current backend.\\n\\n    See Also\\n    --------\\n    matplotlib.use\\n    \\"\\"\\"\\n    return rcParams._get_backend_or_none()\\n"}', name='str_replace_editor'), id='call_ujs629EtKftj1OUlrnf3Bqgr', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=186, prompt_tokens=0, total_tokens=186, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-06 02:56:42,115 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - input_tokens=5,617, output_tokens=0, instance_cost=0.01, cost=0.00
+2026-03-06 02:56:42,115 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - total_tokens_sent=21,747, total_tokens_received=0, total_cost=0.76, total_api_calls=7
+2026-03-06 02:56:42,120 - INFO - swea-agent-matplotlib__matplotlib-23299 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/lib/matplotlib/__init__.py   --old_str 'def get_backend():
+    """
+    Return the name of the current backend.
+
+    See Also
+    --------
+    matplotlib.use
+    """
+    return rcParams['"'"'backend'"'"']
+' --new_str 'def get_backend():
+    """
+    Return the name of the current backend.
+
+    See Also
+    --------
+    matplotlib.use
+    """
+    return rcParams._get_backend_or_none()
+'
+2026-03-06 02:56:42,565 - DEBUG - swea-tools-matplotlib__matplotlib-23299 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-06 02:56:42,569 - INFO - swea-agent-matplotlib__matplotlib-23299 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/lib/matplotlib/__init__.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/lib/matplotlib/__init__.py:
+  1165	
+  1166	if os.environ.get('MPLBACKEND'):
+  1167	    rcParams['backend'] = os.environ.get('MPLBACKEND')
+  1168	
+  1169	
+  1170	def get_backend():
+  1171	    """
+  1172	    Return the name of the current backend.
+  1173	
+  1174	    See Also
+  1175	    --------
+  1176	    matplotlib.use
+  1177	    """
+  1178	    return rcParams._get_backend_or_none()
+  1179	
+  1180	
+  1181	def interactive(b):
+  1182	    """
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-06 02:56:42,582 - INFO - swea-agent-matplotlib__matplotlib-23299 - ========================= STEP 8 =========================
+2026-03-06 02:56:42,584 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - n_cache_control: 2
+2026-03-06 02:56:48,833 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - Response: ModelResponse(id='chatcmpl-f868e2f4-de39-4cc4-8f9b-489e2ff4296d', created=1772737005, model='gpt-5.3-codex', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='stop', index=0, message=Message(content="Implemented a minimal fix in **`lib/matplotlib/__init__.py`**:\n\n### ✅ Change made\n```python\ndef get_backend():\n    ...\n    return rcParams._get_backend_or_none()\n```\ninstead of\n```python\nreturn rcParams['backend']\n```\n\n### Why this fixes the bug\n- `rcParams['backend']` can trigger backend resolution via `RcParams.__getitem__` when backend is still the auto sentinel.\n- That implicit resolution can call into pyplot backend switching machinery and, in the reported scenario (first figure created under `rc_context`), clear `Gcf.figs`.\n- `rcParams._get_backend_or_none()` returns the backend **without triggering resolution**, which is exactly what we want for a passive query function like `get_backend()`.\n\n### Notes\n- I also created and attempted to run a repro script, but this environment has a NumPy/compiled-extension mismatch preventing matplotlib import, so runtime verification here is blocked by infrastructure, not logic.\n- The code change is minimal and targeted to the reported behavior and should satisfy the PR requirement.", role='assistant', tool_calls=None, function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=224, prompt_tokens=0, total_tokens=224, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-06 02:56:48,834 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - input_tokens=5,977, output_tokens=224, instance_cost=0.01, cost=0.00
+2026-03-06 02:56:48,835 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - total_tokens_sent=27,724, total_tokens_received=224, total_cost=0.76, total_api_calls=8
+2026-03-06 02:56:48,836 - WARNING - swea-agent-matplotlib__matplotlib-23299 - Requerying model after FunctionCallingFormatError (1th requery)
+2026-03-06 02:56:48,844 - WARNING - swea-agent-matplotlib__matplotlib-23299 - Your last output did not use any tool calls!
+Please make sure your output includes exactly _ONE_ function call!
+You must invoke the function directly using the function call format.
+You cannot invoke commands with ```, you have to use the function call format.
+If you think you have already resolved the issue, please submit your changes by running the `submit` command.
+If you think you cannot solve the problem, please run `exit_forfeit` (if available) or `submit`.
+Else, please continue with a new tool call!
+2026-03-06 02:56:48,849 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - n_cache_control: 2
+2026-03-06 02:56:50,991 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - Response: ModelResponse(id='chatcmpl-50053a6e-c1df-4549-9c58-7b8d3230e631', created=1772737010, model='gpt-5.3-codex', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{}', name='submit'), id='call_lUGgqqekVKpuZZRv9Whacjxp', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=34, prompt_tokens=0, total_tokens=34, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-06 02:56:50,992 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - input_tokens=6,316, output_tokens=0, instance_cost=0.01, cost=0.00
+2026-03-06 02:56:50,992 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - total_tokens_sent=34,040, total_tokens_received=224, total_cost=0.76, total_api_calls=9
+2026-03-06 02:56:50,993 - INFO - swea-agent-matplotlib__matplotlib-23299 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-06 02:56:51,516 - DEBUG - swea-tools-matplotlib__matplotlib-23299 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-06 02:56:51,520 - INFO - swea-agent-matplotlib__matplotlib-23299 - 🤖 MODEL INPUT
+OBSERVATION:
+Thank you for your work on this issue. Please carefully follow the steps below to help review your changes.
+
+1. If you made any changes to your code after running the reproduction script, please run the reproduction script again.
+  If the reproduction script is failing, please revisit your changes and make sure they are correct.
+  If you have already removed your reproduction script, please ignore this step.
+2. Remove your reproduction script (if you haven't done so already).
+3. If you have modified any TEST files, please revert them to the state they had before you started fixing the issue.
+  You can do this with `git checkout -- /path/to/test/file.py`. Use below <diff> to find the files you need to revert.
+4. Run the submit command again to confirm.
+
+Here is a list of all of your changes:
+
+<diff>
+diff --git a/lib/matplotlib/__init__.py b/lib/matplotlib/__init__.py
+index c268a56724..0860f0434f 100644
+--- a/lib/matplotlib/__init__.py
++++ b/lib/matplotlib/__init__.py
+@@ -1175,7 +1175,7 @@ def get_backend():
+     --------
+     matplotlib.use
+     """
+-    return rcParams['backend']
++    return rcParams._get_backend_or_none()
+ 
+ 
+ def interactive(b):
+diff --git a/repro_backend_bug.py b/repro_backend_bug.py
+new file mode 100644
+index 0000000000..c369e5b4cd
+--- /dev/null
++++ b/repro_backend_bug.py
+@@ -0,0 +1,14 @@
++import matplotlib
++matplotlib.use('Agg')
++import matplotlib.pyplot as plt
++from matplotlib import get_backend, rc_context
++
++with rc_context():
++    fig2 = plt.figure()
++before = f'{id(plt._pylab_helpers.Gcf)} {plt._pylab_helpers.Gcf.figs!r}'
++get_backend()
++after = f'{id(plt._pylab_helpers.Gcf)} {plt._pylab_helpers.Gcf.figs!r}'
++print('before', before)
++print('after ', after)
++assert before == after, '\n' + before + '\n' + after
++print('OK')
+
+</diff>
+
+
+2026-03-06 02:56:51,538 - INFO - swea-agent-matplotlib__matplotlib-23299 - ========================= STEP 10 =========================
+2026-03-06 02:56:51,540 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - n_cache_control: 2
+2026-03-06 02:56:54,468 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - Response: ModelResponse(id='chatcmpl-69495bec-8076-473a-8203-c877ed8cbc8b', created=1772737014, model='gpt-5.3-codex', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"rm -f /testbed/repro_backend_bug.py && cd /testbed && git status --short"}', name='bash'), id='call_Frw6acqg01gYfBg2Ng5iCTil', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=61, prompt_tokens=0, total_tokens=61, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-06 02:56:54,468 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - input_tokens=6,487, output_tokens=0, instance_cost=0.01, cost=0.00
+2026-03-06 02:56:54,469 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - total_tokens_sent=40,527, total_tokens_received=224, total_cost=0.76, total_api_calls=10
+2026-03-06 02:56:54,470 - INFO - swea-agent-matplotlib__matplotlib-23299 - 💭 THOUGHT
+
+
+🎬 ACTION
+rm -f /testbed/repro_backend_bug.py && cd /testbed && git status --short
+2026-03-06 02:56:54,857 - DEBUG - swea-tools-matplotlib__matplotlib-23299 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-06 02:56:54,861 - INFO - swea-agent-matplotlib__matplotlib-23299 - 🤖 MODEL INPUT
+OBSERVATION:
+M  lib/matplotlib/__init__.py
+AD repro_backend_bug.py
+
+2026-03-06 02:56:54,879 - INFO - swea-agent-matplotlib__matplotlib-23299 - ========================= STEP 11 =========================
+2026-03-06 02:56:54,882 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - n_cache_control: 2
+2026-03-06 02:56:56,890 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - Response: ModelResponse(id='chatcmpl-359190a7-e48e-4fb5-a4d1-d6392e150fbd', created=1772737016, model='gpt-5.3-codex', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"cd /testbed && git reset -- repro_backend_bug.py && git status --short"}', name='bash'), id='call_LfhuK6TCEGW9v8EAq04nEdGK', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=58, prompt_tokens=0, total_tokens=58, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-06 02:56:56,891 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - input_tokens=6,559, output_tokens=0, instance_cost=0.02, cost=0.00
+2026-03-06 02:56:56,891 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - total_tokens_sent=47,086, total_tokens_received=224, total_cost=0.76, total_api_calls=11
+2026-03-06 02:56:56,893 - INFO - swea-agent-matplotlib__matplotlib-23299 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && git reset -- repro_backend_bug.py && git status --short
+2026-03-06 02:56:57,317 - DEBUG - swea-tools-matplotlib__matplotlib-23299 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-06 02:56:57,321 - INFO - swea-agent-matplotlib__matplotlib-23299 - 🤖 MODEL INPUT
+OBSERVATION:
+M  lib/matplotlib/__init__.py
+
+2026-03-06 02:56:57,342 - INFO - swea-agent-matplotlib__matplotlib-23299 - ========================= STEP 12 =========================
+2026-03-06 02:56:57,344 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - n_cache_control: 2
+2026-03-06 02:57:00,165 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - Response: ModelResponse(id='chatcmpl-2392e24b-0e0a-4690-a472-efb0acbd4c2a', created=1772737020, model='gpt-5.3-codex', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{}', name='submit'), id='call_vdhLR0RzUaA7NqK2RZu3dTFB', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=40, prompt_tokens=0, total_tokens=40, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-06 02:57:00,166 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - input_tokens=6,622, output_tokens=0, instance_cost=0.02, cost=0.00
+2026-03-06 02:57:00,166 - DEBUG - swea-lm-matplotlib__matplotlib-23299 - total_tokens_sent=53,708, total_tokens_received=224, total_cost=0.76, total_api_calls=12
+2026-03-06 02:57:00,166 - INFO - swea-agent-matplotlib__matplotlib-23299 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-06 02:57:00,661 - DEBUG - swea-tools-matplotlib__matplotlib-23299 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-06 02:57:00,671 - INFO - swea-agent-matplotlib__matplotlib-23299 - Found submission: diff --git a/lib/matplotlib/__init__.py b/lib/matplotlib/__init__.py
+index c268a56724..0860f0434f 100644
+--- a/lib/matplotlib/__init__.py
++++ b/lib/matplotlib/__init__.py
+@@ -1175,7 +1175,7 @@ def get_backend():
+     --------
+     matplotlib.use
+     """
+-    return rcParams['backend']
++    return rcParams._get_backend_or_none()
+ 
+ 
+ def interactive(b):
+
+2026-03-06 02:57:00,673 - INFO - swea-agent-matplotlib__matplotlib-23299 - 🤖 MODEL INPUT
+OBSERVATION:
+diff --git a/lib/matplotlib/__init__.py b/lib/matplotlib/__init__.py
+index c268a56724..0860f0434f 100644
+--- a/lib/matplotlib/__init__.py
++++ b/lib/matplotlib/__init__.py
+@@ -1175,7 +1175,7 @@ def get_backend():
+     --------
+     matplotlib.use
+     """
+-    return rcParams['backend']
++    return rcParams._get_backend_or_none()
+ 
+ 
+ def interactive(b):
+
+2026-03-06 02:57:00,710 - INFO - swea-agent-matplotlib__matplotlib-23299 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_nobudget_mt8_probev3_rerun1/matplotlib__matplotlib-23299/matplotlib__matplotlib-23299.traj
+2026-03-06 02:57:00,716 - INFO - swea-env-matplotlib__matplotlib-23299 - Beginning environment shutdown...
+2026-03-06 02:57:01,406 - DEBUG - rex-deploy-matplotlib__matplotlib-23299 - Ensuring deployment is stopped because object is deleted

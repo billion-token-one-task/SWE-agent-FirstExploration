@@ -1,0 +1,597 @@
+2026-03-05 15:12:17,587 - INFO - rex-deploy-sympy__sympy-22714 - Starting container docker.ioswebenchsweb.eval.x86_64.sympy_1776_sympy-22714latest-a8f3fcc5-55b1-4eef-a18e-06048fffa11d with image docker.io/swebench/sweb.eval.x86_64.sympy_1776_sympy-22714:latest serving on port 46497
+2026-03-05 15:12:17,589 - INFO - rex-deploy-sympy__sympy-22714 - Starting runtime at 46497
+2026-03-05 15:12:18,889 - INFO - rex-deploy-sympy__sympy-22714 - Runtime started in 1.30s
+2026-03-05 15:12:19,871 - INFO - swea-env-sympy__sympy-22714 - Environment Initialized
+2026-03-05 15:12:22,737 - INFO - swea-agent-sympy__sympy-22714 - Setting up agent for instance sympy__sympy-22714
+2026-03-05 15:12:22,737 - INFO - swea-agent-sympy__sympy-22714 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok30k_mt4_probev3/sympy__sympy-22714/sympy__sympy-22714.traj
+2026-03-05 15:14:23,146 - INFO - swea-tools-sympy__sympy-22714 - Resetting tools
+2026-03-05 15:14:23,660 - INFO - swea-agent-sympy__sympy-22714 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-05 15:14:23,856 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+simpify gives `Imaginary coordinates are not permitted.` with evaluate(False)
+## Issue
+`with evaluate(False)` crashes unexpectedly with `Point2D`
+
+## Code
+```python
+import sympy as sp
+with sp.evaluate(False):
+  sp.S('Point2D(Integer(1),Integer(2))')
+```
+
+## Error
+```
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/home/avinash/.local/lib/python3.8/site-packages/sympy/core/sympify.py", line 472, in sympify
+    expr = parse_expr(a, local_dict=locals, transformations=transformations, evaluate=evaluate)
+  File "/home/avinash/.local/lib/python3.8/site-packages/sympy/parsing/sympy_parser.py", line 1026, in parse_expr
+    raise e from ValueError(f"Error from parse_expr with transformed code: {code!r}")
+  File "/home/avinash/.local/lib/python3.8/site-packages/sympy/parsing/sympy_parser.py", line 1017, in parse_expr
+    rv = eval_expr(code, local_dict, global_dict)
+  File "/home/avinash/.local/lib/python3.8/site-packages/sympy/parsing/sympy_parser.py", line 911, in eval_expr
+    expr = eval(
+  File "<string>", line 1, in <module>
+  File "/home/avinash/.local/lib/python3.8/site-packages/sympy/geometry/point.py", line 912, in __new__
+    args = Point(*args, **kwargs)
+  File "/home/avinash/.local/lib/python3.8/site-packages/sympy/geometry/point.py", line 153, in __new__
+    raise ValueError('Imaginary coordinates are not permitted.')
+ValueError: Imaginary coordinates are not permitted.
+```
+
+However, it works without `with evaluate(False)`. Both of following commands work
+```python
+sp.S('Point2D(Integer(1),Integer(2))')
+sp.S('Point2D(Integer(1),Integer(2))', evaluate=False)
+```
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-05 15:14:23,857 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 1 =========================
+2026-03-05 15:14:31,895 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+import sympy as sp
+print('sympy', sp.__version__)
+try:
+    with sp.evaluate(False):
+        print(sp.S('Point2D(Integer(1),Integer(2))'))
+except Exception as e:
+    import traceback; traceback.print_exc()
+PY
+2026-03-05 15:14:33,936 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+OBSERVATION:
+sympy 1.10.dev
+ValueError: Error from parse_expr with transformed code: <code object <module> at 0x7f1f9105c500, file "<string>", line 1>
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<stdin>", line 5, in <module>
+  File "/testbed/sympy/core/sympify.py", line 476, in sympify
+    expr = parse_expr(a, local_dict=locals, transformations=transformations, evaluate=evaluate)
+  File "/testbed/sympy/parsing/sympy_parser.py", line 1100, in parse_expr
+    raise e from ValueError(f"Error from parse_expr with transformed code: {code!r}")
+  File "/testbed/sympy/parsing/sympy_parser.py", line 1091, in parse_expr
+    rv = eval_expr(code, local_dict, global_dict)
+  File "/testbed/sympy/parsing/sympy_parser.py", line 913, in eval_expr
+    expr = eval(
+  File "<string>", line 1, in <module>
+  File "/testbed/sympy/geometry/point.py", line 915, in __new__
+    args = Point(*args, **kwargs)
+  File "/testbed/sympy/geometry/point.py", line 156, in __new__
+    raise ValueError('Imaginary coordinates are not permitted.')
+ValueError: Imaginary coordinates are not permitted.
+
+2026-03-05 15:14:33,939 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 2 =========================
+2026-03-05 15:14:38,021 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -R "Imaginary coordinates are not permitted" -n sympy/geometry/point.py && sed -n '120,220p' sympy/geometry/point.py && sed -n '860,960p' sympy/geometry/point.py && sed -n '420,540p' sympy/core/sympify.py
+2026-03-05 15:14:38,364 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+OBSERVATION:
+156:            raise ValueError('Imaginary coordinates are not permitted.')
+            evaluate = False
+            if len(coords) == kwargs.get('dim', len(coords)):
+                return coords
+
+        if not is_sequence(coords):
+            raise TypeError(filldedent('''
+                Expecting sequence of coordinates, not `{}`'''
+                                       .format(func_name(coords))))
+        # A point where only `dim` is specified is initialized
+        # to zeros.
+        if len(coords) == 0 and kwargs.get('dim', None):
+            coords = (S.Zero,)*kwargs.get('dim')
+
+        coords = Tuple(*coords)
+        dim = kwargs.get('dim', len(coords))
+
+        if len(coords) < 2:
+            raise ValueError(filldedent('''
+                Point requires 2 or more coordinates or
+                keyword `dim` > 1.'''))
+        if len(coords) != dim:
+            message = ("Dimension of {} needs to be changed "
+                       "from {} to {}.").format(coords, len(coords), dim)
+            if on_morph == 'ignore':
+                pass
+            elif on_morph == "error":
+                raise ValueError(message)
+            elif on_morph == 'warn':
+                warnings.warn(message)
+            else:
+                raise ValueError(filldedent('''
+                        on_morph value should be 'error',
+                        'warn' or 'ignore'.'''))
+        if any(coords[dim:]):
+            raise ValueError('Nonzero coordinates cannot be removed.')
+        if any(a.is_number and im(a) for a in coords):
+            raise ValueError('Imaginary coordinates are not permitted.')
+        if not all(isinstance(a, Expr) for a in coords):
+            raise TypeError('Coordinates must be valid SymPy expressions.')
+
+        # pad with zeros appropriately
+        coords = coords[:dim] + (S.Zero,)*(dim - len(coords))
+
+        # Turn any Floats into rationals and simplify
+        # any expressions before we instantiate
+        if evaluate:
+            coords = coords.xreplace({
+                f: simplify(nsimplify(f, rational=True))
+                 for f in coords.atoms(Float)})
+
+        # return 2D or 3D instances
+        if len(coords) == 2:
+            kwargs['_nocheck'] = True
+            return Point2D(*coords, **kwargs)
+        elif len(coords) == 3:
+            kwargs['_nocheck'] = True
+            return Point3D(*coords, **kwargs)
+
+        # the general Point
+        return GeometryEntity.__new__(cls, *coords)
+
+    def __abs__(self):
+        """Returns the distance between this point and the origin."""
+        origin = Point([0]*len(self))
+        return Point.distance(origin, self)
+
+    def __add__(self, other):
+        """Add other to self by incrementing self's coordinates by
+        those of other.
+
+        Notes
+        =====
+
+        >>> from sympy.geometry.point import Point
+
+        When sequences of coordinates are passed to Point methods, they
+        are converted to a Point internally. This __add__ method does
+        not do that so if floating point values are used, a floating
+        point result (in terms of SymPy Floats) will be returned.
+
+        >>> Point(1, 2) + (.1, .2)
+        Point2D(1.1, 2.2)
+
+        If this is not desired, the `translate` method can be used or
+        another Point can be added:
+
+        >>> Point(1, 2).translate(.1, .2)
+        Point2D(11/10, 11/5)
+        >>> Point(1, 2) + Point(.1, .2)
+        Point2D(11/10, 11/5)
+
+        See Also
+        ========
+
+        sympy.geometry.point.Point.translate
+
+        """
+        try:
+            s, o = Point._normalize_dimension(self, Point(other, evaluate=False))
+        except TypeError:
+            raise GeometryError("Don't know how to add {} and a Point object".format(other))
+class Point2D(Point):
+    """A point in a 2-dimensional Euclidean space.
+
+    Parameters
+    ==========
+
+    coords : sequence of 2 coordinate values.
+
+    Attributes
+    ==========
+
+    x
+    y
+    length
+
+    Raises
+    ======
+
+    TypeError
+        When trying to add or subtract points with different dimensions.
+        When trying to create a point with more than two dimensions.
+        When `intersection` is called with object other than a Point.
+
+    See Also
+    ========
+
+    sympy.geometry.line.Segment : Connects two Points
+
+    Examples
+    ========
+
+    >>> from sympy.geometry import Point2D
+    >>> from sympy.abc import x
+    >>> Point2D(1, 2)
+    Point2D(1, 2)
+    >>> Point2D([1, 2])
+    Point2D(1, 2)
+    >>> Point2D(0, x)
+    Point2D(0, x)
+
+    Floats are automatically converted to Rational unless the
+    evaluate flag is False:
+
+    >>> Point2D(0.5, 0.25)
+    Point2D(1/2, 1/4)
+    >>> Point2D(0.5, 0.25, evaluate=False)
+    Point2D(0.5, 0.25)
+
+    """
+
+    _ambient_dimension = 2
+
+    def __new__(cls, *args, _nocheck=False, **kwargs):
+        if not _nocheck:
+            kwargs['dim'] = 2
+            args = Point(*args, **kwargs)
+        return GeometryEntity.__new__(cls, *args)
+
+    def __contains__(self, item):
+        return item == self
+
+    @property
+    def bounds(self):
+        """Return a tuple (xmin, ymin, xmax, ymax) representing the bounding
+        rectangle for the geometric figure.
+
+        """
+
+        return (self.x, self.y, self.x, self.y)
+
+    def rotate(self, angle, pt=None):
+        """Rotate ``angle`` radians counterclockwise about Point ``pt``.
+
+        See Also
+        ========
+
+        translate, scale
+
+        Examples
+        ========
+
+        >>> from sympy import Point2D, pi
+        >>> t = Point2D(1, 0)
+        >>> t.rotate(pi/2)
+        Point2D(0, 1)
+        >>> t.rotate(pi/2, (2, 0))
+        Point2D(2, -1)
+
+        """
+        c = cos(angle)
+        s = sin(angle)
+
+        rv = self
+        if pt is not None:
+            pt = Point(pt, dim=2)
+            rv -= pt
+        x, y = rv.args
+        rv = Point(c*x - s*y, s*x + c*y)
+        if pt is not None:
+            rv += pt
+        return rv
+                        return sympify(a.item(),
+                                       locals=locals,
+                                       convert_xor=convert_xor,
+                                       strict=strict,
+                                       rational=rational,
+                                       evaluate=evaluate)
+                    except SympifyError:
+                        pass
+        else:
+            # float and int can coerce size-one numpy arrays to their lone
+            # element.  See issue https://github.com/numpy/numpy/issues/10404.
+            for coerce in (float, int):
+                try:
+                    return sympify(coerce(a))
+                except (TypeError, ValueError, AttributeError, SympifyError):
+                    continue
+
+    if strict:
+        raise SympifyError(a)
+
+    if iterable(a):
+        try:
+            return type(a)([sympify(x, locals=locals, convert_xor=convert_xor,
+                rational=rational, evaluate=evaluate) for x in a])
+        except TypeError:
+            # Not all iterables are rebuildable with their type.
+            pass
+
+    if not isinstance(a, str):
+        try:
+            a = str(a)
+        except Exception as exc:
+            raise SympifyError(a, exc)
+        SymPyDeprecationWarning(
+            feature="String fallback in sympify",
+            useinstead= \
+                'sympify(str(obj)) or ' + \
+                'sympy.core.sympify.converter or obj._sympy_',
+            issue=18066,
+            deprecated_since_version='1.6'
+        ).warn()
+
+    from sympy.parsing.sympy_parser import (parse_expr, TokenError,
+                                            standard_transformations)
+    from sympy.parsing.sympy_parser import convert_xor as t_convert_xor
+    from sympy.parsing.sympy_parser import rationalize as t_rationalize
+
+    transformations = standard_transformations
+
+    if rational:
+        transformations += (t_rationalize,)
+    if convert_xor:
+        transformations += (t_convert_xor,)
+
+    try:
+        a = a.replace('\n', '')
+        expr = parse_expr(a, local_dict=locals, transformations=transformations, evaluate=evaluate)
+    except (TokenError, SyntaxError) as exc:
+        raise SympifyError('could not parse %r' % a, exc)
+
+    return expr
+
+
+def _sympify(a):
+    """
+    Short version of :func:`~.sympify` for internal usage for ``__add__`` and
+    ``__eq__`` methods where it is ok to allow some things (like Python
+    integers and floats) in the expression. This excludes things (like strings)
+    that are unwise to allow into such an expression.
+
+    >>> from sympy import Integer
+    >>> Integer(1) == 1
+    True
+
+    >>> Integer(1) == '1'
+    False
+
+    >>> from sympy.abc import x
+    >>> x + 1
+    x + 1
+
+    >>> x + '1'
+    Traceback (most recent call last):
+    ...
+    TypeError: unsupported operand type(s) for +: 'Symbol' and 'str'
+
+    see: sympify
+
+    """
+    return sympify(a, strict=True)
+
+
+def kernS(s):
+    """Use a hack to try keep autosimplification from distributing a
+    a number into an Add; this modification doesn't
+    prevent the 2-arg Mul from becoming an Add, however.
+
+    Examples
+    ========
+
+    >>> from sympy.core.sympify import kernS
+    >>> from sympy.abc import x, y
+
+    The 2-arg Mul distributes a number (or minus sign) across the terms
+    of an expression, but kernS will prevent that:
+
+    >>> 2*(x + y), -(x + 1)
+    (2*x + 2*y, -x - 1)
+    >>> kernS('2*(x + y)')
+    2*(x + y)
+    >>> kernS('-(x + 1)')
+    -(x + 1)
+
+    If use of the hack fails, the un-hacked string will be passed to sympify...
+    and you get what you get.
+
+    XXX This hack should not be necessary once issue 4596 has been resolved.
+    """
+    hit = False
+    quoted = '"' in s or "'" in s
+    if '(' in s and not quoted:
+
+2026-03-05 15:14:38,369 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 3 =========================
+2026-03-05 15:14:43,065 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && cat > /tmp/repro.py <<'PY'
+import sympy as sp
+print('baseline:')
+print(sp.S('Point2D(Integer(1),Integer(2))'))
+print(sp.S('Point2D(Integer(1),Integer(2))', evaluate=False))
+print('context evaluate(False):')
+with sp.evaluate(False):
+    print(sp.S('Point2D(Integer(1),Integer(2))'))
+PY
+python /tmp/repro.py
+2026-03-05 15:14:43,893 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+OBSERVATION:
+baseline:
+Point2D(1, 2)
+Point2D(1, 2)
+context evaluate(False):
+ValueError: Error from parse_expr with transformed code: <code object <module> at 0x7fb63b7c23a0, file "<string>", line 1>
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/tmp/repro.py", line 7, in <module>
+    print(sp.S('Point2D(Integer(1),Integer(2))'))
+  File "/testbed/sympy/core/sympify.py", line 476, in sympify
+    expr = parse_expr(a, local_dict=locals, transformations=transformations, evaluate=evaluate)
+  File "/testbed/sympy/parsing/sympy_parser.py", line 1100, in parse_expr
+    raise e from ValueError(f"Error from parse_expr with transformed code: {code!r}")
+  File "/testbed/sympy/parsing/sympy_parser.py", line 1091, in parse_expr
+    rv = eval_expr(code, local_dict, global_dict)
+  File "/testbed/sympy/parsing/sympy_parser.py", line 913, in eval_expr
+    expr = eval(
+  File "<string>", line 1, in <module>
+  File "/testbed/sympy/geometry/point.py", line 915, in __new__
+    args = Point(*args, **kwargs)
+  File "/testbed/sympy/geometry/point.py", line 156, in __new__
+    raise ValueError('Imaginary coordinates are not permitted.')
+ValueError: Imaginary coordinates are not permitted.
+
+2026-03-05 15:14:43,898 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 4 =========================
+2026-03-05 15:15:08,990 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -R "if any(a.is_number and im(a) for a in coords)" -n sympy/geometry/point.py
+2026-03-05 15:15:09,322 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+OBSERVATION:
+155:        if any(a.is_number and im(a) for a in coords):
+
+2026-03-05 15:15:09,331 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 5 =========================
+2026-03-05 15:15:12,687 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/sympy/geometry/point.py   --old_str '        if any(a.is_number and im(a) for a in coords):
+            raise ValueError('"'"'Imaginary coordinates are not permitted.'"'"')' --new_str '        if any(im(a).is_zero is False for a in coords):
+            raise ValueError('"'"'Imaginary coordinates are not permitted.'"'"')'
+2026-03-05 15:15:13,108 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/sympy/geometry/point.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/sympy/geometry/point.py:
+   150	                raise ValueError(filldedent('''
+   151	                        on_morph value should be 'error',
+   152	                        'warn' or 'ignore'.'''))
+   153	        if any(coords[dim:]):
+   154	            raise ValueError('Nonzero coordinates cannot be removed.')
+   155	        if any(im(a).is_zero is False for a in coords):
+   156	            raise ValueError('Imaginary coordinates are not permitted.')
+   157	        if not all(isinstance(a, Expr) for a in coords):
+   158	            raise TypeError('Coordinates must be valid SymPy expressions.')
+   159	
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-05 15:15:13,116 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 6 =========================
+2026-03-05 15:15:15,008 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python /tmp/repro.py
+2026-03-05 15:15:15,735 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+OBSERVATION:
+baseline:
+Point2D(1, 2)
+Point2D(1, 2)
+context evaluate(False):
+Point2D(1, 2)
+
+2026-03-05 15:15:15,745 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 7 =========================
+2026-03-05 15:15:30,194 - WARNING - swea-agent-sympy__sympy-22714 - Requerying model after FunctionCallingFormatError (1th requery)
+2026-03-05 15:15:30,201 - WARNING - swea-agent-sympy__sympy-22714 - Your last output did not use any tool calls!
+Please make sure your output includes exactly _ONE_ function call!
+You must invoke the function directly using the function call format.
+You cannot invoke commands with ```, you have to use the function call format.
+If you think you have already resolved the issue, please submit your changes by running the `submit` command.
+If you think you cannot solve the problem, please run `exit_forfeit` (if available) or `submit`.
+Else, please continue with a new tool call!
+2026-03-05 15:15:32,265 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-05 15:15:32,726 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+OBSERVATION:
+Thank you for your work on this issue. Please carefully follow the steps below to help review your changes.
+
+1. If you made any changes to your code after running the reproduction script, please run the reproduction script again.
+  If the reproduction script is failing, please revisit your changes and make sure they are correct.
+  If you have already removed your reproduction script, please ignore this step.
+2. Remove your reproduction script (if you haven't done so already).
+3. If you have modified any TEST files, please revert them to the state they had before you started fixing the issue.
+  You can do this with `git checkout -- /path/to/test/file.py`. Use below <diff> to find the files you need to revert.
+4. Run the submit command again to confirm.
+
+Here is a list of all of your changes:
+
+<diff>
+diff --git a/sympy/geometry/point.py b/sympy/geometry/point.py
+index 73c20334d0..281dff34e0 100644
+--- a/sympy/geometry/point.py
++++ b/sympy/geometry/point.py
+@@ -152,7 +152,7 @@ def __new__(cls, *args, **kwargs):
+                         'warn' or 'ignore'.'''))
+         if any(coords[dim:]):
+             raise ValueError('Nonzero coordinates cannot be removed.')
+-        if any(a.is_number and im(a) for a in coords):
++        if any(im(a).is_zero is False for a in coords):
+             raise ValueError('Imaginary coordinates are not permitted.')
+         if not all(isinstance(a, Expr) for a in coords):
+             raise TypeError('Coordinates must be valid SymPy expressions.')
+
+</diff>
+
+
+2026-03-05 15:15:32,739 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 9 =========================
+2026-03-05 15:15:39,249 - WARNING - swea-lm-sympy__sympy-22714 - Token budget exhausted: 34022 > 30000
+2026-03-05 15:15:39,251 - WARNING - swea-agent-sympy__sympy-22714 - Exit due to token budget exhaustion
+2026-03-05 15:15:39,253 - WARNING - swea-agent-sympy__sympy-22714 - Attempting autosubmission after error
+2026-03-05 15:15:39,263 - INFO - swea-agent-sympy__sympy-22714 - Executing submission command git add -A && git diff --cached > /tmp/model.patch in /testbed
+2026-03-05 15:15:39,312 - INFO - swea-agent-sympy__sympy-22714 - Found submission: diff --git a/sympy/geometry/point.py b/sympy/geometry/point.py
+index 73c20334d0..281dff34e0 100644
+--- a/sympy/geometry/point.py
++++ b/sympy/geometry/point.py
+@@ -152,7 +152,7 @@ def __new__(cls, *args, **kwargs):
+                         'warn' or 'ignore'.'''))
+         if any(coords[dim:]):
+             raise ValueError('Nonzero coordinates cannot be removed.')
+-        if any(a.is_number and im(a) for a in coords):
++        if any(im(a).is_zero is False for a in coords):
+             raise ValueError('Imaginary coordinates are not permitted.')
+         if not all(isinstance(a, Expr) for a in coords):
+             raise TypeError('Coordinates must be valid SymPy expressions.')
+
+2026-03-05 15:15:39,312 - INFO - swea-agent-sympy__sympy-22714 - Exiting with autosubmission
+2026-03-05 15:15:39,314 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+OBSERVATION:
+Exited (autosubmitted)
+2026-03-05 15:15:39,341 - INFO - swea-agent-sympy__sympy-22714 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok30k_mt4_probev3/sympy__sympy-22714/sympy__sympy-22714.traj
+2026-03-05 15:15:39,346 - INFO - swea-env-sympy__sympy-22714 - Beginning environment shutdown...

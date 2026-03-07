@@ -1,0 +1,60 @@
+diff --git a/repro_m2m_hash.py b/repro_m2m_hash.py
+new file mode 100644
+index 0000000000..84378a5d80
+--- /dev/null
++++ b/repro_m2m_hash.py
+@@ -0,0 +1,54 @@
++from django.conf import settings
++
++settings.configure(
++    INSTALLED_APPS=["django.contrib.contenttypes"],
++)
++
++import django
++from django.db import models
++
++django.setup()
++
++
++class Parent(models.Model):
++    name = models.CharField(max_length=256)
++
++    class Meta:
++        app_label = "repro"
++
++
++class ProxyParent(Parent):
++    class Meta:
++        proxy = True
++        app_label = "repro"
++
++
++class Child(models.Model):
++    parent = models.ForeignKey(Parent, on_delete=models.CASCADE)
++    many_to_many_field = models.ManyToManyField(
++        to=Parent,
++        through="ManyToManyModel",
++        through_fields=["child", "parent"],
++        related_name="something",
++    )
++
++    class Meta:
++        app_label = "repro"
++
++
++class ManyToManyModel(models.Model):
++    parent = models.ForeignKey(Parent, on_delete=models.CASCADE, related_name='+')
++    child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='+')
++    second_child = models.ForeignKey(Child, on_delete=models.CASCADE, null=True, default=None)
++
++    class Meta:
++        app_label = "repro"
++
++
++# Reproduce hashing of reverse relation identity containing through_fields.
++fields = ProxyParent._meta.get_fields()
++print("num fields:", len(fields))
++used = set()
++for f in fields:
++    used.add(f)
++print("success")

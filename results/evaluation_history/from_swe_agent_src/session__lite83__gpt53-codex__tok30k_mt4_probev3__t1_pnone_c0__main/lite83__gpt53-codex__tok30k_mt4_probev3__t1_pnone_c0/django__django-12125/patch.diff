@@ -1,0 +1,35 @@
+diff --git a/django/db/migrations/serializer.py b/django/db/migrations/serializer.py
+index 7d226955d5..ead81c398a 100644
+--- a/django/db/migrations/serializer.py
++++ b/django/db/migrations/serializer.py
+@@ -269,7 +269,7 @@ class TypeSerializer(BaseSerializer):
+             if module == builtins.__name__:
+                 return self.value.__name__, set()
+             else:
+-                return "%s.%s" % (module, self.value.__name__), {"import %s" % module}
++                return "%s.%s" % (module, self.value.__qualname__), {"import %s" % module}
+ 
+ 
+ class UUIDSerializer(BaseSerializer):
+diff --git a/repro_inner_class_path.py b/repro_inner_class_path.py
+new file mode 100644
+index 0000000000..cbba2a7581
+--- /dev/null
++++ b/repro_inner_class_path.py
+@@ -0,0 +1,16 @@
++from django.db.migrations.serializer import serializer_factory
++
++
++class Outer:
++    class Inner:
++        pass
++
++
++def main():
++    serialized, imports = serializer_factory(Outer.Inner).serialize()
++    print(serialized)
++    print(sorted(imports))
++
++
++if __name__ == '__main__':
++    main()

@@ -1,0 +1,85 @@
+diff --git a/repro_skip_runxfail.py b/repro_skip_runxfail.py
+new file mode 100644
+index 000000000..346a19e9c
+--- /dev/null
++++ b/repro_skip_runxfail.py
+@@ -0,0 +1,22 @@
++import os, subprocess, sys, textwrap, tempfile
++
++with tempfile.TemporaryDirectory() as d:
++    testfile = os.path.join(d, 'test_it.py')
++    with open(testfile, 'w') as f:
++        f.write(textwrap.dedent('''\
++            import pytest
++
++            @pytest.mark.skip
++            def test_skip_location():
++                assert 0
++        '''))
++    env = os.environ.copy()
++    env['PYTHONPATH'] = '/testbed/src'
++    cmds = [
++        [sys.executable, '-m', 'pytest', '-q', '-rs', testfile],
++        [sys.executable, '-m', 'pytest', '-q', '-rs', '--runxfail', testfile],
++    ]
++    for c in cmds:
++        print('\n$', ' '.join(c))
++        p = subprocess.run(c, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
++        print(p.stdout)
+diff --git a/src/_pytest/skipping.py b/src/_pytest/skipping.py
+index 7bd975e5a..c44395132 100644
+--- a/src/_pytest/skipping.py
++++ b/src/_pytest/skipping.py
+@@ -270,9 +270,51 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]):
+         else:
+             rep.longrepr = "Unexpected success"
+         rep.outcome = "failed"
++    elif call.excinfo and isinstance(call.excinfo.value, xfail.Exception):
++        if item.config.option.runxfail:
++            pass  # don't interfere
++        else:
++            assert call.excinfo.value.msg is not None
++            rep.wasxfail = "reason: " + call.excinfo.value.msg
++            rep.outcome = "skipped"
+     elif item.config.option.runxfail:
+         pass  # don't interfere
+-    elif call.excinfo and isinstance(call.excinfo.value, xfail.Exception):
++    elif not rep.skipped and xfailed:
++        if call.excinfo:
++            raises = xfailed.raises
++            if raises is not None and not isinstance(call.excinfo.value, raises):
++                rep.outcome = "failed"
++            else:
++                rep.outcome = "skipped"
++                rep.wasxfail = xfailed.reason
++        elif call.when == "call":
++            if xfailed.strict:
++                rep.outcome = "failed"
++                rep.longrepr = "[XPASS(strict)] " + xfailed.reason
++            else:
++                rep.outcome = "passed"
++                rep.wasxfail = xfailed.reason
++    elif (
++        item._store.get(skipped_by_mark_key, True)
++        and rep.skipped
++        and type(rep.longrepr) is tuple
++    ):
++        # skipped by mark.skipif; change the location of the failure
++        # to point to the item definition, otherwise it will display
++        # the location of where the skip exception was raised within pytest
++        _, _, reason = rep.longrepr
++        filename, line = item.reportinfo()[:2]
++        assert line is not None
++        rep.longrepr = str(filename), line + 1, reason
++
++
++def pytest_report_teststatus(report: BaseReport) -> Optional[Tuple[str, str, str]]:
++    if hasattr(report, "wasxfail"):
++        if report.skipped:
++            return "xfailed", "x", "XFAIL"
++        elif report.passed:
++            return "xpassed", "X", "XPASS"
++    return None
+         assert call.excinfo.value.msg is not None
+         rep.wasxfail = "reason: " + call.excinfo.value.msg
+         rep.outcome = "skipped"

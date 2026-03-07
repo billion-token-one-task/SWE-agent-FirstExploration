@@ -1,0 +1,54 @@
+diff --git a/repro_sqf.py b/repro_sqf.py
+new file mode 100644
+index 0000000000..8fa216e56a
+--- /dev/null
++++ b/repro_sqf.py
+@@ -0,0 +1,10 @@
++from sympy import symbols, sqf_list
++x = symbols('x')
++
++f = (x**2 + 1) * (x - 1)**2 * (x - 2)**3 * (x - 3)**3
++print('input1:', f)
++print('sqf_list1:', sqf_list(f))
++
++f2 = x**5 - 2*x**4 - 2*x**3 + 4*x**2 + x - 2
++print('input2:', f2)
++print('sqf_list2:', sqf_list(f2))
+diff --git a/sympy/polys/polytools.py b/sympy/polys/polytools.py
+index c9e77a901f..75b55660cd 100644
+--- a/sympy/polys/polytools.py
++++ b/sympy/polys/polytools.py
+@@ -5877,17 +5877,32 @@ def sqf_part(f, *gens, **args):
+ def _sorted_factors(factors, method):
+     """Sort a list of ``(expr, exp)`` pairs. """
+     if method == 'sqf':
++        # Keep factors grouped by multiplicity and make ordering deterministic.
++        # If there are several factors with the same multiplicity, order by the
++        # polynomial representation and then merge them into a single factor of
++        # that multiplicity. This keeps sqf_list output consistent with sqf.
+         def key(obj):
+             poly, exp = obj
+             rep = poly.rep.rep
+             return (exp, len(rep), len(poly.gens), rep)
++
++        sorted_factors = sorted(factors, key=key)
++
++        merged = []
++        for poly, exp in sorted_factors:
++            if merged and merged[-1][1] == exp:
++                merged[-1] = (merged[-1][0]*poly, exp)
++            else:
++                merged.append((poly, exp))
++
++        return merged
+     else:
+         def key(obj):
+             poly, exp = obj
+             rep = poly.rep.rep
+             return (len(rep), len(poly.gens), exp, rep)
+ 
+-    return sorted(factors, key=key)
++        return sorted(factors, key=key)
+ 
+ 
+ def _factors_product(factors):

@@ -1,0 +1,21 @@
+diff --git a/django/db/backends/base/schema.py b/django/db/backends/base/schema.py
+index 61f88401ab..60513ec546 100644
+--- a/django/db/backends/base/schema.py
++++ b/django/db/backends/base/schema.py
+@@ -407,6 +407,16 @@ class BaseDatabaseSchemaEditor:
+             model, columns, exclude=meta_constraint_names | meta_index_names,
+             **constraint_kwargs
+         )
++        if len(constraint_names) != 1:
++            # If we're deleting an index_together and there is a
++            # unique_together on the same fields, some backends report both the
++            # index and unique constraint as indexes. Use the default index name
++            # to identify the one created by index_together.
++            if constraint_kwargs.get('index') and not constraint_kwargs.get('unique'):
++                constraint_names = [
++                    name for name in constraint_names
++                    if name == self._create_index_name(model._meta.db_table, columns, suffix='_idx')
++                ]
+         if len(constraint_names) != 1:
+             raise ValueError("Found wrong number (%s) of constraints for %s(%s)" % (
+                 len(constraint_names),

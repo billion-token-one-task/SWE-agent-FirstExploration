@@ -1,0 +1,54 @@
+diff --git a/django/db/models/query.py b/django/db/models/query.py
+index 07d6ffd4ca..e8c48a5dc0 100644
+--- a/django/db/models/query.py
++++ b/django/db/models/query.py
+@@ -919,6 +919,9 @@ class QuerySet:
+     def none(self):
+         """Return an empty QuerySet."""
+         clone = self._chain()
++        clone.query.clear_ordering(True)
++        clone.query.clear_limits()
++        clone.query.combined_queries = ()
+         clone.query.set_empty()
+         return clone
+ 
+diff --git a/repro_none_union.py b/repro_none_union.py
+new file mode 100644
+index 0000000000..eb067d30f4
+--- /dev/null
++++ b/repro_none_union.py
+@@ -0,0 +1,34 @@
++from django import forms
++from django.conf import settings
++from django.db import connection, models
++
++settings.configure(
++    INSTALLED_APPS=["django.contrib.contenttypes"],
++    DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}},
++    SECRET_KEY="x",
++)
++
++import django
++
++django.setup()
++
++
++class Publication(models.Model):
++    class Meta:
++        app_label = "tests"
++
++
++with connection.schema_editor() as schema_editor:
++    schema_editor.create_model(Publication)
++
++for i in range(1, 8):
++    Publication.objects.create()
++
++qs = Publication.objects.filter(id__lt=2).union(Publication.objects.filter(id__gt=5))
++empty = qs.none()
++print("union count", qs.count())
++print("none count", empty.count())
++print("none ids", list(empty.values_list("id", flat=True)))
++
++field = forms.ModelMultipleChoiceField(qs, required=False)
++print("clean empty", list(field.clean([]).values_list("id", flat=True)))

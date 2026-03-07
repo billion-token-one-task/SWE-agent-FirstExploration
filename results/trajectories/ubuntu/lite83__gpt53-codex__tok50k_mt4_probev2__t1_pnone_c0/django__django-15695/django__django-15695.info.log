@@ -1,0 +1,610 @@
+2026-03-05 01:15:19,632 - INFO - rex-deploy-django__django-15695 - Starting container docker.ioswebenchsweb.eval.x86_64.django_1776_django-15695latest-1d8189ff-5b72-4089-9f6b-e732c62a62f4 with image docker.io/swebench/sweb.eval.x86_64.django_1776_django-15695:latest serving on port 34371
+2026-03-05 01:15:19,635 - INFO - rex-deploy-django__django-15695 - Starting runtime at 34371
+2026-03-05 01:15:21,247 - INFO - rex-deploy-django__django-15695 - Runtime started in 1.61s
+2026-03-05 01:15:22,288 - INFO - swea-env-django__django-15695 - Environment Initialized
+2026-03-05 01:15:23,522 - INFO - swea-agent-django__django-15695 - Setting up agent for instance django__django-15695
+2026-03-05 01:15:23,522 - INFO - swea-agent-django__django-15695 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok50k_mt4_probev2/django__django-15695/django__django-15695.traj
+2026-03-05 01:18:55,298 - INFO - swea-tools-django__django-15695 - Resetting tools
+2026-03-05 01:18:55,733 - INFO - swea-agent-django__django-15695 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-05 01:18:55,991 - INFO - swea-agent-django__django-15695 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+RenameIndex() crashes when unnamed index is moving backward and forward.
+Description
+	
+RenameIndex() should restore the old auto-generated name when an unnamed index for unique_together is moving backward. Now re-applying RenameIndex() crashes. For example:
+tests/migrations/test_operations.py
+diff --git a/tests/migrations/test_operations.py b/tests/migrations/test_operations.py
+index cfd28b1b39..c0a55023bb 100644
+					
+					 a
+				 
+					
+					 b
+				 
+ class OperationTests(OperationTestBase): 
+29882988        with connection.schema_editor() as editor, self.assertNumQueries(0):
+29892989            operation.database_backwards(app_label, editor, new_state, project_state)
+29902990        self.assertIndexNameExists(table_name, "new_pony_test_idx")
+ 2991        # Re-apply renaming.
+ 2992        with connection.schema_editor() as editor:
+ 2993            operation.database_forwards(app_label, editor, project_state, new_state)
+ 2994        self.assertIndexNameExists(table_name, "new_pony_test_idx")
+29912995        # Deconstruction.
+29922996        definition = operation.deconstruct()
+29932997        self.assertEqual(definition[0], "RenameIndex")
+crashes on PostgreSQL:
+django.db.utils.ProgrammingError: relation "new_pony_test_idx" already exists
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-05 01:18:55,992 - INFO - swea-agent-django__django-15695 - ========================= STEP 1 =========================
+2026-03-05 01:18:58,986 - INFO - swea-agent-django__django-15695 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && rg "class RenameIndex|def database_backwards|unique_together" -n django | head -200
+2026-03-05 01:18:59,336 - INFO - swea-agent-django__django-15695 - 🤖 MODEL INPUT
+OBSERVATION:
+bash: rg: command not found
+
+2026-03-05 01:18:59,339 - INFO - swea-agent-django__django-15695 - ========================= STEP 2 =========================
+2026-03-05 01:19:01,422 - INFO - swea-agent-django__django-15695 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -R "class RenameIndex" -n django | head
+2026-03-05 01:19:01,947 - INFO - swea-agent-django__django-15695 - 🤖 MODEL INPUT
+OBSERVATION:
+django/db/migrations/operations/models.py:879:class RenameIndex(IndexOperation):
+
+2026-03-05 01:19:01,953 - INFO - swea-agent-django__django-15695 - ========================= STEP 3 =========================
+2026-03-05 01:19:03,916 - INFO - swea-agent-django__django-15695 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/django/db/migrations/operations/models.py  --view_range 840 980
+2026-03-05 01:19:04,444 - INFO - swea-agent-django__django-15695 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/django/db/migrations/operations/models.py:
+   840	        self.model_name = model_name
+   841	        self.name = name
+   842	
+   843	    def state_forwards(self, app_label, state):
+   844	        state.remove_index(app_label, self.model_name_lower, self.name)
+   845	
+   846	    def database_forwards(self, app_label, schema_editor, from_state, to_state):
+   847	        model = from_state.apps.get_model(app_label, self.model_name)
+   848	        if self.allow_migrate_model(schema_editor.connection.alias, model):
+   849	            from_model_state = from_state.models[app_label, self.model_name_lower]
+   850	            index = from_model_state.get_index_by_name(self.name)
+   851	            schema_editor.remove_index(model, index)
+   852	
+   853	    def database_backwards(self, app_label, schema_editor, from_state, to_state):
+   854	        model = to_state.apps.get_model(app_label, self.model_name)
+   855	        if self.allow_migrate_model(schema_editor.connection.alias, model):
+   856	            to_model_state = to_state.models[app_label, self.model_name_lower]
+   857	            index = to_model_state.get_index_by_name(self.name)
+   858	            schema_editor.add_index(model, index)
+   859	
+   860	    def deconstruct(self):
+   861	        kwargs = {
+   862	            "model_name": self.model_name,
+   863	            "name": self.name,
+   864	        }
+   865	        return (
+   866	            self.__class__.__qualname__,
+   867	            [],
+   868	            kwargs,
+   869	        )
+   870	
+   871	    def describe(self):
+   872	        return "Remove index %s from %s" % (self.name, self.model_name)
+   873	
+   874	    @property
+   875	    def migration_name_fragment(self):
+   876	        return "remove_%s_%s" % (self.model_name_lower, self.name.lower())
+   877	
+   878	
+   879	class RenameIndex(IndexOperation):
+   880	    """Rename an index."""
+   881	
+   882	    def __init__(self, model_name, new_name, old_name=None, old_fields=None):
+   883	        if not old_name and not old_fields:
+   884	            raise ValueError(
+   885	                "RenameIndex requires one of old_name and old_fields arguments to be "
+   886	                "set."
+   887	            )
+   888	        if old_name and old_fields:
+   889	            raise ValueError(
+   890	                "RenameIndex.old_name and old_fields are mutually exclusive."
+   891	            )
+   892	        self.model_name = model_name
+   893	        self.new_name = new_name
+   894	        self.old_name = old_name
+   895	        self.old_fields = old_fields
+   896	
+   897	    @cached_property
+   898	    def old_name_lower(self):
+   899	        return self.old_name.lower()
+   900	
+   901	    @cached_property
+   902	    def new_name_lower(self):
+   903	        return self.new_name.lower()
+   904	
+   905	    def deconstruct(self):
+   906	        kwargs = {
+   907	            "model_name": self.model_name,
+   908	            "new_name": self.new_name,
+   909	        }
+   910	        if self.old_name:
+   911	            kwargs["old_name"] = self.old_name
+   912	        if self.old_fields:
+   913	            kwargs["old_fields"] = self.old_fields
+   914	        return (self.__class__.__qualname__, [], kwargs)
+   915	
+   916	    def state_forwards(self, app_label, state):
+   917	        if self.old_fields:
+   918	            state.add_index(
+   919	                app_label,
+   920	                self.model_name_lower,
+   921	                models.Index(fields=self.old_fields, name=self.new_name),
+   922	            )
+   923	            state.remove_model_options(
+   924	                app_label,
+   925	                self.model_name_lower,
+   926	                AlterIndexTogether.option_name,
+   927	                self.old_fields,
+   928	            )
+   929	        else:
+   930	            state.rename_index(
+   931	                app_label, self.model_name_lower, self.old_name, self.new_name
+   932	            )
+   933	
+   934	    def database_forwards(self, app_label, schema_editor, from_state, to_state):
+   935	        model = to_state.apps.get_model(app_label, self.model_name)
+   936	        if not self.allow_migrate_model(schema_editor.connection.alias, model):
+   937	            return
+   938	
+   939	        if self.old_fields:
+   940	            from_model = from_state.apps.get_model(app_label, self.model_name)
+   941	            columns = [
+   942	                from_model._meta.get_field(field).column for field in self.old_fields
+   943	            ]
+   944	            matching_index_name = schema_editor._constraint_names(
+   945	                from_model, column_names=columns, index=True
+   946	            )
+   947	            if len(matching_index_name) != 1:
+   948	                raise ValueError(
+   949	                    "Found wrong number (%s) of indexes for %s(%s)."
+   950	                    % (
+   951	                        len(matching_index_name),
+   952	                        from_model._meta.db_table,
+   953	                        ", ".join(columns),
+   954	                    )
+   955	                )
+   956	            old_index = models.Index(
+   957	                fields=self.old_fields,
+   958	                name=matching_index_name[0],
+   959	            )
+   960	        else:
+   961	            from_model_state = from_state.models[app_label, self.model_name_lower]
+   962	            old_index = from_model_state.get_index_by_name(self.old_name)
+   963	
+   964	        to_model_state = to_state.models[app_label, self.model_name_lower]
+   965	        new_index = to_model_state.get_index_by_name(self.new_name)
+   966	        schema_editor.rename_index(model, old_index, new_index)
+   967	
+   968	    def database_backwards(self, app_label, schema_editor, from_state, to_state):
+   969	        if self.old_fields:
+   970	            # Backward operation with unnamed index is a no-op.
+   971	            return
+   972	
+   973	        self.new_name_lower, self.old_name_lower = (
+   974	            self.old_name_lower,
+   975	            self.new_name_lower,
+   976	        )
+   977	        self.new_name, self.old_name = self.old_name, self.new_name
+   978	
+   979	        self.database_forwards(app_label, schema_editor, from_state, to_state)
+   980	
+
+
+2026-03-05 01:19:04,450 - INFO - swea-agent-django__django-15695 - ========================= STEP 4 =========================
+2026-03-05 01:19:07,330 - INFO - swea-agent-django__django-15695 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/django/db/migrations/operations/models.py  --view_range 980 1040
+2026-03-05 01:19:07,780 - INFO - swea-agent-django__django-15695 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/django/db/migrations/operations/models.py:
+   980	
+   981	        self.new_name_lower, self.old_name_lower = (
+   982	            self.old_name_lower,
+   983	            self.new_name_lower,
+   984	        )
+   985	        self.new_name, self.old_name = self.old_name, self.new_name
+   986	
+   987	    def describe(self):
+   988	        if self.old_name:
+   989	            return (
+   990	                f"Rename index {self.old_name} on {self.model_name} to {self.new_name}"
+   991	            )
+   992	        return (
+   993	            f"Rename unnamed index for {self.old_fields} on {self.model_name} to "
+   994	            f"{self.new_name}"
+   995	        )
+   996	
+   997	    @property
+   998	    def migration_name_fragment(self):
+   999	        if self.old_name:
+  1000	            return "rename_%s_%s" % (self.old_name_lower, self.new_name_lower)
+  1001	        return "rename_%s_%s_%s" % (
+  1002	            self.model_name_lower,
+  1003	            "_".join(self.old_fields),
+  1004	            self.new_name_lower,
+  1005	        )
+  1006	
+  1007	    def reduce(self, operation, app_label):
+  1008	        if (
+  1009	            isinstance(operation, RenameIndex)
+  1010	            and self.model_name_lower == operation.model_name_lower
+  1011	            and operation.old_name
+  1012	            and self.new_name_lower == operation.old_name_lower
+  1013	        ):
+  1014	            return [
+  1015	                RenameIndex(
+  1016	                    self.model_name,
+  1017	                    new_name=operation.new_name,
+  1018	                    old_name=self.old_name,
+  1019	                    old_fields=self.old_fields,
+  1020	                )
+  1021	            ]
+  1022	        return super().reduce(operation, app_label)
+  1023	
+  1024	
+  1025	class AddConstraint(IndexOperation):
+  1026	    option_name = "constraints"
+  1027	
+  1028	    def __init__(self, model_name, constraint):
+  1029	        self.model_name = model_name
+  1030	        self.constraint = constraint
+  1031	
+  1032	    def state_forwards(self, app_label, state):
+  1033	        state.add_constraint(app_label, self.model_name_lower, self.constraint)
+  1034	
+  1035	    def database_forwards(self, app_label, schema_editor, from_state, to_state):
+  1036	        model = to_state.apps.get_model(app_label, self.model_name)
+  1037	        if self.allow_migrate_model(schema_editor.connection.alias, model):
+  1038	            schema_editor.add_constraint(model, self.constraint)
+  1039	
+  1040	    def database_backwards(self, app_label, schema_editor, from_state, to_state):
+
+
+2026-03-05 01:19:07,787 - INFO - swea-agent-django__django-15695 - ========================= STEP 5 =========================
+2026-03-05 01:19:11,318 - INFO - swea-agent-django__django-15695 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+from django.db.migrations.operations.models import RenameIndex
+
+op = RenameIndex('Pony', new_name='new_pony_test_idx', old_fields=('weight','pink'))
+print('initial', op.old_fields, op.old_name, op.new_name)
+print('dict before backward', op.__dict__)
+op.database_backwards('app', None, None, None)
+print('dict after backward', op.__dict__)
+PY
+2026-03-05 01:19:12,313 - INFO - swea-agent-django__django-15695 - 🤖 MODEL INPUT
+OBSERVATION:
+initial ('weight', 'pink') None new_pony_test_idx
+dict before backward {'_constructor_args': (('Pony',), {'new_name': 'new_pony_test_idx', 'old_fields': ('weight', 'pink')}), 'model_name': 'Pony', 'new_name': 'new_pony_test_idx', 'old_name': None, 'old_fields': ('weight', 'pink')}
+dict after backward {'_constructor_args': (('Pony',), {'new_name': 'new_pony_test_idx', 'old_fields': ('weight', 'pink')}), 'model_name': 'Pony', 'new_name': 'new_pony_test_idx', 'old_name': None, 'old_fields': ('weight', 'pink')}
+
+2026-03-05 01:19:12,321 - INFO - swea-agent-django__django-15695 - ========================= STEP 6 =========================
+2026-03-05 01:19:22,850 - INFO - swea-agent-django__django-15695 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/django/db/migrations/operations/models.py   --old_str '    def database_backwards(self, app_label, schema_editor, from_state, to_state):
+        if self.old_fields:
+            # Backward operation with unnamed index is a no-op.
+            return
+
+        self.new_name_lower, self.old_name_lower = (
+            self.old_name_lower,
+            self.new_name_lower,
+        )
+        self.new_name, self.old_name = self.old_name, self.new_name
+
+        self.database_forwards(app_label, schema_editor, from_state, to_state)
+
+        self.new_name_lower, self.old_name_lower = (
+            self.old_name_lower,
+            self.new_name_lower,
+        )
+        self.new_name, self.old_name = self.old_name, self.new_name
+' --new_str '    def database_backwards(self, app_label, schema_editor, from_state, to_state):
+        if self.old_fields:
+            # Rename back to the previous auto-generated name.
+            model = to_state.apps.get_model(app_label, self.model_name)
+            if not self.allow_migrate_model(schema_editor.connection.alias, model):
+                return
+
+            columns = [model._meta.get_field(field).column for field in self.old_fields]
+            matching_index_name = schema_editor._constraint_names(
+                model,
+                column_names=columns,
+                index=True,
+                unique=False,
+                primary_key=False,
+                exclude=(),
+            )
+            if len(matching_index_name) != 1:
+                raise ValueError(
+                    "Found wrong number (%s) of indexes for %s(%s)."
+                    % (
+                        len(matching_index_name),
+                        model._meta.db_table,
+                        ", ".join(columns),
+                    )
+                )
+            old_index = models.Index(fields=self.old_fields, name=self.new_name)
+            new_index = models.Index(fields=self.old_fields, name=matching_index_name[0])
+            schema_editor.rename_index(model, old_index, new_index)
+            return
+
+        self.new_name_lower, self.old_name_lower = (
+            self.old_name_lower,
+            self.new_name_lower,
+        )
+        self.new_name, self.old_name = self.old_name, self.new_name
+
+        self.database_forwards(app_label, schema_editor, from_state, to_state)
+
+        self.new_name_lower, self.old_name_lower = (
+            self.old_name_lower,
+            self.new_name_lower,
+        )
+        self.new_name, self.old_name = self.old_name, self.new_name
+'
+2026-03-05 01:19:23,321 - INFO - swea-agent-django__django-15695 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/django/db/migrations/operations/models.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/django/db/migrations/operations/models.py:
+   963	
+   964	        to_model_state = to_state.models[app_label, self.model_name_lower]
+   965	        new_index = to_model_state.get_index_by_name(self.new_name)
+   966	        schema_editor.rename_index(model, old_index, new_index)
+   967	
+   968	    def database_backwards(self, app_label, schema_editor, from_state, to_state):
+   969	        if self.old_fields:
+   970	            # Rename back to the previous auto-generated name.
+   971	            model = to_state.apps.get_model(app_label, self.model_name)
+   972	            if not self.allow_migrate_model(schema_editor.connection.alias, model):
+   973	                return
+   974	
+   975	            columns = [model._meta.get_field(field).column for field in self.old_fields]
+   976	            matching_index_name = schema_editor._constraint_names(
+   977	                model,
+   978	                column_names=columns,
+   979	                index=True,
+   980	                unique=False,
+   981	                primary_key=False,
+   982	                exclude=(),
+   983	            )
+   984	            if len(matching_index_name) != 1:
+   985	                raise ValueError(
+   986	                    "Found wrong number (%s) of indexes for %s(%s)."
+   987	                    % (
+   988	                        len(matching_index_name),
+   989	                        model._meta.db_table,
+   990	                        ", ".join(columns),
+   991	                    )
+   992	                )
+   993	            old_index = models.Index(fields=self.old_fields, name=self.new_name)
+   994	            new_index = models.Index(fields=self.old_fields, name=matching_index_name[0])
+   995	            schema_editor.rename_index(model, old_index, new_index)
+   996	            return
+   997	
+   998	        self.new_name_lower, self.old_name_lower = (
+   999	            self.old_name_lower,
+  1000	            self.new_name_lower,
+  1001	        )
+  1002	        self.new_name, self.old_name = self.old_name, self.new_name
+  1003	
+  1004	        self.database_forwards(app_label, schema_editor, from_state, to_state)
+  1005	
+  1006	        self.new_name_lower, self.old_name_lower = (
+  1007	            self.old_name_lower,
+  1008	            self.new_name_lower,
+  1009	        )
+  1010	        self.new_name, self.old_name = self.old_name, self.new_name
+  1011	
+  1012	    def describe(self):
+  1013	        if self.old_name:
+  1014	            return (
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-05 01:19:23,331 - INFO - swea-agent-django__django-15695 - ========================= STEP 7 =========================
+2026-03-05 01:19:29,082 - WARNING - swea-agent-django__django-15695 - Requerying model after FunctionCallingFormatError (1th requery)
+2026-03-05 01:19:29,090 - WARNING - swea-agent-django__django-15695 - Your last output did not use any tool calls!
+Please make sure your output includes exactly _ONE_ function call!
+You must invoke the function directly using the function call format.
+You cannot invoke commands with ```, you have to use the function call format.
+If you think you have already resolved the issue, please submit your changes by running the `submit` command.
+If you think you cannot solve the problem, please run `exit_forfeit` (if available) or `submit`.
+Else, please continue with a new tool call!
+2026-03-05 01:19:30,930 - INFO - swea-agent-django__django-15695 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-05 01:19:31,705 - INFO - swea-agent-django__django-15695 - 🤖 MODEL INPUT
+OBSERVATION:
+Thank you for your work on this issue. Please carefully follow the steps below to help review your changes.
+
+1. If you made any changes to your code after running the reproduction script, please run the reproduction script again.
+  If the reproduction script is failing, please revisit your changes and make sure they are correct.
+  If you have already removed your reproduction script, please ignore this step.
+2. Remove your reproduction script (if you haven't done so already).
+3. If you have modified any TEST files, please revert them to the state they had before you started fixing the issue.
+  You can do this with `git checkout -- /path/to/test/file.py`. Use below <diff> to find the files you need to revert.
+4. Run the submit command again to confirm.
+
+Here is a list of all of your changes:
+
+<diff>
+diff --git a/django/db/migrations/operations/models.py b/django/db/migrations/operations/models.py
+index d17232e4ec..bf5c693fd5 100644
+--- a/django/db/migrations/operations/models.py
++++ b/django/db/migrations/operations/models.py
+@@ -967,7 +967,32 @@ class RenameIndex(IndexOperation):
+ 
+     def database_backwards(self, app_label, schema_editor, from_state, to_state):
+         if self.old_fields:
+-            # Backward operation with unnamed index is a no-op.
++            # Rename back to the previous auto-generated name.
++            model = to_state.apps.get_model(app_label, self.model_name)
++            if not self.allow_migrate_model(schema_editor.connection.alias, model):
++                return
++
++            columns = [model._meta.get_field(field).column for field in self.old_fields]
++            matching_index_name = schema_editor._constraint_names(
++                model,
++                column_names=columns,
++                index=True,
++                unique=False,
++                primary_key=False,
++                exclude=(),
++            )
++            if len(matching_index_name) != 1:
++                raise ValueError(
++                    "Found wrong number (%s) of indexes for %s(%s)."
++                    % (
++                        len(matching_index_name),
++                        model._meta.db_table,
++                        ", ".join(columns),
++                    )
++                )
++            old_index = models.Index(fields=self.old_fields, name=self.new_name)
++            new_index = models.Index(fields=self.old_fields, name=matching_index_name[0])
++            schema_editor.rename_index(model, old_index, new_index)
+             return
+ 
+         self.new_name_lower, self.old_name_lower = (
+
+</diff>
+
+
+2026-03-05 01:19:31,720 - INFO - swea-agent-django__django-15695 - ========================= STEP 9 =========================
+2026-03-05 01:19:37,108 - WARNING - swea-agent-django__django-15695 - Requerying model after FunctionCallingFormatError (1th requery)
+2026-03-05 01:19:37,115 - WARNING - swea-agent-django__django-15695 - Your last output did not use any tool calls!
+Please make sure your output includes exactly _ONE_ function call!
+You must invoke the function directly using the function call format.
+You cannot invoke commands with ```, you have to use the function call format.
+If you think you have already resolved the issue, please submit your changes by running the `submit` command.
+If you think you cannot solve the problem, please run `exit_forfeit` (if available) or `submit`.
+Else, please continue with a new tool call!
+2026-03-05 01:19:39,498 - INFO - swea-agent-django__django-15695 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-05 01:19:40,517 - INFO - swea-agent-django__django-15695 - Found submission: diff --git a/django/db/migrations/operations/models.py b/django/db/migrations/operations/models.py
+index d17232e4ec..bf5c693fd5 100644
+--- a/django/db/migrations/operations/models.py
++++ b/django/db/migrations/operations/models.py
+@@ -967,7 +967,32 @@ class RenameIndex(IndexOperation):
+ 
+     def database_backwards(self, app_label, schema_editor, from_state, to_state):
+         if self.old_fields:
+-            # Backward operation with unnamed index is a no-op.
++            # Rename back to the previous auto-generated name.
++            model = to_state.apps.get_model(app_label, self.model_name)
++            if not self.allow_migrate_model(schema_editor.connection.alias, model):
++                return
++
++            columns = [model._meta.get_field(field).column for field in self.old_fields]
++            matching_index_name = schema_editor._constraint_names(
++                model,
++                column_names=columns,
++                index=True,
++                unique=False,
++                primary_key=False,
++                exclude=(),
++            )
++            if len(matching_index_name) != 1:
++                raise ValueError(
++                    "Found wrong number (%s) of indexes for %s(%s)."
++                    % (
++                        len(matching_index_name),
++                        model._meta.db_table,
++                        ", ".join(columns),
++                    )
++                )
++            old_index = models.Index(fields=self.old_fields, name=self.new_name)
++            new_index = models.Index(fields=self.old_fields, name=matching_index_name[0])
++            schema_editor.rename_index(model, old_index, new_index)
+             return
+ 
+         self.new_name_lower, self.old_name_lower = (
+
+2026-03-05 01:19:40,545 - INFO - swea-agent-django__django-15695 - 🤖 MODEL INPUT
+OBSERVATION:
+diff --git a/django/db/migrations/operations/models.py b/django/db/migrations/operations/models.py
+index d17232e4ec..bf5c693fd5 100644
+--- a/django/db/migrations/operations/models.py
++++ b/django/db/migrations/operations/models.py
+@@ -967,7 +967,32 @@ class RenameIndex(IndexOperation):
+ 
+     def database_backwards(self, app_label, schema_editor, from_state, to_state):
+         if self.old_fields:
+-            # Backward operation with unnamed index is a no-op.
++            # Rename back to the previous auto-generated name.
++            model = to_state.apps.get_model(app_label, self.model_name)
++            if not self.allow_migrate_model(schema_editor.connection.alias, model):
++                return
++
++            columns = [model._meta.get_field(field).column for field in self.old_fields]
++            matching_index_name = schema_editor._constraint_names(
++                model,
++                column_names=columns,
++                index=True,
++                unique=False,
++                primary_key=False,
++                exclude=(),
++            )
++            if len(matching_index_name) != 1:
++                raise ValueError(
++                    "Found wrong number (%s) of indexes for %s(%s)."
++                    % (
++                        len(matching_index_name),
++                        model._meta.db_table,
++                        ", ".join(columns),
++                    )
++                )
++            old_index = models.Index(fields=self.old_fields, name=self.new_name)
++            new_index = models.Index(fields=self.old_fields, name=matching_index_name[0])
++            schema_editor.rename_index(model, old_index, new_index)
+             return
+ 
+         self.new_name_lower, self.old_name_lower = (
+
+2026-03-05 01:19:40,716 - INFO - swea-agent-django__django-15695 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok50k_mt4_probev2/django__django-15695/django__django-15695.traj
+2026-03-05 01:19:40,751 - INFO - swea-env-django__django-15695 - Beginning environment shutdown...

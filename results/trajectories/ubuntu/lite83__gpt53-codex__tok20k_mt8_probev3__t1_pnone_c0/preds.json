@@ -1,0 +1,417 @@
+{
+    "astropy__astropy-12907": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "astropy__astropy-12907",
+        "model_patch": "diff --git a/repro_separable_bug.py b/repro_separable_bug.py\nnew file mode 100644\nindex 000000000..d6ceff770\n--- /dev/null\n+++ b/repro_separable_bug.py\n@@ -0,0 +1,13 @@\n+from astropy.modeling import models as m\n+from astropy.modeling.separable import separability_matrix\n+\n+cm = m.Linear1D(10) & m.Linear1D(5)\n+\n+print('cm:')\n+print(separability_matrix(cm))\n+\n+print('\\nflat compound:')\n+print(separability_matrix(m.Pix2Sky_TAN() & m.Linear1D(10) & m.Linear1D(5)))\n+\n+print('\\nnested compound:')\n+print(separability_matrix(m.Pix2Sky_TAN() & cm))\n"
+    },
+    "astropy__astropy-14182": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "astropy__astropy-14182",
+        "model_patch": "diff --git a/astropy/io/ascii/rst.py b/astropy/io/ascii/rst.py\nindex abdeba8ef..e336a6251 100644\n--- a/astropy/io/ascii/rst.py\n+++ b/astropy/io/ascii/rst.py\n@@ -57,8 +57,14 @@ class RST(FixedWidth):\n     data_class = SimpleRSTData\n     header_class = SimpleRSTHeader\n \n-    def __init__(self):\n-        super().__init__(delimiter_pad=None, bookend=False)\n+    def __init__(self, header_rows=None):\n+        if header_rows is None:\n+            header_rows = [\"name\"]\n+        super().__init__(\n+            delimiter_pad=None,\n+            bookend=False,\n+            header_rows=header_rows,\n+        )\n \n     def write(self, lines):\n         lines = super().write(lines)\ndiff --git a/repro_rst_header_rows.py b/repro_rst_header_rows.py\nnew file mode 100644\nindex 000000000..32fb8168f\n--- /dev/null\n+++ b/repro_rst_header_rows.py\n@@ -0,0 +1,10 @@\n+from astropy.table import QTable\n+import astropy.units as u\n+import sys\n+\n+\n+tbl = QTable({'wave': [350,950]*u.nm, 'response': [0.7, 1.2]*u.count})\n+print('fixed_width with header_rows works:')\n+tbl.write(sys.stdout, format='ascii.fixed_width', header_rows=['name', 'unit'])\n+print('\\nrst with header_rows:')\n+tbl.write(sys.stdout, format='ascii.rst', header_rows=['name', 'unit'])\n"
+    },
+    "astropy__astropy-14365": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "astropy__astropy-14365",
+        "model_patch": "diff --git a/repro_qdp_case.py b/repro_qdp_case.py\nnew file mode 100644\nindex 000000000..965350111\n--- /dev/null\n+++ b/repro_qdp_case.py\n@@ -0,0 +1,11 @@\n+from astropy.table import Table\n+from pathlib import Path\n+p = Path('/tmp/test.qdp')\n+p.write_text('read serr 1 2\\n1 0.5 1 0.5\\n')\n+print('reading', p)\n+try:\n+    t = Table.read(p, format='ascii.qdp')\n+    print('OK', t.colnames, t[0])\n+except Exception as e:\n+    print(type(e).__name__, e)\n+    raise\n"
+    },
+    "astropy__astropy-14995": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "astropy__astropy-14995",
+        "model_patch": ""
+    },
+    "django__django-10914": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-10914",
+        "model_patch": "diff --git a/repro_upload_perm.py b/repro_upload_perm.py\nnew file mode 100644\nindex 0000000000..4532aa8186\n--- /dev/null\n+++ b/repro_upload_perm.py\n@@ -0,0 +1,38 @@\n+import os\n+import stat\n+import tempfile\n+\n+from django.conf import settings\n+\n+if not settings.configured:\n+    tmp = tempfile.mkdtemp(prefix='dj-repro-')\n+    settings.configure(\n+        SECRET_KEY='x',\n+        INSTALLED_APPS=[],\n+        MEDIA_ROOT=tmp,\n+        DEFAULT_FILE_STORAGE='django.core.files.storage.FileSystemStorage',\n+    )\n+\n+from django.core.files.base import ContentFile\n+from django.core.files.uploadedfile import TemporaryUploadedFile\n+from django.core.files.storage import FileSystemStorage\n+\n+\n+def mode(path):\n+    return oct(stat.S_IMODE(os.stat(path).st_mode))\n+\n+\n+storage = FileSystemStorage()\n+\n+# Memory upload path\n+name1 = storage.save('mem.txt', ContentFile(b'abc'))\n+path1 = storage.path(name1)\n+print('memory:', mode(path1))\n+\n+# Temporary upload path\n+t = TemporaryUploadedFile('tmp.txt', 'text/plain', 3, None)\n+t.write(b'abc')\n+t.seek(0)\n+name2 = storage.save('tmp.txt', t)\n+path2 = storage.path(name2)\n+print('temp:', mode(path2))\n"
+    },
+    "django__django-11099": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-11099",
+        "model_patch": "diff --git a/django/contrib/auth/validators.py b/django/contrib/auth/validators.py\nindex b4878cfd45..1304f20a60 100644\n--- a/django/contrib/auth/validators.py\n+++ b/django/contrib/auth/validators.py\n@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _\n \n @deconstructible\n class ASCIIUsernameValidator(validators.RegexValidator):\n-    regex = r'^[\\w.@+-]+$'\n+    regex = r'\\A[\\w.@+-]+\\Z'\n     message = _(\n         'Enter a valid username. This value may contain only English letters, '\n         'numbers, and @/./+/-/_ characters.'\n@@ -17,7 +17,7 @@ class ASCIIUsernameValidator(validators.RegexValidator):\n \n @deconstructible\n class UnicodeUsernameValidator(validators.RegexValidator):\n-    regex = r'^[\\w.@+-]+$'\n+    regex = r'\\A[\\w.@+-]+\\Z'\n     message = _(\n         'Enter a valid username. This value may contain only letters, '\n         'numbers, and @/./+/-/_ characters.'\n"
+    },
+    "django__django-11133": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-11133",
+        "model_patch": ""
+    },
+    "django__django-11179": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-11179",
+        "model_patch": "diff --git a/django/db/models/deletion.py b/django/db/models/deletion.py\nindex 92fe4affb9..3a462f1c4c 100644\n--- a/django/db/models/deletion.py\n+++ b/django/db/models/deletion.py\n@@ -277,6 +277,7 @@ class Collector:\n             if self.can_fast_delete(instance):\n                 with transaction.mark_for_rollback_on_error():\n                     count = sql.DeleteQuery(model).delete_batch([instance.pk], self.using)\n+                setattr(instance, model._meta.pk.attname, None)\n                 return count, {model._meta.label: count}\n \n         with transaction.atomic(using=self.using, savepoint=False):\ndiff --git a/repro_delete_pk.py b/repro_delete_pk.py\nnew file mode 100644\nindex 0000000000..4e4bd01865\n--- /dev/null\n+++ b/repro_delete_pk.py\n@@ -0,0 +1,30 @@\n+from django.conf import settings\n+from django.db import connection, models\n+\n+\n+if not settings.configured:\n+    settings.configure(\n+        INSTALLED_APPS=[],\n+        DATABASES={\"default\": {\"ENGINE\": \"django.db.backends.sqlite3\", \"NAME\": \":memory:\"}},\n+        SECRET_KEY=\"repro\",\n+    )\n+\n+import django\n+\n+django.setup()\n+\n+\n+class SimpleModel(models.Model):\n+    name = models.CharField(max_length=20)\n+\n+    class Meta:\n+        app_label = \"repro\"\n+\n+\n+with connection.schema_editor() as editor:\n+    editor.create_model(SimpleModel)\n+\n+obj = SimpleModel.objects.create(name=\"x\")\n+print(\"before delete pk:\", obj.pk)\n+obj.delete()\n+print(\"after delete pk:\", obj.pk)\n"
+    },
+    "django__django-11815": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-11815",
+        "model_patch": "diff --git a/repro_enum_migration.py b/repro_enum_migration.py\nnew file mode 100644\nindex 0000000000..22fdc6d376\n--- /dev/null\n+++ b/repro_enum_migration.py\n@@ -0,0 +1,18 @@\n+from enum import Enum\n+\n+from django.db.migrations.serializer import serializer_factory\n+from django.utils.translation import gettext_lazy as _\n+\n+\n+class Status(Enum):\n+    GOOD = _('Good')\n+    BAD = _('Bad')\n+\n+    def __str__(self):\n+        return self.name\n+\n+\n+if __name__ == '__main__':\n+    value, imports = serializer_factory(Status.GOOD).serialize()\n+    print(value)\n+    print(sorted(imports))\n"
+    },
+    "django__django-11848": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-11848",
+        "model_patch": "diff --git a/django/utils/http.py b/django/utils/http.py\nindex 572cfb4347..27557dc446 100644\n--- a/django/utils/http.py\n+++ b/django/utils/http.py\n@@ -176,10 +176,11 @@ def parse_http_date(date):\n     try:\n         year = int(m.group('year'))\n         if year < 100:\n-            if year < 70:\n-                year += 2000\n-            else:\n-                year += 1900\n+            current_year = datetime.datetime.utcnow().year\n+            current_century = current_year - (current_year % 100)\n+            year += current_century\n+            if year - current_year > 50:\n+                year -= 100\n         month = MONTHS.index(m.group('mon').lower()) + 1\n         day = int(m.group('day'))\n         hour = int(m.group('hour'))\ndiff --git a/repro_http_date.py b/repro_http_date.py\nnew file mode 100644\nindex 0000000000..50e2ebeaa7\n--- /dev/null\n+++ b/repro_http_date.py\n@@ -0,0 +1,30 @@\n+import datetime\n+from django.utils.http import parse_http_date\n+\n+\n+def current_two_digit_window_candidates(yy):\n+    now = datetime.datetime.utcnow()\n+    current_year = now.year\n+    century = current_year - (current_year % 100)\n+    candidate = century + yy\n+    if candidate - current_year > 50:\n+        candidate -= 100\n+    return current_year, candidate\n+\n+\n+def main():\n+    yy = 77\n+    date = \"Sunday, 06-Nov-%02d 08:49:37 GMT\" % yy\n+    ts = parse_http_date(date)\n+    parsed_year = datetime.datetime.utcfromtimestamp(ts).year\n+    current_year, expected_year = current_two_digit_window_candidates(yy)\n+\n+    print(\"Current year:\", current_year)\n+    print(\"Input:\", date)\n+    print(\"Parsed year:\", parsed_year)\n+    print(\"Expected year by RFC7231 rule:\", expected_year)\n+    print(\"BUG PRESENT:\", parsed_year != expected_year)\n+\n+\n+if __name__ == \"__main__\":\n+    main()\n"
+    },
+    "django__django-11964": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-11964",
+        "model_patch": "diff --git a/django/db/models/enums.py b/django/db/models/enums.py\nindex bbe362a6ab..b520b34a43 100644\n--- a/django/db/models/enums.py\n+++ b/django/db/models/enums.py\n@@ -60,7 +60,10 @@ class ChoicesMeta(enum.EnumMeta):\n \n class Choices(enum.Enum, metaclass=ChoicesMeta):\n     \"\"\"Class for creating enumerated choices.\"\"\"\n-    pass\n+\n+    def __str__(self):\n+        \"\"\"Use value when cast to str() so freshly assigned values match DB-loaded values.\"\"\"\n+        return str(self.value)\n \n \n class IntegerChoices(int, Choices):\ndiff --git a/repro_enum_issue.py b/repro_enum_issue.py\nnew file mode 100644\nindex 0000000000..9c75223a51\n--- /dev/null\n+++ b/repro_enum_issue.py\n@@ -0,0 +1,14 @@\n+from django.conf import settings\n+\n+settings.configure(\n+    INSTALLED_APPS=[],\n+    DATABASES={\"default\": {\"ENGINE\": \"django.db.backends.sqlite3\", \"NAME\": \":memory:\"}},\n+)\n+\n+from django.db import models\n+\n+class MyChoice(models.TextChoices):\n+    FIRST_CHOICE = \"first\", \"The first choice, it is\"\n+\n+v = MyChoice.FIRST_CHOICE\n+print(type(v), v, str(v), v.value)\n"
+    },
+    "django__django-12125": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-12125",
+        "model_patch": ""
+    },
+    "django__django-12708": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-12708",
+        "model_patch": ""
+    },
+    "django__django-13028": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-13028",
+        "model_patch": ""
+    },
+    "django__django-13033": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-13033",
+        "model_patch": ""
+    },
+    "django__django-13158": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-13158",
+        "model_patch": ""
+    },
+    "django__django-13315": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-13315",
+        "model_patch": ""
+    },
+    "django__django-13401": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-13401",
+        "model_patch": "diff --git a/django/db/models/fields/__init__.py b/django/db/models/fields/__init__.py\nindex 28374272f4..588ee38e5a 100644\n--- a/django/db/models/fields/__init__.py\n+++ b/django/db/models/fields/__init__.py\n@@ -516,17 +516,20 @@ class Field(RegisterLookupMixin):\n     def __eq__(self, other):\n         # Needed for @total_ordering\n         if isinstance(other, Field):\n-            return self.creation_counter == other.creation_counter\n+            return (\n+                self.creation_counter == other.creation_counter and\n+                self.model == other.model\n+            )\n         return NotImplemented\n \n     def __lt__(self, other):\n         # This is needed because bisect does not take a comparison function.\n         if isinstance(other, Field):\n-            return self.creation_counter < other.creation_counter\n+            return (self.creation_counter, self.model) < (other.creation_counter, other.model)\n         return NotImplemented\n \n     def __hash__(self):\n-        return hash(self.creation_counter)\n+        return hash((self.creation_counter, self.model))\n \n     def __deepcopy__(self, memodict):\n         # We don't have to deepcopy very much here, since most things are not\n"
+    },
+    "django__django-13551": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-13551",
+        "model_patch": ""
+    },
+    "django__django-13658": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-13658",
+        "model_patch": "diff --git a/django/core/management/__init__.py b/django/core/management/__init__.py\nindex 1ba093e51f..4e30a28f33 100644\n--- a/django/core/management/__init__.py\n+++ b/django/core/management/__init__.py\n@@ -344,7 +344,12 @@ class ManagementUtility:\n         # Preprocess options to extract --settings and --pythonpath.\n         # These options could affect the commands that are available, so they\n         # must be processed early.\n-        parser = CommandParser(usage='%(prog)s subcommand [options] [args]', add_help=False, allow_abbrev=False)\n+        parser = CommandParser(\n+            prog=self.prog_name,\n+            usage='%(prog)s subcommand [options] [args]',\n+            add_help=False,\n+            allow_abbrev=False,\n+        )\n         parser.add_argument('--settings')\n         parser.add_argument('--pythonpath')\n         parser.add_argument('args', nargs='*')  # catch-all\ndiff --git a/repro.py b/repro.py\nnew file mode 100644\nindex 0000000000..c2bac109d1\n--- /dev/null\n+++ b/repro.py\n@@ -0,0 +1,16 @@\n+import sys\n+from django.core.management import ManagementUtility\n+\n+\n+def main():\n+    original = sys.argv[:]\n+    sys.argv = [None, \"placeholder\"]\n+    try:\n+        utility = ManagementUtility(argv=[\"custom-prog\", \"help\"])\n+        utility.execute()\n+    finally:\n+        sys.argv = original\n+\n+\n+if __name__ == \"__main__\":\n+    main()\n"
+    },
+    "django__django-13925": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-13925",
+        "model_patch": ""
+    },
+    "django__django-13933": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-13933",
+        "model_patch": ""
+    },
+    "django__django-13964": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-13964",
+        "model_patch": "diff --git a/django/db/models/fields/related_descriptors.py b/django/db/models/fields/related_descriptors.py\nindex 872a4c98dc..779f29b858 100644\n--- a/django/db/models/fields/related_descriptors.py\n+++ b/django/db/models/fields/related_descriptors.py\n@@ -258,6 +258,12 @@ class ForwardManyToOneDescriptor:\n \n         # Set the related instance cache used by __get__ to avoid an SQL query\n         # when accessing the attribute we just set.\n+        # Keep the local foreign key value in sync with the related object so\n+        # subsequent parent primary key updates are reflected (e.g. non-auto\n+        # CharField primary keys assigned after relation assignment).\n+        if value is not None:\n+            for lh_field, rh_field in self.field.related_fields:\n+                setattr(instance, lh_field.attname, getattr(value, rh_field.attname))\n         self.field.set_cached_value(instance, value)\n \n         # If this is a one-to-one relation, set the reverse accessor cache on\n"
+    },
+    "django__django-14017": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-14017",
+        "model_patch": "diff --git a/django/db/models/query_utils.py b/django/db/models/query_utils.py\nindex c957ffa564..09047c6e2f 100644\n--- a/django/db/models/query_utils.py\n+++ b/django/db/models/query_utils.py\n@@ -64,6 +64,12 @@ class Q(tree.Node):\n     def __and__(self, other):\n         return self._combine(other, self.AND)\n \n+    def __rand__(self, other):\n+        return self.__and__(other)\n+\n+    def __ror__(self, other):\n+        return self.__or__(other)\n+\n     def __invert__(self):\n         obj = type(self)()\n         obj.add(self, self.AND)\ndiff --git a/repro_q_exists.py b/repro_q_exists.py\nnew file mode 100644\nindex 0000000000..14efd78621\n--- /dev/null\n+++ b/repro_q_exists.py\n@@ -0,0 +1,13 @@\n+from django.db.models import Exists, Q\n+\n+\n+def main():\n+    e = Exists(None)\n+    print('Exists & Q:', e & Q())\n+    try:\n+        print('Q & Exists:', Q() & e)\n+    except Exception as exc:\n+        print(type(exc).__name__, exc)\n+\n+if __name__ == '__main__':\n+    main()\n"
+    },
+    "django__django-14155": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-14155",
+        "model_patch": ""
+    },
+    "django__django-14534": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-14534",
+        "model_patch": "diff --git a/django/forms/boundfield.py b/django/forms/boundfield.py\nindex 2ff8b0ee26..c93959b1e3 100644\n--- a/django/forms/boundfield.py\n+++ b/django/forms/boundfield.py\n@@ -277,7 +277,7 @@ class BoundWidget:\n \n     @property\n     def id_for_label(self):\n-        return 'id_%s_%s' % (self.data['name'], self.data['index'])\n+        return self.data['attrs']['id']\n \n     @property\n     def choice_label(self):\ndiff --git a/repro_boundwidget_id.py b/repro_boundwidget_id.py\nnew file mode 100644\nindex 0000000000..2f768dfa66\n--- /dev/null\n+++ b/repro_boundwidget_id.py\n@@ -0,0 +1,12 @@\n+from django import forms\n+\n+class F(forms.Form):\n+    beatles = forms.MultipleChoiceField(\n+        choices=[('j', 'John'), ('p', 'Paul')],\n+        widget=forms.CheckboxSelectMultiple,\n+    )\n+\n+f = F(auto_id='custom_%s')\n+first = f['beatles'].subwidgets[0]\n+print('subwidget attrs id:', first.data['attrs'].get('id'))\n+print('boundwidget id_for_label:', first.id_for_label)\n"
+    },
+    "django__django-14580": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-14580",
+        "model_patch": ""
+    },
+    "django__django-14608": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-14608",
+        "model_patch": "diff --git a/django/forms/formsets.py b/django/forms/formsets.py\nindex a89c35599f..bbb08a3376 100644\n--- a/django/forms/formsets.py\n+++ b/django/forms/formsets.py\n@@ -295,7 +295,7 @@ class BaseFormSet:\n         \"\"\"\n         if self._non_form_errors is None:\n             self.full_clean()\n-        return self._non_form_errors\n+        return self.error_class(self._non_form_errors, error_class='nonform')\n \n     @property\n     def errors(self):\n"
+    },
+    "django__django-14672": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-14672",
+        "model_patch": "diff --git a/django/db/models/fields/reverse_related.py b/django/db/models/fields/reverse_related.py\nindex ccc2223a5f..65950590e2 100644\n--- a/django/db/models/fields/reverse_related.py\n+++ b/django/db/models/fields/reverse_related.py\n@@ -310,7 +310,7 @@ class ManyToManyRel(ForeignObjectRel):\n     def identity(self):\n         return super().identity + (\n             self.through,\n-            self.through_fields,\n+            make_hashable(self.through_fields),\n             self.db_constraint,\n         )\n \ndiff --git a/repro_m2m_hash.py b/repro_m2m_hash.py\nnew file mode 100644\nindex 0000000000..023956ac00\n--- /dev/null\n+++ b/repro_m2m_hash.py\n@@ -0,0 +1,39 @@\n+import django\n+from django.conf import settings\n+\n+settings.configure(\n+    INSTALLED_APPS=[\"__main__\"],\n+    DATABASES={\"default\": {\"ENGINE\": \"django.db.backends.sqlite3\", \"NAME\": \":memory:\"}},\n+)\n+\n+django.setup()\n+\n+from django.db import models\n+\n+class Parent(models.Model):\n+    name = models.CharField(max_length=256)\n+\n+class ProxyParent(Parent):\n+    class Meta:\n+        proxy = True\n+\n+class Child(models.Model):\n+    parent = models.ForeignKey(Parent, on_delete=models.CASCADE)\n+    many_to_many_field = models.ManyToManyField(\n+        to=Parent,\n+        through=\"ManyToManyModel\",\n+        through_fields=['child', 'parent'],\n+        related_name=\"something\"\n+    )\n+\n+class ManyToManyModel(models.Model):\n+    parent = models.ForeignKey(Parent, on_delete=models.CASCADE, related_name='+')\n+    child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name='+')\n+    second_child = models.ForeignKey(Child, on_delete=models.CASCADE, null=True, default=None)\n+\n+# Trigger hashing of reverse relations similar to model checks.\n+used_fields = set()\n+for f in ProxyParent._meta.get_fields():\n+    used_fields.add(f)\n+\n+print(\"OK\")\n"
+    },
+    "django__django-14787": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-14787",
+        "model_patch": "diff --git a/django/utils/decorators.py b/django/utils/decorators.py\nindex 5c9a5d01c7..69aca10a4d 100644\n--- a/django/utils/decorators.py\n+++ b/django/utils/decorators.py\n@@ -37,7 +37,7 @@ def _multi_decorate(decorators, method):\n         # 'self' argument, but it's a closure over self so it can call\n         # 'func'. Also, wrap method.__get__() in a function because new\n         # attributes can't be set on bound method objects, only on functions.\n-        bound_method = partial(method.__get__(self, type(self)))\n+        bound_method = wraps(method)(partial(method.__get__(self, type(self))))\n         for dec in decorators:\n             bound_method = dec(bound_method)\n         return bound_method(*args, **kwargs)\ndiff --git a/repro.py b/repro.py\nnew file mode 100644\nindex 0000000000..7c86f2746e\n--- /dev/null\n+++ b/repro.py\n@@ -0,0 +1,20 @@\n+from functools import wraps\n+from django.utils.decorators import method_decorator\n+\n+\n+def logger(func):\n+    @wraps(func)\n+    def inner(*args, **kwargs):\n+        result = func(*args, **kwargs)\n+        print(f\"{func.__name__} called\")\n+        return result\n+    return inner\n+\n+\n+class Test:\n+    @method_decorator(logger)\n+    def hello_world(self):\n+        return \"hello\"\n+\n+\n+print(Test().hello_world())\n"
+    },
+    "django__django-14915": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-14915",
+        "model_patch": "diff --git a/django/forms/models.py b/django/forms/models.py\nindex 5dcf923c12..7effb202e3 100644\n--- a/django/forms/models.py\n+++ b/django/forms/models.py\n@@ -1166,6 +1166,9 @@ class ModelChoiceIteratorValue:\n     def __str__(self):\n         return str(self.value)\n \n+    def __hash__(self):\n+        return hash(self.value)\n+\n     def __eq__(self, other):\n         if isinstance(other, ModelChoiceIteratorValue):\n             other = other.value\ndiff --git a/repro.py b/repro.py\nnew file mode 100644\nindex 0000000000..b28d7012d4\n--- /dev/null\n+++ b/repro.py\n@@ -0,0 +1,7 @@\n+from django.forms.models import ModelChoiceIteratorValue\n+\n+v = ModelChoiceIteratorValue(1, object())\n+print('eq list contains:', v in [1,2])\n+print('dict lookup start')\n+d = {1: ['first_name', 'last_name']}\n+print(v in d)\n"
+    },
+    "django__django-14999": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-14999",
+        "model_patch": "diff --git a/repro.py b/repro.py\nnew file mode 100644\nindex 0000000000..4a8438a077\n--- /dev/null\n+++ b/repro.py\n@@ -0,0 +1,23 @@\n+from django.db import migrations\n+from django.db.migrations.state import ProjectState, ModelState\n+from django.db import connection\n+\n+\n+def main():\n+    from_state = ProjectState()\n+    to_state = ProjectState()\n+\n+    model_fields = [\n+        ('id', __import__('django').db.models.AutoField(primary_key=True)),\n+        ('name', __import__('django').db.models.CharField(max_length=20)),\n+    ]\n+    from_state.add_model(ModelState('app', 'Author', model_fields, options={'db_table': 'author_table'}))\n+    to_state.add_model(ModelState('app', 'Writer', model_fields, options={'db_table': 'author_table'}))\n+\n+    op = migrations.RenameModel('Author', 'Writer')\n+    with connection.schema_editor(collect_sql=True) as editor:\n+        op.database_forwards('app', editor, from_state, to_state)\n+        print('\\n'.join(editor.collected_sql))\n+\n+if __name__ == '__main__':\n+    main()\n"
+    },
+    "django__django-15252": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-15252",
+        "model_patch": "diff --git a/django/db/migrations/recorder.py b/django/db/migrations/recorder.py\nindex 1a37c6b7d0..ab089783e8 100644\n--- a/django/db/migrations/recorder.py\n+++ b/django/db/migrations/recorder.py\n@@ -1,5 +1,5 @@\n from django.apps.registry import Apps\n-from django.db import DatabaseError, models\n+from django.db import DatabaseError, models, router\n from django.utils.functional import classproperty\n from django.utils.timezone import now\n \n@@ -62,6 +62,9 @@ class MigrationRecorder:\n         # in the codebase.\n         if self.has_table():\n             return\n+        # Don't create the table if migrations aren't allowed for this DB.\n+        if not router.allow_migrate(self.connection.alias, self.Migration):\n+            return\n         # Make the table\n         try:\n             with self.connection.schema_editor() as editor:\ndiff --git a/repro_recorder_router.py b/repro_recorder_router.py\nnew file mode 100644\nindex 0000000000..f3b361e463\n--- /dev/null\n+++ b/repro_recorder_router.py\n@@ -0,0 +1,41 @@\n+from django.conf import settings\n+\n+\n+if not settings.configured:\n+    settings.configure(\n+        DATABASES={\n+            'default': {\n+                'ENGINE': 'django.db.backends.sqlite3',\n+                'NAME': ':memory:',\n+            },\n+            'other': {\n+                'ENGINE': 'django.db.backends.sqlite3',\n+                'NAME': ':memory:',\n+            },\n+        },\n+        INSTALLED_APPS=[],\n+        DATABASE_ROUTERS=['repro_recorder_router.Router'],\n+        SECRET_KEY='test',\n+    )\n+\n+import django\n+\n+django.setup()\n+\n+from django.db import connections\n+from django.db.migrations.recorder import MigrationRecorder\n+\n+\n+class Router:\n+    def allow_migrate(self, db, app_label=None, model_name=None, **hints):\n+        return db == 'default'\n+\n+\n+def main():\n+    recorder = MigrationRecorder(connections['other'])\n+    recorder.record_applied('app', '0001_initial')\n+    print('has_table(other):', recorder.has_table())\n+\n+\n+if __name__ == '__main__':\n+    main()\n"
+    },
+    "django__django-15695": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-15695",
+        "model_patch": ""
+    },
+    "django__django-15851": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-15851",
+        "model_patch": "diff --git a/django/db/backends/postgresql/client.py b/django/db/backends/postgresql/client.py\nindex 4c9bd63546..3b5ddafaca 100644\n--- a/django/db/backends/postgresql/client.py\n+++ b/django/db/backends/postgresql/client.py\n@@ -32,9 +32,9 @@ class DatabaseClient(BaseDatabaseClient):\n             args += [\"-h\", host]\n         if port:\n             args += [\"-p\", str(port)]\n+        args.extend(parameters)\n         if dbname:\n             args += [dbname]\n-        args.extend(parameters)\n \n         env = {}\n         if passwd:\ndiff --git a/repro_dbshell_order.py b/repro_dbshell_order.py\nnew file mode 100644\nindex 0000000000..9e85226661\n--- /dev/null\n+++ b/repro_dbshell_order.py\n@@ -0,0 +1,15 @@\n+from django.db.backends.postgresql.client import DatabaseClient\n+\n+settings = {\n+    \"HOST\": \"\",\n+    \"PORT\": \"\",\n+    \"NAME\": \"some_database\",\n+    \"USER\": \"\",\n+    \"PASSWORD\": \"\",\n+    \"OPTIONS\": {},\n+}\n+\n+parameters = [\"-c\", \"select * from some_table;\"]\n+args, env = DatabaseClient.settings_to_cmd_args_env(settings, parameters)\n+print(args)\n+print(env)\n"
+    },
+    "django__django-16139": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-16139",
+        "model_patch": "diff --git a/django/contrib/auth/forms.py b/django/contrib/auth/forms.py\nindex b3cfc6723c..523830e8ee 100644\n--- a/django/contrib/auth/forms.py\n+++ b/django/contrib/auth/forms.py\n@@ -163,7 +163,9 @@ class UserChangeForm(forms.ModelForm):\n         super().__init__(*args, **kwargs)\n         password = self.fields.get(\"password\")\n         if password:\n-            password.help_text = password.help_text.format(\"../password/\")\n+            password.help_text = password.help_text.format(\n+                f\"../../{self.instance.pk}/password/\"\n+            )\n         user_permissions = self.fields.get(\"user_permissions\")\n         if user_permissions:\n             user_permissions.queryset = user_permissions.queryset.select_related(\n"
+    },
+    "django__django-16255": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-16255",
+        "model_patch": "diff --git a/django/contrib/sitemaps/__init__.py b/django/contrib/sitemaps/__init__.py\nindex 27756d9d96..b40ad806ed 100644\n--- a/django/contrib/sitemaps/__init__.py\n+++ b/django/contrib/sitemaps/__init__.py\n@@ -168,7 +168,7 @@ class Sitemap:\n         if callable(self.lastmod):\n             try:\n                 return max([self.lastmod(item) for item in self.items()])\n-            except TypeError:\n+            except (TypeError, ValueError):\n                 return None\n         else:\n             return self.lastmod\ndiff --git a/repro_sitemap_empty_lastmod.py b/repro_sitemap_empty_lastmod.py\nnew file mode 100644\nindex 0000000000..17739142b6\n--- /dev/null\n+++ b/repro_sitemap_empty_lastmod.py\n@@ -0,0 +1,12 @@\n+from django.contrib.sitemaps import Sitemap\n+\n+class EmptySitemap(Sitemap):\n+    def items(self):\n+        return []\n+\n+    def lastmod(self, item):\n+        return None\n+\n+s = EmptySitemap()\n+print('Calling get_latest_lastmod()...')\n+print(s.get_latest_lastmod())\n"
+    },
+    "django__django-16527": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-16527",
+        "model_patch": "diff --git a/django/contrib/admin/templatetags/admin_modify.py b/django/contrib/admin/templatetags/admin_modify.py\nindex 9df4b7aadb..5b742af46a 100644\n--- a/django/contrib/admin/templatetags/admin_modify.py\n+++ b/django/contrib/admin/templatetags/admin_modify.py\n@@ -100,6 +100,7 @@ def submit_row(context):\n                 and context.get(\"show_delete\", True)\n             ),\n             \"show_save_as_new\": not is_popup\n+            and has_add_permission\n             and has_change_permission\n             and change\n             and save_as,\ndiff --git a/repro.py b/repro.py\nnew file mode 100644\nindex 0000000000..ee1fa79f96\n--- /dev/null\n+++ b/repro.py\n@@ -0,0 +1,25 @@\n+from django.contrib.admin.templatetags.admin_modify import submit_row\n+\n+\n+def run_case(has_add_permission):\n+    context = {\n+        \"add\": False,\n+        \"change\": True,\n+        \"is_popup\": False,\n+        \"save_as\": True,\n+        \"show_save\": True,\n+        \"show_save_and_add_another\": True,\n+        \"show_save_and_continue\": True,\n+        \"has_add_permission\": has_add_permission,\n+        \"has_change_permission\": True,\n+        \"has_view_permission\": True,\n+        \"has_editable_inline_admin_formsets\": False,\n+        \"has_delete_permission\": True,\n+    }\n+    result = submit_row(context)\n+    return result[\"show_save_as_new\"]\n+\n+\n+if __name__ == \"__main__\":\n+    print(\"show_save_as_new when has_add_permission=False:\", run_case(False))\n+    print(\"show_save_as_new when has_add_permission=True:\", run_case(True))\n"
+    },
+    "django__django-16595": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-16595",
+        "model_patch": "diff --git a/django/db/migrations/operations/fields.py b/django/db/migrations/operations/fields.py\nindex cd3aab43ad..c545f3cf50 100644\n--- a/django/db/migrations/operations/fields.py\n+++ b/django/db/migrations/operations/fields.py\n@@ -247,6 +247,8 @@ class AlterField(FieldOperation):\n         return \"alter_%s_%s\" % (self.model_name_lower, self.name_lower)\n \n     def reduce(self, operation, app_label):\n+        if isinstance(operation, AlterField) and self.is_same_field_operation(operation):\n+            return [operation]\n         if isinstance(operation, RemoveField) and self.is_same_field_operation(\n             operation\n         ):\ndiff --git a/repro.py b/repro.py\nnew file mode 100644\nindex 0000000000..7e10d13798\n--- /dev/null\n+++ b/repro.py\n@@ -0,0 +1,24 @@\n+from django.db import migrations, models\n+from django.db.migrations.optimizer import MigrationOptimizer\n+\n+operations = [\n+    migrations.AlterField(\n+        model_name=\"book\",\n+        name=\"title\",\n+        field=models.CharField(max_length=128, null=True),\n+    ),\n+    migrations.AlterField(\n+        model_name=\"book\",\n+        name=\"title\",\n+        field=models.CharField(max_length=128, null=True, help_text=\"help\"),\n+    ),\n+    migrations.AlterField(\n+        model_name=\"book\",\n+        name=\"title\",\n+        field=models.CharField(max_length=128, null=True, help_text=\"help\", default=None),\n+    ),\n+]\n+\n+optimizer = MigrationOptimizer()\n+result = optimizer.optimize(operations, \"books\")\n+print(len(result), result)\n"
+    },
+    "django__django-17087": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "django__django-17087",
+        "model_patch": ""
+    },
+    "matplotlib__matplotlib-23299": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "matplotlib__matplotlib-23299",
+        "model_patch": "diff --git a/lib/matplotlib/__init__.py b/lib/matplotlib/__init__.py\nindex c268a56724..0acba41c97 100644\n--- a/lib/matplotlib/__init__.py\n+++ b/lib/matplotlib/__init__.py\n@@ -1175,7 +1175,7 @@ def get_backend():\n     --------\n     matplotlib.use\n     \"\"\"\n-    return rcParams['backend']\n+    return rcParams._get_backend_or_none() or rcParams['backend']\n \n \n def interactive(b):\ndiff --git a/repro_backend_bug.py b/repro_backend_bug.py\nnew file mode 100644\nindex 0000000000..c6fec8f62e\n--- /dev/null\n+++ b/repro_backend_bug.py\n@@ -0,0 +1,15 @@\n+import matplotlib\n+matplotlib.use('Agg')\n+import matplotlib.pyplot as plt\n+from matplotlib import get_backend, rc_context\n+\n+with rc_context():\n+    fig2 = plt.figure()\n+before = f\"{id(plt._pylab_helpers.Gcf)} {plt._pylab_helpers.Gcf.figs!r}\"\n+get_backend()\n+after = f\"{id(plt._pylab_helpers.Gcf)} {plt._pylab_helpers.Gcf.figs!r}\"\n+\n+print('before:', before)\n+print('after :', after)\n+assert before == after, '\\n' + before + '\\n' + after\n+print('OK')\n"
+    },
+    "matplotlib__matplotlib-23314": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "matplotlib__matplotlib-23314",
+        "model_patch": "diff --git a/repro_visible_3d.py b/repro_visible_3d.py\nnew file mode 100644\nindex 0000000000..ae6350be72\n--- /dev/null\n+++ b/repro_visible_3d.py\n@@ -0,0 +1,13 @@\n+import matplotlib\n+matplotlib.use('Agg')\n+import matplotlib.pyplot as plt\n+\n+fig, (ax1, ax2) = plt.subplots(1, 2, subplot_kw={'projection': '3d'})\n+ax1.scatter([1], [1], [1])\n+ax2.scatter([1], [1], [1], c='r')\n+ax1.set_visible(False)\n+\n+fig.canvas.draw()\n+print('ax1 visible:', ax1.get_visible())\n+print('ax1 patch visible:', ax1.patch.get_visible())\n+print('ax1 tightbbox:', ax1.get_tightbbox(fig.canvas.get_renderer()))\n"
+    },
+    "matplotlib__matplotlib-23476": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "matplotlib__matplotlib-23476",
+        "model_patch": ""
+    },
+    "matplotlib__matplotlib-24149": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "matplotlib__matplotlib-24149",
+        "model_patch": "diff --git a/lib/matplotlib/axes/_axes.py b/lib/matplotlib/axes/_axes.py\nindex fdac0f3560..14b1861390 100644\n--- a/lib/matplotlib/axes/_axes.py\n+++ b/lib/matplotlib/axes/_axes.py\n@@ -2180,7 +2180,7 @@ class Axes(_AxesBase):\n             # wrap numpy arrays.\n             try:\n                 x0 = cbook._safe_first_finite(x0)\n-            except (TypeError, IndexError, KeyError):\n+            except (TypeError, IndexError, KeyError, StopIteration):\n                 pass\n \n             try:\ndiff --git a/repro_nan_bar.py b/repro_nan_bar.py\nnew file mode 100644\nindex 0000000000..b72b39d575\n--- /dev/null\n+++ b/repro_nan_bar.py\n@@ -0,0 +1,7 @@\n+import numpy as np\n+import matplotlib.pyplot as plt\n+\n+f, ax = plt.subplots()\n+print('about to call bar')\n+res = ax.bar([np.nan], [np.nan])\n+print('ok', len(res), res[0].get_x(), res[0].get_height())\n"
+    },
+    "matplotlib__matplotlib-24970": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "matplotlib__matplotlib-24970",
+        "model_patch": "diff --git a/lib/matplotlib/colors.py b/lib/matplotlib/colors.py\nindex 2d3072da04..ca67bac5ec 100644\n--- a/lib/matplotlib/colors.py\n+++ b/lib/matplotlib/colors.py\n@@ -710,6 +710,8 @@ class Colormap:\n         # np.isnan() to after we have converted to an array.\n         mask_bad = X.mask if np.ma.is_masked(X) else None\n         xa = np.array(X, copy=True)\n+        if xa.dtype.kind == \"u\" and xa.dtype.itemsize < np.dtype(np.intp).itemsize:\n+            xa = xa.astype(np.intp)\n         if mask_bad is None:\n             mask_bad = np.isnan(xa)\n         if not xa.dtype.isnative:\n"
+    },
+    "matplotlib__matplotlib-25311": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "matplotlib__matplotlib-25311",
+        "model_patch": ""
+    },
+    "matplotlib__matplotlib-25332": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "matplotlib__matplotlib-25332",
+        "model_patch": ""
+    },
+    "psf__requests-2317": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "psf__requests-2317",
+        "model_patch": "diff --git a/repro_method_bytes.py b/repro_method_bytes.py\nnew file mode 100644\nindex 0000000..60cb193\n--- /dev/null\n+++ b/repro_method_bytes.py\n@@ -0,0 +1,12 @@\n+import requests\n+\n+s = requests.Session()\n+req = requests.Request(method=b'GET', url='http://example.com')\n+prep = s.prepare_request(req)\n+print('PreparedRequest.method:', prep.method, type(prep.method))\n+\n+try:\n+    r = s.request(b'GET', 'http://example.com')\n+    print('response status', r.status_code)\n+except Exception as e:\n+    print('request exception', repr(e))\n"
+    },
+    "pydata__xarray-4094": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "pydata__xarray-4094",
+        "model_patch": ""
+    },
+    "pylint-dev__pylint-7080": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "pylint-dev__pylint-7080",
+        "model_patch": ""
+    },
+    "pytest-dev__pytest-7432": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "pytest-dev__pytest-7432",
+        "model_patch": "diff --git a/repro_skip_runxfail.py b/repro_skip_runxfail.py\nnew file mode 100644\nindex 000000000..5d1c89bcc\n--- /dev/null\n+++ b/repro_skip_runxfail.py\n@@ -0,0 +1,21 @@\n+import os, subprocess, sys, tempfile, textwrap\n+\n+with tempfile.TemporaryDirectory() as d:\n+    p = os.path.join(d, 'test_it.py')\n+    with open(p, 'w') as f:\n+        f.write(textwrap.dedent('''\\\n+            import pytest\n+\n+            @pytest.mark.skip\n+            def test_skip_location():\n+                assert 0\n+        '''))\n+\n+    base = [sys.executable, '-m', 'pytest', '-rs', p]\n+    for extra in ([], ['--runxfail']):\n+        cmd = base + extra\n+        print('==', ' '.join(cmd), '==')\n+        r = subprocess.run(cmd, capture_output=True, text=True)\n+        print('rc=', r.returncode)\n+        print('STDOUT:\\n', r.stdout)\n+        print('STDERR:\\n', r.stderr)\ndiff --git a/src/_pytest/skipping.py b/src/_pytest/skipping.py\nindex 7bd975e5a..e9f7d2f47 100644\n--- a/src/_pytest/skipping.py\n+++ b/src/_pytest/skipping.py\n@@ -271,7 +271,9 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]):\n             rep.longrepr = \"Unexpected success\"\n         rep.outcome = \"failed\"\n     elif item.config.option.runxfail:\n-        pass  # don't interfere\n+        # don't interfere with xfail/XPASS reporting when --runxfail is active,\n+        # but still fix skip/skipif mark locations below.\n+        pass\n     elif call.excinfo and isinstance(call.excinfo.value, xfail.Exception):\n         assert call.excinfo.value.msg is not None\n         rep.wasxfail = \"reason: \" + call.excinfo.value.msg\n"
+    },
+    "pytest-dev__pytest-7490": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "pytest-dev__pytest-7490",
+        "model_patch": ""
+    },
+    "scikit-learn__scikit-learn-10297": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "scikit-learn__scikit-learn-10297",
+        "model_patch": ""
+    },
+    "scikit-learn__scikit-learn-13142": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "scikit-learn__scikit-learn-13142",
+        "model_patch": ""
+    },
+    "scikit-learn__scikit-learn-13439": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "scikit-learn__scikit-learn-13439",
+        "model_patch": "diff --git a/repro_len_pipeline.py b/repro_len_pipeline.py\nnew file mode 100644\nindex 000000000..27368fe4e\n--- /dev/null\n+++ b/repro_len_pipeline.py\n@@ -0,0 +1,13 @@\n+from sklearn import svm\n+from sklearn.datasets import samples_generator\n+from sklearn.feature_selection import SelectKBest\n+from sklearn.feature_selection import f_regression\n+from sklearn.pipeline import Pipeline\n+\n+X, y = samples_generator.make_classification(n_informative=5, n_redundant=0, random_state=42)\n+anova_filter = SelectKBest(f_regression, k=5)\n+clf = svm.SVC(kernel='linear')\n+pipe = Pipeline([('anova', anova_filter), ('svc', clf)])\n+\n+print('len(pipe)=', len(pipe))\n+print('slice works:', pipe[:len(pipe)])\ndiff --git a/sklearn/pipeline.py b/sklearn/pipeline.py\nindex 7eaf9a46f..dba62f67b 100644\n--- a/sklearn/pipeline.py\n+++ b/sklearn/pipeline.py\n@@ -199,6 +199,10 @@ class Pipeline(_BaseComposition):\n             if trans is not None and trans != 'passthrough':\n                 yield idx, name, trans\n \n+    def __len__(self):\n+        \"\"\"Returns the length of the Pipeline.\"\"\"\n+        return len(self.steps)\n+\n     def __getitem__(self, ind):\n         \"\"\"Returns a sub-pipeline or a single esimtator in the pipeline\n \n"
+    },
+    "scikit-learn__scikit-learn-13496": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "scikit-learn__scikit-learn-13496",
+        "model_patch": "diff --git a/repro_iforest_warm.py b/repro_iforest_warm.py\nnew file mode 100644\nindex 000000000..68516520f\n--- /dev/null\n+++ b/repro_iforest_warm.py\n@@ -0,0 +1,7 @@\n+from sklearn.ensemble import IsolationForest\n+\n+try:\n+    IsolationForest(warm_start=True)\n+    print('warm_start accepted')\n+except Exception as e:\n+    print(type(e).__name__, e)\ndiff --git a/sklearn/ensemble/iforest.py b/sklearn/ensemble/iforest.py\nindex 8a1bd3625..1e288f700 100644\n--- a/sklearn/ensemble/iforest.py\n+++ b/sklearn/ensemble/iforest.py\n@@ -120,6 +120,11 @@ class IsolationForest(BaseBagging, OutlierMixin):\n     verbose : int, optional (default=0)\n         Controls the verbosity of the tree building process.\n \n+    warm_start : bool, optional (default=False)\n+        When set to ``True``, reuse the solution of the previous call to fit\n+        and add more estimators to the ensemble, otherwise, just fit a whole\n+        new forest. See :term:`the Glossary <warm_start>`.\n+\n \n     Attributes\n     ----------\n"
+    },
+    "scikit-learn__scikit-learn-13779": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "scikit-learn__scikit-learn-13779",
+        "model_patch": "diff --git a/sklearn/ensemble/voting.py b/sklearn/ensemble/voting.py\nindex 7afa7180c..d8e14b152 100644\n--- a/sklearn/ensemble/voting.py\n+++ b/sklearn/ensemble/voting.py\n@@ -78,6 +78,8 @@ class _BaseVoting(_BaseComposition, TransformerMixin):\n \n         if sample_weight is not None:\n             for name, step in self.estimators:\n+                if step is None:\n+                    continue\n                 if not has_fit_parameter(step, 'sample_weight'):\n                     raise ValueError('Underlying estimator \\'%s\\' does not'\n                                      ' support sample weights.' % name)\n"
+    },
+    "scikit-learn__scikit-learn-14087": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "scikit-learn__scikit-learn-14087",
+        "model_patch": ""
+    },
+    "scikit-learn__scikit-learn-14894": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "scikit-learn__scikit-learn-14894",
+        "model_patch": "diff --git a/repro_svm_sparse_zero_div.py b/repro_svm_sparse_zero_div.py\nnew file mode 100644\nindex 000000000..5ad38f0db\n--- /dev/null\n+++ b/repro_svm_sparse_zero_div.py\n@@ -0,0 +1,23 @@\n+import numpy as np\n+import scipy\n+from sklearn.svm import SVR\n+\n+x_train = np.array([[0, 1, 0, 0],\n+                    [0, 0, 0, 1],\n+                    [0, 0, 1, 0],\n+                    [0, 0, 0, 1]])\n+y_train = np.array([0.04, 0.04, 0.10, 0.16])\n+model = SVR(C=316.227766017, cache_size=200, coef0=0.0, degree=3, epsilon=0.1,\n+            gamma=1.0, kernel='linear', max_iter=15000,\n+            shrinking=True, tol=0.001, verbose=False)\n+\n+print('Dense fit...')\n+model.fit(x_train, y_train)\n+print('Dense OK')\n+\n+print('Sparse fit...')\n+xtrain = scipy.sparse.csr_matrix(x_train)\n+model.fit(xtrain, y_train)\n+print('Sparse OK')\n+print('dual_coef_ shape:', model.dual_coef_.shape)\n+print('dual_coef_ nnz:', model.dual_coef_.nnz)\ndiff --git a/sklearn/svm/base.py b/sklearn/svm/base.py\nindex 64cebe837..7ffbacef6 100644\n--- a/sklearn/svm/base.py\n+++ b/sklearn/svm/base.py\n@@ -287,8 +287,11 @@ class BaseLibSVM(BaseEstimator, metaclass=ABCMeta):\n         n_SV = self.support_vectors_.shape[0]\n \n         dual_coef_indices = np.tile(np.arange(n_SV), n_class)\n-        dual_coef_indptr = np.arange(0, dual_coef_indices.size + 1,\n-                                     dual_coef_indices.size / n_class)\n+        if dual_coef_indices.size == 0:\n+            dual_coef_indptr = np.zeros(n_class + 1, dtype=np.int32)\n+        else:\n+            dual_coef_indptr = np.arange(0, dual_coef_indices.size + 1,\n+                                         dual_coef_indices.size / n_class)\n         self.dual_coef_ = sp.csr_matrix(\n             (dual_coef_data, dual_coef_indices, dual_coef_indptr),\n             (n_class, n_SV))\n"
+    },
+    "scikit-learn__scikit-learn-14983": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "scikit-learn__scikit-learn-14983",
+        "model_patch": "diff --git a/repro_repr.py b/repro_repr.py\nnew file mode 100644\nindex 000000000..785d1f5ec\n--- /dev/null\n+++ b/repro_repr.py\n@@ -0,0 +1,3 @@\n+from sklearn.model_selection import RepeatedKFold, RepeatedStratifiedKFold\n+print(repr(RepeatedKFold()))\n+print(repr(RepeatedStratifiedKFold()))\ndiff --git a/sklearn/model_selection/_split.py b/sklearn/model_selection/_split.py\nindex c49a3ce6a..f73f7c105 100644\n--- a/sklearn/model_selection/_split.py\n+++ b/sklearn/model_selection/_split.py\n@@ -1103,6 +1103,15 @@ class _RepeatedSplits(metaclass=ABCMeta):\n         self.random_state = random_state\n         self.cvargs = cvargs\n \n+    def __repr__(self):\n+        return '%s(%s, n_repeats=%d, random_state=%s)' % (\n+            self.__class__.__name__,\n+            ', '.join('%s=%r' % (key, value)\n+                      for key, value in sorted(self.cvargs.items())),\n+            self.n_repeats,\n+            self.random_state,\n+        )\n+\n     def split(self, X, y=None, groups=None):\n         \"\"\"Generates indices to split data into training and test set.\n \n"
+    },
+    "scikit-learn__scikit-learn-25747": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "scikit-learn__scikit-learn-25747",
+        "model_patch": "diff --git a/repro.py b/repro.py\nnew file mode 100644\nindex 000000000..27e366cf2\n--- /dev/null\n+++ b/repro.py\n@@ -0,0 +1,21 @@\n+import pandas as pd\n+from sklearn.base import BaseEstimator, TransformerMixin\n+from sklearn import set_config\n+from sklearn.pipeline import make_union\n+\n+index = pd.date_range(start=\"2020-01-01\", end=\"2020-01-05\", inclusive=\"left\", freq=\"H\")\n+data = pd.DataFrame(index=index, data=[10] * len(index), columns=[\"value\"])\n+data[\"date\"] = index.date\n+\n+class MyTransformer(BaseEstimator, TransformerMixin):\n+    def fit(self, X: pd.DataFrame, y=None, **kwargs):\n+        return self\n+\n+    def transform(self, X: pd.DataFrame, y=None):\n+        return X[\"value\"].groupby(X[\"date\"]).sum()\n+\n+set_config(transform_output=\"default\")\n+print('default ok:', make_union(MyTransformer()).fit_transform(data).shape)\n+\n+set_config(transform_output=\"pandas\")\n+print(make_union(MyTransformer()).fit_transform(data))\n"
+    },
+    "sphinx-doc__sphinx-8595": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sphinx-doc__sphinx-8595",
+        "model_patch": "diff --git a/repro_autodoc_all_empty.py b/repro_autodoc_all_empty.py\nnew file mode 100644\nindex 000000000..523a9822a\n--- /dev/null\n+++ b/repro_autodoc_all_empty.py\n@@ -0,0 +1,48 @@\n+import os\n+import tempfile\n+import textwrap\n+from sphinx.application import Sphinx\n+\n+\n+def main():\n+    with tempfile.TemporaryDirectory() as tmp:\n+        src = os.path.join(tmp, 'src')\n+        out = os.path.join(tmp, 'out')\n+        doctree = os.path.join(tmp, 'doctree')\n+        os.makedirs(src)\n+\n+        with open(os.path.join(src, 'conf.py'), 'w') as f:\n+            f.write('extensions = [\"sphinx.ext.autodoc\"]\\n')\n+\n+        with open(os.path.join(src, 'example.py'), 'w') as f:\n+            f.write(textwrap.dedent('''\\\n+                __all__ = []\n+\n+                def foo():\n+                    \"\"\"docstring\"\"\"\n+\n+                def bar():\n+                    \"\"\"docstring\"\"\"\n+\n+                def baz():\n+                    \"\"\"docstring\"\"\"\n+            '''))\n+\n+        with open(os.path.join(src, 'index.rst'), 'w') as f:\n+            f.write(textwrap.dedent('''\\\n+                .. automodule:: example\n+                   :members:\n+            '''))\n+\n+        app = Sphinx(srcdir=src, confdir=src, outdir=out, doctreedir=doctree,\n+                     buildername='text', status=None, warning=None, freshenv=True)\n+        app.build()\n+\n+        out_file = os.path.join(out, 'index.txt')\n+        text = open(out_file).read()\n+        print(text)\n+        print('HAS_FOO_BAR_BAZ:', any(x in text for x in ('foo()', 'bar()', 'baz()')))\n+\n+\n+if __name__ == '__main__':\n+    main()\n"
+    },
+    "sphinx-doc__sphinx-8721": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sphinx-doc__sphinx-8721",
+        "model_patch": "diff --git a/sphinx/ext/viewcode.py b/sphinx/ext/viewcode.py\nindex a7d52a91c..06fabf3a4 100644\n--- a/sphinx/ext/viewcode.py\n+++ b/sphinx/ext/viewcode.py\n@@ -180,6 +180,8 @@ def should_generate_module_page(app: Sphinx, modname: str) -> bool:\n \n def collect_pages(app: Sphinx) -> Generator[Tuple[str, Dict[str, Any], str], None, None]:\n     env = app.builder.env\n+    if app.builder.name.startswith('epub') and not env.config.viewcode_enable_epub:\n+        return\n     if not hasattr(env, '_viewcode_modules'):\n         return\n     highlighter = app.builder.highlighter  # type: ignore\n"
+    },
+    "sympy__sympy-12419": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-12419",
+        "model_patch": "diff --git a/sympy/matrices/expressions/matexpr.py b/sympy/matrices/expressions/matexpr.py\nindex b4d759836..a700a6c67 100644\n--- a/sympy/matrices/expressions/matexpr.py\n+++ b/sympy/matrices/expressions/matexpr.py\n@@ -476,10 +476,12 @@ def conjugate(self):\n         return self\n \n     def _entry(self, i, j):\n-        if i == j:\n+        eq = Eq(i, j)\n+        if eq is S.true:\n             return S.One\n-        else:\n+        elif eq is S.false:\n             return S.Zero\n+        return KroneckerDelta(i, j)\n \n     def _eval_determinant(self):\n         return S.One\n"
+    },
+    "sympy__sympy-12481": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-12481",
+        "model_patch": "diff --git a/repro_perm.py b/repro_perm.py\nnew file mode 100644\nindex 000000000..07159b4f8\n--- /dev/null\n+++ b/repro_perm.py\n@@ -0,0 +1,7 @@\n+from sympy.combinatorics import Permutation\n+\n+try:\n+    p = Permutation([[0,1],[0,1]])\n+    print('constructed:', p, p.array_form)\n+except Exception as e:\n+    print(type(e).__name__, e)\n"
+    },
+    "sympy__sympy-13031": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-13031",
+        "model_patch": "diff --git a/repro.py b/repro.py\nnew file mode 100644\nindex 000000000..f33da322a\n--- /dev/null\n+++ b/repro.py\n@@ -0,0 +1,13 @@\n+import sympy as sy\n+\n+M1 = sy.Matrix.zeros(0, 0)\n+M2 = sy.Matrix.zeros(0, 1)\n+M3 = sy.Matrix.zeros(0, 2)\n+M4 = sy.Matrix.zeros(0, 3)\n+print('hstack zero-row shapes:', sy.Matrix.hstack(M1, M2, M3, M4).shape)\n+\n+N1 = sy.Matrix.zeros(1, 0)\n+N2 = sy.Matrix.zeros(1, 1)\n+N3 = sy.Matrix.zeros(1, 2)\n+N4 = sy.Matrix.zeros(1, 3)\n+print('hstack one-row shapes:', sy.Matrix.hstack(N1, N2, N3, N4).shape)\n"
+    },
+    "sympy__sympy-13480": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-13480",
+        "model_patch": "diff --git a/sympy/functions/elementary/hyperbolic.py b/sympy/functions/elementary/hyperbolic.py\nindex 2a4555d91..5fbb73c78 100644\n--- a/sympy/functions/elementary/hyperbolic.py\n+++ b/sympy/functions/elementary/hyperbolic.py\n@@ -587,7 +587,7 @@ def eval(cls, arg):\n                 x, m = _peeloff_ipi(arg)\n                 if m:\n                     cothm = coth(m)\n-                    if cotm is S.ComplexInfinity:\n+                    if cothm is S.ComplexInfinity:\n                         return coth(x)\n                     else: # cothm == 0\n                         return tanh(x)\n"
+    },
+    "sympy__sympy-13647": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-13647",
+        "model_patch": "diff --git a/repro.py b/repro.py\nnew file mode 100644\nindex 000000000..13a58b807\n--- /dev/null\n+++ b/repro.py\n@@ -0,0 +1,4 @@\n+import sympy as sm\n+M = sm.eye(6)\n+V = 2*sm.ones(6,2)\n+print(M.col_insert(3,V))\ndiff --git a/sympy/matrices/common.py b/sympy/matrices/common.py\nindex 056d9bc49..4aa75e4d7 100644\n--- a/sympy/matrices/common.py\n+++ b/sympy/matrices/common.py\n@@ -86,7 +86,7 @@ def entry(i, j):\n                 return self[i, j]\n             elif pos <= j < pos + other.cols:\n                 return other[i, j - pos]\n-            return self[i, j - pos - other.cols]\n+            return self[i, j - other.cols]\n \n         return self._new(self.rows, self.cols + other.cols,\n                          lambda i, j: entry(i, j))\n"
+    },
+    "sympy__sympy-15345": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-15345",
+        "model_patch": "diff --git a/repro.py b/repro.py\nnew file mode 100644\nindex 000000000..87f67c0a9\n--- /dev/null\n+++ b/repro.py\n@@ -0,0 +1,4 @@\n+from sympy import symbols, Max\n+from sympy.printing.mathematica import mathematica_code\n+x = symbols('x')\n+print(mathematica_code(Max(x, 2)))\ndiff --git a/sympy/printing/mathematica.py b/sympy/printing/mathematica.py\nindex ea7e3a2d9..7d7b2e248 100644\n--- a/sympy/printing/mathematica.py\n+++ b/sympy/printing/mathematica.py\n@@ -101,6 +101,9 @@ def _print_Function(self, expr):\n                     return \"%s[%s]\" % (mfunc, self.stringify(expr.args, \", \"))\n         return expr.func.__name__ + \"[%s]\" % self.stringify(expr.args, \", \")\n \n+    def _print_MinMaxBase(self, expr):\n+        return \"%s[%s]\" % (expr.func.__name__, self.stringify(expr.args, \", \"))\n+\n     def _print_Integral(self, expr):\n         if len(expr.variables) == 1 and not expr.limits[0][1:]:\n             args = [expr.args[0], expr.variables[0]]\n"
+    },
+    "sympy__sympy-16792": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-16792",
+        "model_patch": ""
+    },
+    "sympy__sympy-17139": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-17139",
+        "model_patch": "diff --git a/repro.py b/repro.py\nnew file mode 100644\nindex 000000000..7833cec4c\n--- /dev/null\n+++ b/repro.py\n@@ -0,0 +1,3 @@\n+from sympy import *\n+x = Symbol('x')\n+print(simplify(cos(x)**I))\ndiff --git a/sympy/simplify/fu.py b/sympy/simplify/fu.py\nindex ad1130ef9..b9945874f 100644\n--- a/sympy/simplify/fu.py\n+++ b/sympy/simplify/fu.py\n@@ -501,9 +501,9 @@ def _f(rv):\n         if not (rv.is_Pow and rv.base.func == f):\n             return rv\n \n-        if (rv.exp < 0) == True:\n+        if (rv.exp.is_extended_real and rv.exp < 0) == True:\n             return rv\n-        if (rv.exp > max) == True:\n+        if (rv.exp.is_extended_real and rv.exp > max) == True:\n             return rv\n         if rv.exp == 2:\n             return h(g(rv.base.args[0])**2)\n"
+    },
+    "sympy__sympy-17655": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-17655",
+        "model_patch": "diff --git a/repro_point_mul.py b/repro_point_mul.py\nnew file mode 100644\nindex 0000000000..07b0791c00\n--- /dev/null\n+++ b/repro_point_mul.py\n@@ -0,0 +1,8 @@\n+from sympy import geometry as ge\n+import sympy\n+\n+point1 = ge.Point(0,0)\n+point2 = ge.Point(1,1)\n+\n+print(point1 + point2 * sympy.sympify(2.0))\n+print(point1 + sympy.sympify(2.0) * point2)\ndiff --git a/sympy/geometry/point.py b/sympy/geometry/point.py\nindex 7c978c47be..231820a2a9 100644\n--- a/sympy/geometry/point.py\n+++ b/sympy/geometry/point.py\n@@ -278,6 +278,8 @@ def __mul__(self, factor):\n         coords = [simplify(x*factor) for x in self.args]\n         return Point(coords, evaluate=False)\n \n+    __rmul__ = __mul__\n+\n     def __neg__(self):\n         \"\"\"Negate the point.\"\"\"\n         coords = [-x for x in self.args]\n"
+    },
+    "sympy__sympy-18189": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-18189",
+        "model_patch": ""
+    },
+    "sympy__sympy-18199": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-18199",
+        "model_patch": "diff --git a/repro_nthroot.py b/repro_nthroot.py\nnew file mode 100644\nindex 0000000000..fc6b5df0b7\n--- /dev/null\n+++ b/repro_nthroot.py\n@@ -0,0 +1,4 @@\n+from sympy.ntheory.residue_ntheory import nthroot_mod\n+\n+print(\"nthroot_mod(17*17, 5, 17):\", nthroot_mod(17*17, 5, 17))\n+print(\"nthroot_mod(17*17, 5, 17, True):\", nthroot_mod(17*17, 5, 17, True))\ndiff --git a/sympy/ntheory/residue_ntheory.py b/sympy/ntheory/residue_ntheory.py\nindex 9a3052d4c3..cd9d076ff9 100644\n--- a/sympy/ntheory/residue_ntheory.py\n+++ b/sympy/ntheory/residue_ntheory.py\n@@ -768,6 +768,8 @@ def nthroot_mod(a, n, p, all_roots=False):\n     \"\"\"\n     from sympy.core.numbers import igcdex\n     a, n, p = as_int(a), as_int(n), as_int(p)\n+    if a % p == 0:\n+        return [0] if all_roots else 0\n     if n == 2:\n         return sqrt_mod(a, p, all_roots)\n     # see Hackman \"Elementary Number Theory\" (2009), page 76\n"
+    },
+    "sympy__sympy-18698": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-18698",
+        "model_patch": "diff --git a/repro_sqf.py b/repro_sqf.py\nnew file mode 100644\nindex 0000000000..21c3cc950d\n--- /dev/null\n+++ b/repro_sqf.py\n@@ -0,0 +1,5 @@\n+from sympy import symbols, sqf_list\n+x=symbols('x')\n+expr=(x**2+1)*(x-1)**2*(x-2)**3*(x-3)**3\n+print('input:', expr)\n+print('sqf_list:', sqf_list(expr))\n"
+    },
+    "sympy__sympy-20154": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-20154",
+        "model_patch": "diff --git a/sympy/utilities/iterables.py b/sympy/utilities/iterables.py\nindex dd36dea304..8031ee3df3 100644\n--- a/sympy/utilities/iterables.py\n+++ b/sympy/utilities/iterables.py\n@@ -1738,19 +1738,9 @@ def partitions(n, m=None, k=None, size=False):\n     {2: 1, 4: 1}\n     {3: 2}\n \n-    Note that the _same_ dictionary object is returned each time.\n-    This is for speed:  generating each partition goes quickly,\n-    taking constant time, independent of n.\n-\n-    >>> [p for p in partitions(6, k=2)]\n-    [{1: 6}, {1: 6}, {1: 6}, {1: 6}]\n-\n-    If you want to build a list of the returned dictionaries then\n-    make a copy of them:\n-\n-    >>> [p.copy() for p in partitions(6, k=2)]  # doctest: +SKIP\n+>>> [p for p in partitions(6, k=2)]\n     [{2: 3}, {1: 2, 2: 2}, {1: 4, 2: 1}, {1: 6}]\n-    >>> [(M, p.copy()) for M, p in partitions(6, k=2, size=True)]  # doctest: +SKIP\n+    >>> [(M, p) for M, p in partitions(6, k=2, size=True)]  # doctest: +SKIP\n     [(3, {2: 3}), (4, {1: 2, 2: 2}), (5, {1: 4, 2: 1}), (6, {1: 6})]\n \n     References\n@@ -1802,9 +1792,9 @@ def partitions(n, m=None, k=None, size=False):\n         keys.append(r)\n     room = m - q - bool(r)\n     if size:\n-        yield sum(ms.values()), ms\n+        yield sum(ms.values()), ms.copy()\n     else:\n-        yield ms\n+        yield ms.copy()\n \n     while keys != [1]:\n         # Reuse any 1's.\n"
+    },
+    "sympy__sympy-20590": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-20590",
+        "model_patch": ""
+    },
+    "sympy__sympy-21379": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-21379",
+        "model_patch": "diff --git a/sympy/functions/elementary/hyperbolic.py b/sympy/functions/elementary/hyperbolic.py\nindex 860989f7c1..9f90dd92dc 100644\n--- a/sympy/functions/elementary/hyperbolic.py\n+++ b/sympy/functions/elementary/hyperbolic.py\n@@ -248,6 +248,8 @@ def _eval_is_real(self):\n         # if `im` is of the form n*pi\n         # else, check if it is a number\n         re, im = arg.as_real_imag()\n+        if im.has(piecewise := __import__(\"sympy\").Piecewise):\n+            return None\n         return (im%pi).is_zero\n \n     def _eval_is_extended_real(self):\n@@ -437,6 +439,8 @@ def _eval_is_real(self):\n         # the imaginary part can be an expression like n*pi\n         # if not, check if the imaginary part is a number\n         re, im = arg.as_real_imag()\n+        if im.has(piecewise := __import__(\"sympy\").Piecewise):\n+            return None\n         return (im%pi).is_zero\n \n     def _eval_is_positive(self):\n@@ -656,6 +660,8 @@ def _eval_is_real(self):\n             return True\n \n         re, im = arg.as_real_imag()\n+        if im.has(piecewise := __import__(\"sympy\").Piecewise):\n+            return None\n \n         # if denom = 0, tanh(arg) = zoo\n         if re == 0 and im % pi == pi/2:\n"
+    },
+    "sympy__sympy-21612": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-21612",
+        "model_patch": "diff --git a/repro_frac.py b/repro_frac.py\nnew file mode 100644\nindex 0000000000..44b6cd8cb9\n--- /dev/null\n+++ b/repro_frac.py\n@@ -0,0 +1,3 @@\n+from sympy.parsing.latex import parse_latex\n+expr = parse_latex(r\"\\frac{\\frac{a^3+b}{c}}{\\frac{1}{c^2}}\")\n+print(expr)\ndiff --git a/sympy/parsing/latex/_parse_latex_antlr.py b/sympy/parsing/latex/_parse_latex_antlr.py\nindex 2e4a45ad20..c432b6ae77 100644\n--- a/sympy/parsing/latex/_parse_latex_antlr.py\n+++ b/sympy/parsing/latex/_parse_latex_antlr.py\n@@ -382,11 +382,14 @@ def convert_frac(frac):\n \n     expr_top = convert_expr(frac.upper)\n     expr_bot = convert_expr(frac.lower)\n-    inverse_denom = sympy.Pow(expr_bot, -1, evaluate=False)\n-    if expr_top == 1:\n-        return inverse_denom\n-    else:\n-        return sympy.Mul(expr_top, inverse_denom, evaluate=False)\n+\n+    # Keep the denominator grouped so nested fractions preserve structure,\n+    # e.g. \\frac{a}{\\frac{1}{b}} -> a/(1/b), not a/1/b.\n+    return sympy.Mul(\n+        expr_top,\n+        sympy.Pow(sympy.UnevaluatedExpr(expr_bot), -1, evaluate=False),\n+        evaluate=False,\n+    )\n \n def convert_binom(binom):\n     expr_n = convert_expr(binom.n)\n"
+    },
+    "sympy__sympy-21847": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-21847",
+        "model_patch": "diff --git a/repro_itermonomials.py b/repro_itermonomials.py\nnew file mode 100644\nindex 0000000000..421a19a8a4\n--- /dev/null\n+++ b/repro_itermonomials.py\n@@ -0,0 +1,9 @@\n+import sympy as sp\n+from sympy.polys.orderings import monomial_key\n+x1,x2,x3=sp.symbols('x1 x2 x3')\n+states=[x1,x2,x3]\n+max_degrees=3\n+min_degrees=3\n+mons=sorted(sp.itermonomials(states,max_degrees,min_degrees=min_degrees), key=monomial_key('grlex', states))\n+print(mons)\n+print(len(mons))\ndiff --git a/sympy/polys/monomials.py b/sympy/polys/monomials.py\nindex 0e84403307..7c6a37933b 100644\n--- a/sympy/polys/monomials.py\n+++ b/sympy/polys/monomials.py\n@@ -127,7 +127,7 @@ def itermonomials(variables, max_degrees, min_degrees=None):\n                 for variable in item:\n                     if variable != 1:\n                         powers[variable] += 1\n-                if max(powers.values()) >= min_degree:\n+                if sum(powers.values()) >= min_degree:\n                     monomials_list_comm.append(Mul(*item))\n             yield from set(monomials_list_comm)\n         else:\n"
+    },
+    "sympy__sympy-22714": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-22714",
+        "model_patch": "diff --git a/sympy/parsing/sympy_parser.py b/sympy/parsing/sympy_parser.py\nindex e403654cb4..0b37cbc670 100644\n--- a/sympy/parsing/sympy_parser.py\n+++ b/sympy/parsing/sympy_parser.py\n@@ -1130,6 +1130,7 @@ class EvaluateFalseTransformer(ast.NodeTransformer):\n         'cos', 'cot', 'csc', 'sec', 'sin', 'tan',\n         'cosh', 'coth', 'csch', 'sech', 'sinh', 'tanh',\n         'exp', 'ln', 'log', 'sqrt', 'cbrt',\n+        'Point', 'Point2D', 'Point3D',\n     )\n \n     def flatten(self, args, func):\n"
+    },
+    "sympy__sympy-23262": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-23262",
+        "model_patch": "diff --git a/repro.py b/repro.py\nnew file mode 100644\nindex 0000000000..59457897b1\n--- /dev/null\n+++ b/repro.py\n@@ -0,0 +1,6 @@\n+import inspect\n+from sympy import lambdify\n+\n+f = lambdify([], tuple([1]))\n+print(inspect.getsource(f))\n+print(f(), type(f()))\n"
+    },
+    "sympy__sympy-24066": {
+        "model_name_or_path": "default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok20k_mt8_probev3",
+        "instance_id": "sympy__sympy-24066",
+        "model_patch": "diff --git a/sympy/physics/units/unitsystem.py b/sympy/physics/units/unitsystem.py\nindex 3daf84c108..2c0a0cddc0 100644\n--- a/sympy/physics/units/unitsystem.py\n+++ b/sympy/physics/units/unitsystem.py\n@@ -192,8 +192,11 @@ def _collect_factor_and_dimension(self, expr):\n         elif isinstance(expr, Function):\n             fds = [self._collect_factor_and_dimension(\n                 arg) for arg in expr.args]\n+            dims = [d[1] for d in fds]\n+            if all(self.get_dimension_system().is_dimensionless(dim) for dim in dims):\n+                return expr.func(*(f[0] for f in fds)), Dimension(1)\n             return (expr.func(*(f[0] for f in fds)),\n-                    *(d[1] for d in fds))\n+                    *dims)\n         elif isinstance(expr, Dimension):\n             return S.One, expr\n         else:\n"
+    }
+}

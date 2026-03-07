@@ -1,0 +1,74 @@
+diff --git a/repro_limit_choices_dup.py b/repro_limit_choices_dup.py
+new file mode 100644
+index 0000000000..f6a5e6eaa6
+--- /dev/null
++++ b/repro_limit_choices_dup.py
+@@ -0,0 +1,68 @@
++import os
++
++os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.test_sqlite')
++
++import django
++from django import forms
++from django.db import connection, models
++from django.db.models import Q
++
++
++django.setup()
++
++
++class ReproAuthor(models.Model):
++    name = models.CharField(max_length=50)
++
++    class Meta:
++        app_label = 'model_forms'
++
++    def __str__(self):
++        return self.name
++
++
++class ReproBook(models.Model):
++    title = models.CharField(max_length=50)
++    authors = models.ManyToManyField(ReproAuthor, related_name='books')
++
++    class Meta:
++        app_label = 'model_forms'
++
++
++class ReproEdition(models.Model):
++    author = models.ForeignKey(
++        ReproAuthor,
++        models.CASCADE,
++        limit_choices_to=Q(books__title__icontains='django'),
++    )
++
++    class Meta:
++        app_label = 'model_forms'
++
++
++with connection.schema_editor() as editor:
++    editor.create_model(ReproAuthor)
++    editor.create_model(ReproBook)
++    editor.create_model(ReproEdition)
++
++try:
++    a = ReproAuthor.objects.create(name='Alice')
++    b1 = ReproBook.objects.create(title='Django Unleashed')
++    b2 = ReproBook.objects.create(title='Advanced Django')
++    b1.authors.add(a)
++    b2.authors.add(a)
++
++    class ReproEditionForm(forms.ModelForm):
++        class Meta:
++            model = ReproEdition
++            fields = ['author']
++
++    form = ReproEditionForm()
++    labels = [label for value, label in form.fields['author'].choices if value]
++    print('choices:', labels)
++    print('count:', len(labels), 'unique:', len(set(labels)))
++finally:
++    with connection.schema_editor() as editor:
++        editor.delete_model(ReproEdition)
++        editor.delete_model(ReproBook)
++        editor.delete_model(ReproAuthor)

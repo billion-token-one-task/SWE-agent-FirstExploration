@@ -1,0 +1,1193 @@
+2026-03-07 11:48:57,897 - INFO - rex-deploy-astropy__astropy-12907 - Starting container docker.ioswebenchsweb.eval.x86_64.astropy_1776_astropy-12907latest-36fc71ce-16ab-4f59-a81e-66004436f478 with image docker.io/swebench/sweb.eval.x86_64.astropy_1776_astropy-12907:latest serving on port 59383
+2026-03-07 11:48:57,900 - INFO - rex-deploy-astropy__astropy-12907 - Starting runtime at 59383
+2026-03-07 11:48:59,988 - INFO - rex-deploy-astropy__astropy-12907 - Runtime started in 2.09s
+2026-03-07 11:49:01,094 - INFO - swea-env-astropy__astropy-12907 - Environment Initialized
+2026-03-07 11:49:02,119 - INFO - swea-agent-astropy__astropy-12907 - Setting up agent for instance astropy__astropy-12907
+2026-03-07 11:49:02,119 - INFO - swea-agent-astropy__astropy-12907 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.4__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok100k_mt8_probev3_gpt54_rerun1/astropy__astropy-12907/astropy__astropy-12907.traj
+2026-03-07 11:49:25,753 - INFO - swea-tools-astropy__astropy-12907 - Resetting tools
+2026-03-07 11:49:26,162 - INFO - swea-agent-astropy__astropy-12907 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-07 11:49:26,376 - INFO - swea-agent-astropy__astropy-12907 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+Modeling's `separability_matrix` does not compute separability correctly for nested CompoundModels
+Consider the following model:
+
+```python
+from astropy.modeling import models as m
+from astropy.modeling.separable import separability_matrix
+
+cm = m.Linear1D(10) & m.Linear1D(5)
+```
+
+It's separability matrix as you might expect is a diagonal:
+
+```python
+>>> separability_matrix(cm)
+array([[ True, False],
+       [False,  True]])
+```
+
+If I make the model more complex:
+```python
+>>> separability_matrix(m.Pix2Sky_TAN() & m.Linear1D(10) & m.Linear1D(5))
+array([[ True,  True, False, False],
+       [ True,  True, False, False],
+       [False, False,  True, False],
+       [False, False, False,  True]])
+```
+
+The output matrix is again, as expected, the outputs and inputs to the linear models are separable and independent of each other.
+
+If however, I nest these compound models:
+```python
+>>> separability_matrix(m.Pix2Sky_TAN() & cm)
+array([[ True,  True, False, False],
+       [ True,  True, False, False],
+       [False, False,  True,  True],
+       [False, False,  True,  True]])
+```
+Suddenly the inputs and outputs are no longer separable?
+
+This feels like a bug to me, but I might be missing something?
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-07 11:49:26,377 - INFO - swea-agent-astropy__astropy-12907 - ========================= STEP 1 =========================
+2026-03-07 11:49:31,094 - INFO - swea-agent-astropy__astropy-12907 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && rg -n "separability_matrix|_separable|CompoundModel|separable"
+2026-03-07 11:49:31,440 - INFO - swea-agent-astropy__astropy-12907 - 🤖 MODEL INPUT
+OBSERVATION:
+bash: rg: command not found
+
+2026-03-07 11:49:31,444 - INFO - swea-agent-astropy__astropy-12907 - ========================= STEP 2 =========================
+2026-03-07 11:49:36,212 - INFO - swea-agent-astropy__astropy-12907 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && find . -maxdepth 3 -type f | sed 's#^./##' | sort | grep -E 'astropy|model|separ' | head -200
+2026-03-07 11:49:36,577 - INFO - swea-agent-astropy__astropy-12907 - 🤖 MODEL INPUT
+OBSERVATION:
+.astropy-root
+.pyinstaller/run_astropy_tests.py
+astropy.egg-info/PKG-INFO
+astropy.egg-info/SOURCES.txt
+astropy.egg-info/dependency_links.txt
+astropy.egg-info/entry_points.txt
+astropy.egg-info/not-zip-safe
+astropy.egg-info/requires.txt
+astropy.egg-info/top_level.txt
+astropy/CITATION
+astropy/__init__.py
+astropy/_compiler.c
+astropy/_dev/__init__.py
+astropy/_dev/scm_version.py
+astropy/_erfa/__init__.py
+astropy/_version.py
+astropy/compiler_version.cpython-39-x86_64-linux-gnu.so
+astropy/config/__init__.py
+astropy/config/affiliated.py
+astropy/config/configuration.py
+astropy/config/paths.py
+astropy/conftest.py
+astropy/constants/__init__.py
+astropy/constants/astropyconst13.py
+astropy/constants/astropyconst20.py
+astropy/constants/astropyconst40.py
+astropy/constants/cgs.py
+astropy/constants/codata2010.py
+astropy/constants/codata2014.py
+astropy/constants/codata2018.py
+astropy/constants/config.py
+astropy/constants/constant.py
+astropy/constants/iau2012.py
+astropy/constants/iau2015.py
+astropy/constants/si.py
+astropy/constants/utils.py
+astropy/convolution/__init__.py
+astropy/convolution/_convolve.cpython-39-x86_64-linux-gnu.so
+astropy/convolution/convolve.py
+astropy/convolution/core.py
+astropy/convolution/kernels.py
+astropy/convolution/setup_package.py
+astropy/convolution/utils.py
+astropy/coordinates/__init__.py
+astropy/coordinates/angle_formats.py
+astropy/coordinates/angle_lextab.py
+astropy/coordinates/angle_parsetab.py
+astropy/coordinates/angle_utilities.py
+astropy/coordinates/angles.py
+astropy/coordinates/attributes.py
+astropy/coordinates/baseframe.py
+astropy/coordinates/calculation.py
+astropy/coordinates/distances.py
+astropy/coordinates/earth.py
+astropy/coordinates/earth_orientation.py
+astropy/coordinates/erfa_astrom.py
+astropy/coordinates/errors.py
+astropy/coordinates/funcs.py
+astropy/coordinates/jparser.py
+astropy/coordinates/matching.py
+astropy/coordinates/matrix_utilities.py
+astropy/coordinates/name_resolve.py
+astropy/coordinates/orbital_elements.py
+astropy/coordinates/representation.py
+astropy/coordinates/sites.py
+astropy/coordinates/sky_coordinate.py
+astropy/coordinates/sky_coordinate_parsers.py
+astropy/coordinates/solar_system.py
+astropy/coordinates/spectral_coordinate.py
+astropy/coordinates/spectral_quantity.py
+astropy/coordinates/transformations.py
+astropy/cosmology/__init__.py
+astropy/cosmology/connect.py
+astropy/cosmology/core.py
+astropy/cosmology/flrw.py
+astropy/cosmology/funcs.py
+astropy/cosmology/parameter.py
+astropy/cosmology/parameters.py
+astropy/cosmology/realizations.py
+astropy/cosmology/scalar_inv_efuncs.c
+astropy/cosmology/scalar_inv_efuncs.cpython-39-x86_64-linux-gnu.so
+astropy/cosmology/scalar_inv_efuncs.pyx
+astropy/cosmology/units.py
+astropy/cosmology/utils.py
+astropy/extern/README.rst
+astropy/extern/__init__.py
+astropy/extern/_strptime.py
+astropy/io/__init__.py
+astropy/logger.py
+astropy/modeling/__init__.py
+astropy/modeling/bounding_box.py
+astropy/modeling/convolution.py
+astropy/modeling/core.py
+astropy/modeling/fitting.py
+astropy/modeling/functional_models.py
+astropy/modeling/mappings.py
+astropy/modeling/math_functions.py
+astropy/modeling/models.py
+astropy/modeling/optimizers.py
+astropy/modeling/parameters.py
+astropy/modeling/physical_models.py
+astropy/modeling/polynomial.py
+astropy/modeling/powerlaws.py
+astropy/modeling/projections.py
+astropy/modeling/rotations.py
+astropy/modeling/separable.py
+astropy/modeling/setup_package.py
+astropy/modeling/spline.py
+astropy/modeling/statistic.py
+astropy/modeling/tabular.py
+astropy/modeling/utils.py
+astropy/nddata/__init__.py
+astropy/nddata/_testing.py
+astropy/nddata/bitmask.py
+astropy/nddata/blocks.py
+astropy/nddata/ccddata.py
+astropy/nddata/compat.py
+astropy/nddata/decorators.py
+astropy/nddata/flag_collection.py
+astropy/nddata/nddata.py
+astropy/nddata/nddata_base.py
+astropy/nddata/nddata_withmixins.py
+astropy/nddata/nduncertainty.py
+astropy/nddata/utils.py
+astropy/samp/__init__.py
+astropy/samp/client.py
+astropy/samp/constants.py
+astropy/samp/errors.py
+astropy/samp/hub.py
+astropy/samp/hub_proxy.py
+astropy/samp/hub_script.py
+astropy/samp/integrated_client.py
+astropy/samp/lockfile_helpers.py
+astropy/samp/setup_package.py
+astropy/samp/standard_profile.py
+astropy/samp/utils.py
+astropy/samp/web_profile.py
+astropy/stats/__init__.py
+astropy/stats/_fast_sigma_clip.cpython-39-x86_64-linux-gnu.so
+astropy/stats/_stats.c
+astropy/stats/_stats.cpython-39-x86_64-linux-gnu.so
+astropy/stats/_stats.pyx
+astropy/stats/bayesian_blocks.py
+astropy/stats/biweight.py
+astropy/stats/circstats.py
+astropy/stats/funcs.py
+astropy/stats/histogram.py
+astropy/stats/info_theory.py
+astropy/stats/jackknife.py
+astropy/stats/setup_package.py
+astropy/stats/sigma_clipping.py
+astropy/stats/spatial.py
+astropy/table/__init__.py
+astropy/table/_column_mixins.c
+astropy/table/_column_mixins.cpython-39-x86_64-linux-gnu.so
+astropy/table/_column_mixins.pyx
+astropy/table/_np_utils.c
+astropy/table/_np_utils.cpython-39-x86_64-linux-gnu.so
+astropy/table/_np_utils.pyx
+astropy/table/bst.py
+astropy/table/column.py
+astropy/table/connect.py
+astropy/table/groups.py
+astropy/table/index.py
+astropy/table/info.py
+astropy/table/jsviewer.py
+astropy/table/meta.py
+astropy/table/ndarray_mixin.py
+astropy/table/np_utils.py
+astropy/table/operations.py
+astropy/table/pandas.py
+astropy/table/pprint.py
+astropy/table/row.py
+astropy/table/serialize.py
+astropy/table/setup_package.py
+astropy/table/soco.py
+astropy/table/sorted_array.py
+astropy/table/table.py
+astropy/table/table_helpers.py
+astropy/tests/__init__.py
+astropy/tests/command.py
+astropy/tests/helper.py
+astropy/tests/image_tests.py
+astropy/tests/runner.py
+astropy/tests/test_logger.py
+astropy/time/__init__.py
+astropy/time/_parse_times.cpython-39-x86_64-linux-gnu.so
+astropy/time/core.py
+astropy/time/formats.py
+astropy/time/setup_package.py
+astropy/time/utils.py
+astropy/timeseries/__init__.py
+astropy/timeseries/binned.py
+astropy/timeseries/core.py
+astropy/timeseries/downsample.py
+astropy/timeseries/sampled.py
+astropy/uncertainty/__init__.py
+astropy/uncertainty/core.py
+astropy/uncertainty/distributions.py
+astropy/units/__init__.py
+
+2026-03-07 11:49:36,585 - INFO - swea-agent-astropy__astropy-12907 - ========================= STEP 3 =========================
+2026-03-07 11:49:41,284 - INFO - swea-agent-astropy__astropy-12907 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/astropy/modeling/core.py  --view_range 1 260
+2026-03-07 11:49:41,739 - INFO - swea-agent-astropy__astropy-12907 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/astropy/modeling/core.py:
+     1	# Licensed under a 3-clause BSD style license - see LICENSE.rst
+     2	
+     3	"""
+     4	This module defines base classes for all models.  The base class of all
+     5	models is `~astropy.modeling.Model`. `~astropy.modeling.FittableModel` is
+     6	the base class for all fittable models. Fittable models can be linear or
+     7	nonlinear in a regression analysis sense.
+     8	
+     9	All models provide a `__call__` method which performs the transformation in
+    10	a purely mathematical way, i.e. the models are unitless.  Model instances can
+    11	represent either a single model, or a "model set" representing multiple copies
+    12	of the same type of model, but with potentially different values of the
+    13	parameters in each model making up the set.
+    14	"""
+    15	# pylint: disable=invalid-name, protected-access, redefined-outer-name
+    16	import abc
+    17	import copy
+    18	import inspect
+    19	import itertools
+    20	import functools
+    21	import operator
+    22	import types
+    23	
+    24	from collections import defaultdict, deque
+    25	from inspect import signature
+    26	from itertools import chain
+    27	
+    28	import numpy as np
+    29	
+    30	from astropy.utils import indent, metadata
+    31	from astropy.table import Table
+    32	from astropy.units import Quantity, UnitsError, dimensionless_unscaled
+    33	from astropy.units.utils import quantity_asanyarray
+    34	from astropy.utils import (sharedmethod, find_current_module,
+    35	                           check_broadcast, IncompatibleShapeError, isiterable)
+    36	from astropy.utils.codegen import make_function_with_signature
+    37	from astropy.nddata.utils import add_array, extract_array
+    38	from .utils import (combine_labels, make_binary_operator_eval,
+    39	                    get_inputs_and_params, _combine_equivalency_dict,
+    40	                    _ConstraintsDict, _SpecialOperatorsDict)
+    41	from .bounding_box import ModelBoundingBox, CompoundBoundingBox
+    42	from .parameters import (Parameter, InputParameterError,
+    43	                         param_repr_oneline, _tofloat)
+    44	
+    45	
+    46	__all__ = ['Model', 'FittableModel', 'Fittable1DModel', 'Fittable2DModel',
+    47	           'CompoundModel', 'fix_inputs', 'custom_model', 'ModelDefinitionError',
+    48	           'bind_bounding_box', 'bind_compound_bounding_box']
+    49	
+    50	
+    51	def _model_oper(oper, **kwargs):
+    52	    """
+    53	    Returns a function that evaluates a given Python arithmetic operator
+    54	    between two models.  The operator should be given as a string, like ``'+'``
+    55	    or ``'**'``.
+    56	    """
+    57	    return lambda left, right: CompoundModel(oper, left, right, **kwargs)
+    58	
+    59	
+    60	class ModelDefinitionError(TypeError):
+    61	    """Used for incorrect models definitions."""
+    62	
+    63	
+    64	class _ModelMeta(abc.ABCMeta):
+    65	    """
+    66	    Metaclass for Model.
+    67	
+    68	    Currently just handles auto-generating the param_names list based on
+    69	    Parameter descriptors declared at the class-level of Model subclasses.
+    70	    """
+    71	
+    72	    _is_dynamic = False
+    73	    """
+    74	    This flag signifies whether this class was created in the "normal" way,
+    75	    with a class statement in the body of a module, as opposed to a call to
+    76	    `type` or some other metaclass constructor, such that the resulting class
+    77	    does not belong to a specific module.  This is important for pickling of
+    78	    dynamic classes.
+    79	
+    80	    This flag is always forced to False for new classes, so code that creates
+    81	    dynamic classes should manually set it to True on those classes when
+    82	    creating them.
+    83	    """
+    84	
+    85	    # Default empty dict for _parameters_, which will be empty on model
+    86	    # classes that don't have any Parameters
+    87	
+    88	    def __new__(mcls, name, bases, members, **kwds):
+    89	        # See the docstring for _is_dynamic above
+    90	        if '_is_dynamic' not in members:
+    91	            members['_is_dynamic'] = mcls._is_dynamic
+    92	        opermethods = [
+    93	            ('__add__', _model_oper('+')),
+    94	            ('__sub__', _model_oper('-')),
+    95	            ('__mul__', _model_oper('*')),
+    96	            ('__truediv__', _model_oper('/')),
+    97	            ('__pow__', _model_oper('**')),
+    98	            ('__or__', _model_oper('|')),
+    99	            ('__and__', _model_oper('&')),
+   100	            ('_fix_inputs', _model_oper('fix_inputs'))
+   101	        ]
+   102	
+   103	        members['_parameters_'] = {k: v for k, v in members.items()
+   104	                                   if isinstance(v, Parameter)}
+   105	
+   106	        for opermethod, opercall in opermethods:
+   107	            members[opermethod] = opercall
+   108	        cls = super().__new__(mcls, name, bases, members, **kwds)
+   109	
+   110	        param_names = list(members['_parameters_'])
+   111	
+   112	        # Need to walk each base MRO to collect all parameter names
+   113	        for base in bases:
+   114	            for tbase in base.__mro__:
+   115	                if issubclass(tbase, Model):
+   116	                    # Preserve order of definitions
+   117	                    param_names = list(tbase._parameters_) + param_names
+   118	        # Remove duplicates (arising from redefinition in subclass).
+   119	        param_names = list(dict.fromkeys(param_names))
+   120	        if cls._parameters_:
+   121	            if hasattr(cls, '_param_names'):
+   122	                # Slight kludge to support compound models, where
+   123	                # cls.param_names is a property; could be improved with a
+   124	                # little refactoring but fine for now
+   125	                cls._param_names = tuple(param_names)
+   126	            else:
+   127	                cls.param_names = tuple(param_names)
+   128	
+   129	        return cls
+   130	
+   131	    def __init__(cls, name, bases, members, **kwds):
+   132	        super(_ModelMeta, cls).__init__(name, bases, members, **kwds)
+   133	        cls._create_inverse_property(members)
+   134	        cls._create_bounding_box_property(members)
+   135	        pdict = {}
+   136	        for base in bases:
+   137	            for tbase in base.__mro__:
+   138	                if issubclass(tbase, Model):
+   139	                    for parname, val in cls._parameters_.items():
+   140	                        pdict[parname] = val
+   141	        cls._handle_special_methods(members, pdict)
+   142	
+   143	    def __repr__(cls):
+   144	        """
+   145	        Custom repr for Model subclasses.
+   146	        """
+   147	
+   148	        return cls._format_cls_repr()
+   149	
+   150	    def _repr_pretty_(cls, p, cycle):
+   151	        """
+   152	        Repr for IPython's pretty printer.
+   153	
+   154	        By default IPython "pretty prints" classes, so we need to implement
+   155	        this so that IPython displays the custom repr for Models.
+   156	        """
+   157	
+   158	        p.text(repr(cls))
+   159	
+   160	    def __reduce__(cls):
+   161	        if not cls._is_dynamic:
+   162	            # Just return a string specifying where the class can be imported
+   163	            # from
+   164	            return cls.__name__
+   165	        members = dict(cls.__dict__)
+   166	        # Delete any ABC-related attributes--these will be restored when
+   167	        # the class is reconstructed:
+   168	        for key in list(members):
+   169	            if key.startswith('_abc_'):
+   170	                del members[key]
+   171	
+   172	        # Delete custom __init__ and __call__ if they exist:
+   173	        for key in ('__init__', '__call__'):
+   174	            if key in members:
+   175	                del members[key]
+   176	
+   177	        return (type(cls), (cls.__name__, cls.__bases__, members))
+   178	
+   179	    @property
+   180	    def name(cls):
+   181	        """
+   182	        The name of this model class--equivalent to ``cls.__name__``.
+   183	
+   184	        This attribute is provided for symmetry with the `Model.name` attribute
+   185	        of model instances.
+   186	        """
+   187	
+   188	        return cls.__name__
+   189	
+   190	    @property
+   191	    def _is_concrete(cls):
+   192	        """
+   193	        A class-level property that determines whether the class is a concrete
+   194	        implementation of a Model--i.e. it is not some abstract base class or
+   195	        internal implementation detail (i.e. begins with '_').
+   196	        """
+   197	        return not (cls.__name__.startswith('_') or inspect.isabstract(cls))
+   198	
+   199	    def rename(cls, name=None, inputs=None, outputs=None):
+   200	        """
+   201	        Creates a copy of this model class with a new name, inputs or outputs.
+   202	
+   203	        The new class is technically a subclass of the original class, so that
+   204	        instance and type checks will still work.  For example::
+   205	
+   206	            >>> from astropy.modeling.models import Rotation2D
+   207	            >>> SkyRotation = Rotation2D.rename('SkyRotation')
+   208	            >>> SkyRotation
+   209	            <class 'astropy.modeling.core.SkyRotation'>
+   210	            Name: SkyRotation (Rotation2D)
+   211	            N_inputs: 2
+   212	            N_outputs: 2
+   213	            Fittable parameters: ('angle',)
+   214	            >>> issubclass(SkyRotation, Rotation2D)
+   215	            True
+   216	            >>> r = SkyRotation(90)
+   217	            >>> isinstance(r, Rotation2D)
+   218	            True
+   219	        """
+   220	
+   221	        mod = find_current_module(2)
+   222	        if mod:
+   223	            modname = mod.__name__
+   224	        else:
+   225	            modname = '__main__'
+   226	
+   227	        if name is None:
+   228	            name = cls.name
+   229	        if inputs is None:
+   230	            inputs = cls.inputs
+   231	        else:
+   232	            if not isinstance(inputs, tuple):
+   233	                raise TypeError("Expected 'inputs' to be a tuple of strings.")
+   234	            elif len(inputs) != len(cls.inputs):
+   235	                raise ValueError(f'{cls.name} expects {len(cls.inputs)} inputs')
+   236	        if outputs is None:
+   237	            outputs = cls.outputs
+   238	        else:
+   239	            if not isinstance(outputs, tuple):
+   240	                raise TypeError("Expected 'outputs' to be a tuple of strings.")
+   241	            elif len(outputs) != len(cls.outputs):
+   242	                raise ValueError(f'{cls.name} expects {len(cls.outputs)} outputs')
+   243	        new_cls = type(name, (cls,), {"inputs": inputs, "outputs": outputs})
+   244	        new_cls.__module__ = modname
+   245	        new_cls.__qualname__ = name
+   246	
+   247	        return new_cls
+   248	
+   249	    def _create_inverse_property(cls, members):
+   250	        inverse = members.get('inverse')
+   251	        if inverse is None or cls.__bases__[0] is object:
+   252	            # The latter clause is the prevent the below code from running on
+   253	            # the Model base class, which implements the default getter and
+   254	            # setter for .inverse
+   255	            return
+   256	
+   257	        if isinstance(inverse, property):
+   258	            # We allow the @property decorator to be omitted entirely from
+   259	            # the class definition, though its use should be encouraged for
+   260	            # clarity
+
+
+2026-03-07 11:49:41,747 - INFO - swea-agent-astropy__astropy-12907 - ========================= STEP 4 =========================
+2026-03-07 11:49:44,905 - INFO - swea-agent-astropy__astropy-12907 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/astropy/modeling/separable.py
+2026-03-07 11:49:45,481 - INFO - swea-agent-astropy__astropy-12907 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/astropy/modeling/separable.py:
+     1	# Licensed under a 3-clause BSD style license - see LICENSE.rst
+     2	
+     3	"""
+     4	Functions to determine if a model is separable, i.e.
+     5	if the model outputs are independent.
+     6	
+     7	It analyzes ``n_inputs``, ``n_outputs`` and the operators
+     8	in a compound model by stepping through the transforms
+     9	and creating a ``coord_matrix`` of shape (``n_outputs``, ``n_inputs``).
+    10	
+    11	
+    12	Each modeling operator is represented by a function which
+    13	takes two simple models (or two ``coord_matrix`` arrays) and
+    14	returns an array of shape (``n_outputs``, ``n_inputs``).
+    15	
+    16	"""
+    17	
+    18	import numpy as np
+    19	
+    20	from .core import Model, ModelDefinitionError, CompoundModel
+    21	from .mappings import Mapping
+    22	
+    23	
+    24	__all__ = ["is_separable", "separability_matrix"]
+    25	
+    26	
+    27	def is_separable(transform):
+    28	    """
+    29	    A separability test for the outputs of a transform.
+    30	
+    31	    Parameters
+    32	    ----------
+    33	    transform : `~astropy.modeling.core.Model`
+    34	        A (compound) model.
+    35	
+    36	    Returns
+    37	    -------
+    38	    is_separable : ndarray
+    39	        A boolean array with size ``transform.n_outputs`` where
+    40	        each element indicates whether the output is independent
+    41	        and the result of a separable transform.
+    42	
+    43	    Examples
+    44	    --------
+    45	    >>> from astropy.modeling.models import Shift, Scale, Rotation2D, Polynomial2D
+    46	    >>> is_separable(Shift(1) & Shift(2) | Scale(1) & Scale(2))
+    47	        array([ True,  True]...)
+    48	    >>> is_separable(Shift(1) & Shift(2) | Rotation2D(2))
+    49	        array([False, False]...)
+    50	    >>> is_separable(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]) | \
+    51	        Polynomial2D(1) & Polynomial2D(2))
+    52	        array([False, False]...)
+    53	    >>> is_separable(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]))
+    54	        array([ True,  True,  True,  True]...)
+    55	
+    56	    """
+    57	    if transform.n_inputs == 1 and transform.n_outputs > 1:
+    58	        is_separable = np.array([False] * transform.n_outputs).T
+    59	        return is_separable
+    60	    separable_matrix = _separable(transform)
+    61	    is_separable = separable_matrix.sum(1)
+    62	    is_separable = np.where(is_separable != 1, False, True)
+    63	    return is_separable
+    64	
+    65	
+    66	def separability_matrix(transform):
+    67	    """
+    68	    Compute the correlation between outputs and inputs.
+    69	
+    70	    Parameters
+    71	    ----------
+    72	    transform : `~astropy.modeling.core.Model`
+    73	        A (compound) model.
+    74	
+    75	    Returns
+    76	    -------
+    77	    separable_matrix : ndarray
+    78	        A boolean correlation matrix of shape (n_outputs, n_inputs).
+    79	        Indicates the dependence of outputs on inputs. For completely
+    80	        independent outputs, the diagonal elements are True and
+    81	        off-diagonal elements are False.
+    82	
+    83	    Examples
+    84	    --------
+    85	    >>> from astropy.modeling.models import Shift, Scale, Rotation2D, Polynomial2D
+    86	    >>> separability_matrix(Shift(1) & Shift(2) | Scale(1) & Scale(2))
+    87	        array([[ True, False], [False,  True]]...)
+    88	    >>> separability_matrix(Shift(1) & Shift(2) | Rotation2D(2))
+    89	        array([[ True,  True], [ True,  True]]...)
+    90	    >>> separability_matrix(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]) | \
+    91	        Polynomial2D(1) & Polynomial2D(2))
+    92	        array([[ True,  True], [ True,  True]]...)
+    93	    >>> separability_matrix(Shift(1) & Shift(2) | Mapping([0, 1, 0, 1]))
+    94	        array([[ True, False], [False,  True], [ True, False], [False,  True]]...)
+    95	
+    96	    """
+    97	    if transform.n_inputs == 1 and transform.n_outputs > 1:
+    98	        return np.ones((transform.n_outputs, transform.n_inputs),
+    99	                       dtype=np.bool_)
+   100	    separable_matrix = _separable(transform)
+   101	    separable_matrix = np.where(separable_matrix != 0, True, False)
+   102	    return separable_matrix
+   103	
+   104	
+   105	def _compute_n_outputs(left, right):
+   106	    """
+   107	    Compute the number of outputs of two models.
+   108	
+   109	    The two models are the left and right model to an operation in
+   110	    the expression tree of a compound model.
+   111	
+   112	    Parameters
+   113	    ----------
+   114	    left, right : `astropy.modeling.Model` or ndarray
+   115	        If input is of an array, it is the output of `coord_matrix`.
+   116	
+   117	    """
+   118	    if isinstance(left, Model):
+   119	        lnout = left.n_outputs
+   120	    else:
+   121	        lnout = left.shape[0]
+   122	    if isinstance(right, Model):
+   123	        rnout = right.n_outputs
+   124	    else:
+   125	        rnout = right.shape[0]
+   126	    noutp = lnout + rnout
+   127	    return noutp
+   128	
+   129	
+   130	def _arith_oper(left, right):
+   131	    """
+   132	    Function corresponding to one of the arithmetic operators
+   133	    ['+', '-'. '*', '/', '**'].
+   134	
+   135	    This always returns a nonseparable output.
+   136	
+   137	
+   138	    Parameters
+   139	    ----------
+   140	    left, right : `astropy.modeling.Model` or ndarray
+   141	        If input is of an array, it is the output of `coord_matrix`.
+   142	
+   143	    Returns
+   144	    -------
+   145	    result : ndarray
+   146	        Result from this operation.
+   147	    """
+   148	    # models have the same number of inputs and outputs
+   149	    def _n_inputs_outputs(input):
+   150	        if isinstance(input, Model):
+   151	            n_outputs, n_inputs = input.n_outputs, input.n_inputs
+   152	        else:
+   153	            n_outputs, n_inputs = input.shape
+   154	        return n_inputs, n_outputs
+   155	
+   156	    left_inputs, left_outputs = _n_inputs_outputs(left)
+   157	    right_inputs, right_outputs = _n_inputs_outputs(right)
+   158	
+   159	    if left_inputs != right_inputs or left_outputs != right_outputs:
+   160	        raise ModelDefinitionError(
+   161	            "Unsupported operands for arithmetic operator: left (n_inputs={}, "
+   162	            "n_outputs={}) and right (n_inputs={}, n_outputs={}); "
+   163	            "models must have the same n_inputs and the same "
+   164	            "n_outputs for this operator.".format(
+   165	                left_inputs, left_outputs, right_inputs, right_outputs))
+   166	
+   167	    result = np.ones((left_outputs, left_inputs))
+   168	    return result
+   169	
+   170	
+   171	def _coord_matrix(model, pos, noutp):
+   172	    """
+   173	    Create an array representing inputs and outputs of a simple model.
+   174	
+   175	    The array has a shape (noutp, model.n_inputs).
+   176	
+   177	    Parameters
+   178	    ----------
+   179	    model : `astropy.modeling.Model`
+   180	        model
+   181	    pos : str
+   182	        Position of this model in the expression tree.
+   183	        One of ['left', 'right'].
+   184	    noutp : int
+   185	        Number of outputs of the compound model of which the input model
+   186	        is a left or right child.
+   187	
+   188	    """
+   189	    if isinstance(model, Mapping):
+   190	        axes = []
+   191	        for i in model.mapping:
+   192	            axis = np.zeros((model.n_inputs,))
+   193	            axis[i] = 1
+   194	            axes.append(axis)
+   195	        m = np.vstack(axes)
+   196	        mat = np.zeros((noutp, model.n_inputs))
+   197	        if pos == 'left':
+   198	            mat[: model.n_outputs, :model.n_inputs] = m
+   199	        else:
+   200	            mat[-model.n_outputs:, -model.n_inputs:] = m
+   201	        return mat
+   202	    if not model.separable:
+   203	        # this does not work for more than 2 coordinates
+   204	        mat = np.zeros((noutp, model.n_inputs))
+   205	        if pos == 'left':
+   206	            mat[:model.n_outputs, : model.n_inputs] = 1
+   207	        else:
+   208	            mat[-model.n_outputs:, -model.n_inputs:] = 1
+   209	    else:
+   210	        mat = np.zeros((noutp, model.n_inputs))
+   211	
+   212	        for i in range(model.n_inputs):
+   213	            mat[i, i] = 1
+   214	        if pos == 'right':
+   215	            mat = np.roll(mat, (noutp - model.n_outputs))
+   216	    return mat
+   217	
+   218	
+   219	def _cstack(left, right):
+   220	    """
+   221	    Function corresponding to '&' operation.
+   222	
+   223	    Parameters
+   224	    ----------
+   225	    left, right : `astropy.modeling.Model` or ndarray
+   226	        If input is of an array, it is the output of `coord_matrix`.
+   227	
+   228	    Returns
+   229	    -------
+   230	    result : ndarray
+   231	        Result from this operation.
+   232	
+   233	    """
+   234	    noutp = _compute_n_outputs(left, right)
+   235	
+   236	    if isinstance(left, Model):
+   237	        cleft = _coord_matrix(left, 'left', noutp)
+   238	    else:
+   239	        cleft = np.zeros((noutp, left.shape[1]))
+   240	        cleft[: left.shape[0], : left.shape[1]] = left
+   241	    if isinstance(right, Model):
+   242	        cright = _coord_matrix(right, 'right', noutp)
+   243	    else:
+   244	        cright = np.zeros((noutp, right.shape[1]))
+   245	        cright[-right.shape[0]:, -right.shape[1]:] = 1
+   246	
+   247	    return np.hstack([cleft, cright])
+   248	
+   249	
+   250	def _cdot(left, right):
+   251	    """
+   252	    Function corresponding to "|" operation.
+   253	
+   254	    Parameters
+   255	    ----------
+   256	    left, right : `astropy.modeling.Model` or ndarray
+   257	        If input is of an array, it is the output of `coord_matrix`.
+   258	
+   259	    Returns
+   260	    -------
+   261	    result : ndarray
+   262	        Result from this operation.
+   263	    """
+   264	
+   265	    left, right = right, left
+   266	
+   267	    def _n_inputs_outputs(input, position):
+   268	        """
+   269	        Return ``n_inputs``, ``n_outputs`` for a model or coord_matrix.
+   270	        """
+   271	        if isinstance(input, Model):
+   272	            coords = _coord_matrix(input, position, input.n_outputs)
+   273	        else:
+   274	            coords = input
+   275	        return coords
+   276	
+   277	    cleft = _n_inputs_outputs(left, 'left')
+   278	    cright = _n_inputs_outputs(right, 'right')
+   279	
+   280	    try:
+   281	        result = np.dot(cleft, cright)
+   282	    except ValueError:
+   283	        raise ModelDefinitionError(
+   284	            'Models cannot be combined with the "|" operator; '
+   285	            'left coord_matrix is {}, right coord_matrix is {}'.format(
+   286	                cright, cleft))
+   287	    return result
+   288	
+   289	
+   290	def _separable(transform):
+   291	    """
+   292	    Calculate the separability of outputs.
+   293	
+   294	    Parameters
+   295	    ----------
+   296	    transform : `astropy.modeling.Model`
+   297	        A transform (usually a compound model).
+   298	
+   299	    Returns :
+   300	    is_separable : ndarray of dtype np.bool
+   301	        An array of shape (transform.n_outputs,) of boolean type
+   302	        Each element represents the separablity of the corresponding output.
+   303	    """
+   304	    if (transform_matrix := transform._calculate_separability_matrix()) is not NotImplemented:
+   305	        return transform_matrix
+   306	    elif isinstance(transform, CompoundModel):
+   307	        sepleft = _separable(transform.left)
+   308	        sepright = _separable(transform.right)
+   309	        return _operators[transform.op](sepleft, sepright)
+   310	    elif isinstance(transform, Model):
+   311	        return _coord_matrix(transform, 'left', transform.n_outputs)
+   312	
+   313	
+   314	# Maps modeling operators to a function computing and represents the
+   315	# relationship of axes as an array of 0-es and 1-s
+   316	_operators = {'&': _cstack, '|': _cdot, '+': _arith_oper, '-': _arith_oper,
+   317	              '*': _arith_oper, '/': _arith_oper, '**': _arith_oper}
+   318	
+
+
+2026-03-07 11:49:45,544 - INFO - swea-agent-astropy__astropy-12907 - ========================= STEP 5 =========================
+2026-03-07 11:49:51,862 - INFO - swea-agent-astropy__astropy-12907 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && cat > reproduce_separable_bug.py <<'PY'
+from astropy.modeling import models as m
+from astropy.modeling.separable import separability_matrix
+
+cm = m.Linear1D(10) & m.Linear1D(5)
+print('cm:')
+print(separability_matrix(cm))
+print('pix2sky & linear & linear:')
+print(separability_matrix(m.Pix2Sky_TAN() & m.Linear1D(10) & m.Linear1D(5)))
+print('pix2sky & cm:')
+print(separability_matrix(m.Pix2Sky_TAN() & cm))
+PY
+python reproduce_separable_bug.py
+2026-03-07 11:49:52,562 - INFO - swea-agent-astropy__astropy-12907 - 🤖 MODEL INPUT
+OBSERVATION:
+Traceback (most recent call last):
+  File "/opt/sweagent_deps/numpy/_core/__init__.py", line 24, in <module>
+    from . import multiarray
+  File "/opt/sweagent_deps/numpy/_core/multiarray.py", line 11, in <module>
+    from . import _multiarray_umath, overrides
+  File "/opt/sweagent_deps/numpy/_core/overrides.py", line 6, in <module>
+    from numpy._core._multiarray_umath import (
+ModuleNotFoundError: No module named 'numpy._core._multiarray_umath'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/sweagent_deps/numpy/__init__.py", line 112, in <module>
+    from numpy.__config__ import show_config
+  File "/opt/sweagent_deps/numpy/__config__.py", line 4, in <module>
+    from numpy._core._multiarray_umath import (
+  File "/opt/sweagent_deps/numpy/_core/__init__.py", line 85, in <module>
+    raise ImportError(msg) from exc
+ImportError: 
+
+IMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!
+
+Importing the numpy C-extensions failed. This error can happen for
+many reasons, often due to issues with your setup or how NumPy was
+installed.
+The following compiled module files exist, but seem incompatible
+with with either python 'cpython-39' or the platform 'linux':
+
+  * _multiarray_umath.cpython-311-x86_64-linux-gnu.so
+
+We have compiled some common reasons and troubleshooting tips at:
+
+    https://numpy.org/devdocs/user/troubleshooting-importerror.html
+
+Please note and check the following:
+
+  * The Python version is: Python 3.9 from "/opt/miniconda3/envs/testbed/bin/python"
+  * The NumPy version is: "2.4.2"
+
+and make sure that they are the versions you expect.
+
+Please carefully study the information and documentation linked above.
+This is unlikely to be a NumPy issue but will be caused by a bad install
+or environment on your machine.
+
+Original error was: No module named 'numpy._core._multiarray_umath'
+
+Traceback (most recent call last):
+  File "/testbed/reproduce_separable_bug.py", line 1, in <module>
+    from astropy.modeling import models as m
+  File "/testbed/astropy/__init__.py", line 41, in <module>
+    from . import config as _config  # noqa: E402
+  File "/testbed/astropy/config/__init__.py", line 10, in <module>
+    from .configuration import *
+  File "/testbed/astropy/config/configuration.py", line 24, in <module>
+    from astropy.utils import find_current_module, silence
+  File "/testbed/astropy/utils/__init__.py", line 17, in <module>
+    from .codegen import *  # noqa
+  File "/testbed/astropy/utils/codegen.py", line 13, in <module>
+    from .introspection import find_current_module
+  File "/testbed/astropy/utils/introspection.py", line 14, in <module>
+    from astropy.utils.decorators import deprecated_renamed_argument
+  File "/testbed/astropy/utils/decorators.py", line 14, in <module>
+    from .exceptions import (AstropyDeprecationWarning, AstropyUserWarning,
+  File "/testbed/astropy/utils/exceptions.py", line 11, in <module>
+    from erfa import ErfaError, ErfaWarning  # noqa
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/erfa/__init__.py", line 5, in <module>
+    from .version import version as __version__  # noqa
+  File "/opt/miniconda3/envs/testbed/lib/python3.9/site-packages/erfa/version.py", line 25, in <module>
+    from . import ufunc
+ImportError: numpy.core.multiarray failed to import
+
+2026-03-07 11:49:52,572 - INFO - swea-agent-astropy__astropy-12907 - ========================= STEP 6 =========================
+2026-03-07 11:49:55,610 - INFO - swea-agent-astropy__astropy-12907 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python3.11 reproduce_separable_bug.py
+2026-03-07 11:49:56,488 - INFO - swea-agent-astropy__astropy-12907 - 🤖 MODEL INPUT
+OBSERVATION:
+Traceback (most recent call last):
+  File "/testbed/reproduce_separable_bug.py", line 1, in <module>
+    from astropy.modeling import models as m
+  File "/testbed/astropy/__init__.py", line 41, in <module>
+    from . import config as _config  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/astropy/config/__init__.py", line 10, in <module>
+    from .configuration import *
+  File "/testbed/astropy/config/configuration.py", line 24, in <module>
+    from astropy.utils import find_current_module, silence
+  File "/testbed/astropy/utils/__init__.py", line 17, in <module>
+    from .codegen import *  # noqa
+    ^^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/astropy/utils/codegen.py", line 13, in <module>
+    from .introspection import find_current_module
+  File "/testbed/astropy/utils/introspection.py", line 14, in <module>
+    from astropy.utils.decorators import deprecated_renamed_argument
+  File "/testbed/astropy/utils/decorators.py", line 14, in <module>
+    from .exceptions import (AstropyDeprecationWarning, AstropyUserWarning,
+  File "/testbed/astropy/utils/exceptions.py", line 11, in <module>
+    from erfa import ErfaError, ErfaWarning  # noqa
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'erfa'
+
+2026-03-07 11:49:56,549 - INFO - swea-agent-astropy__astropy-12907 - ========================= STEP 7 =========================
+2026-03-07 11:50:05,458 - INFO - swea-agent-astropy__astropy-12907 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/astropy/modeling/separable.py   --old_str '    if isinstance(right, Model):
+        cright = _coord_matrix(right, '"'"'right'"'"', noutp)
+    else:
+        cright = np.zeros((noutp, right.shape[1]))
+        cright[-right.shape[0]:, -right.shape[1]:] = 1
+
+    return np.hstack([cleft, cright])
+' --new_str '    if isinstance(right, Model):
+        cright = _coord_matrix(right, '"'"'right'"'"', noutp)
+    else:
+        cright = np.zeros((noutp, right.shape[1]))
+        cright[-right.shape[0]:, -right.shape[1]:] = right
+
+    return np.hstack([cleft, cright])
+'
+2026-03-07 11:50:06,091 - INFO - swea-agent-astropy__astropy-12907 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/astropy/modeling/separable.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/astropy/modeling/separable.py:
+   236	    if isinstance(left, Model):
+   237	        cleft = _coord_matrix(left, 'left', noutp)
+   238	    else:
+   239	        cleft = np.zeros((noutp, left.shape[1]))
+   240	        cleft[: left.shape[0], : left.shape[1]] = left
+   241	    if isinstance(right, Model):
+   242	        cright = _coord_matrix(right, 'right', noutp)
+   243	    else:
+   244	        cright = np.zeros((noutp, right.shape[1]))
+   245	        cright[-right.shape[0]:, -right.shape[1]:] = right
+   246	
+   247	    return np.hstack([cleft, cright])
+   248	
+   249	
+   250	def _cdot(left, right):
+   251	    """
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-07 11:50:06,174 - INFO - swea-agent-astropy__astropy-12907 - ========================= STEP 8 =========================
+2026-03-07 11:50:07,199 - WARNING - swea-lm-astropy__astropy-12907 - Retrying LM query: attempt 1 (slept for 10.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 11:50:17,879 - WARNING - swea-lm-astropy__astropy-12907 - Retrying LM query: attempt 2 (slept for 20.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 11:50:32,134 - INFO - swea-agent-astropy__astropy-12907 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python3.11 - <<'PY'
+import numpy as np
+from astropy.modeling.separable import _cstack
+
+left = np.array([[1,1],[1,1]])
+right = np.array([[1,0],[0,1]])
+print(_cstack(left, right))
+PY
+2026-03-07 11:50:32,949 - INFO - swea-agent-astropy__astropy-12907 - 🤖 MODEL INPUT
+OBSERVATION:
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "/testbed/astropy/__init__.py", line 41, in <module>
+    from . import config as _config  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/astropy/config/__init__.py", line 10, in <module>
+    from .configuration import *
+  File "/testbed/astropy/config/configuration.py", line 24, in <module>
+    from astropy.utils import find_current_module, silence
+  File "/testbed/astropy/utils/__init__.py", line 17, in <module>
+    from .codegen import *  # noqa
+    ^^^^^^^^^^^^^^^^^^^^^^
+  File "/testbed/astropy/utils/codegen.py", line 13, in <module>
+    from .introspection import find_current_module
+  File "/testbed/astropy/utils/introspection.py", line 14, in <module>
+    from astropy.utils.decorators import deprecated_renamed_argument
+  File "/testbed/astropy/utils/decorators.py", line 14, in <module>
+    from .exceptions import (AstropyDeprecationWarning, AstropyUserWarning,
+  File "/testbed/astropy/utils/exceptions.py", line 11, in <module>
+    from erfa import ErfaError, ErfaWarning  # noqa
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'erfa'
+
+2026-03-07 11:50:32,966 - INFO - swea-agent-astropy__astropy-12907 - ========================= STEP 9 =========================
+2026-03-07 11:50:34,889 - INFO - swea-agent-astropy__astropy-12907 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-07 11:50:35,434 - INFO - swea-agent-astropy__astropy-12907 - 🤖 MODEL INPUT
+OBSERVATION:
+Thank you for your work on this issue. Please carefully follow the steps below to help review your changes.
+
+1. If you made any changes to your code after running the reproduction script, please run the reproduction script again.
+  If the reproduction script is failing, please revisit your changes and make sure they are correct.
+  If you have already removed your reproduction script, please ignore this step.
+2. Remove your reproduction script (if you haven't done so already).
+3. If you have modified any TEST files, please revert them to the state they had before you started fixing the issue.
+  You can do this with `git checkout -- /path/to/test/file.py`. Use below <diff> to find the files you need to revert.
+4. Run the submit command again to confirm.
+
+Here is a list of all of your changes:
+
+<diff>
+diff --git a/astropy/modeling/separable.py b/astropy/modeling/separable.py
+index a308e2729..45bea3608 100644
+--- a/astropy/modeling/separable.py
++++ b/astropy/modeling/separable.py
+@@ -242,7 +242,7 @@ def _cstack(left, right):
+         cright = _coord_matrix(right, 'right', noutp)
+     else:
+         cright = np.zeros((noutp, right.shape[1]))
+-        cright[-right.shape[0]:, -right.shape[1]:] = 1
++        cright[-right.shape[0]:, -right.shape[1]:] = right
+ 
+     return np.hstack([cleft, cright])
+ 
+diff --git a/reproduce_separable_bug.py b/reproduce_separable_bug.py
+new file mode 100644
+index 000000000..43a1daf6e
+--- /dev/null
++++ b/reproduce_separable_bug.py
+@@ -0,0 +1,10 @@
++from astropy.modeling import models as m
++from astropy.modeling.separable import separability_matrix
++
++cm = m.Linear1D(10) & m.Linear1D(5)
++print('cm:')
++print(separability_matrix(cm))
++print('pix2sky & linear & linear:')
++print(separability_matrix(m.Pix2Sky_TAN() & m.Linear1D(10) & m.Linear1D(5)))
++print('pix2sky & cm:')
++print(separability_matrix(m.Pix2Sky_TAN() & cm))
+
+</diff>
+
+
+2026-03-07 11:50:35,504 - INFO - swea-agent-astropy__astropy-12907 - ========================= STEP 10 =========================
+2026-03-07 11:50:39,390 - INFO - swea-agent-astropy__astropy-12907 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && rm -f reproduce_separable_bug.py
+2026-03-07 11:50:40,050 - INFO - swea-agent-astropy__astropy-12907 - 🤖 MODEL INPUT
+Your command ran successfully and did not produce any output.
+2026-03-07 11:50:40,145 - INFO - swea-agent-astropy__astropy-12907 - ========================= STEP 11 =========================
+2026-03-07 11:50:43,696 - INFO - swea-agent-astropy__astropy-12907 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-07 11:50:44,197 - INFO - swea-agent-astropy__astropy-12907 - Found submission: diff --git a/astropy/modeling/separable.py b/astropy/modeling/separable.py
+index a308e2729..45bea3608 100644
+--- a/astropy/modeling/separable.py
++++ b/astropy/modeling/separable.py
+@@ -242,7 +242,7 @@ def _cstack(left, right):
+         cright = _coord_matrix(right, 'right', noutp)
+     else:
+         cright = np.zeros((noutp, right.shape[1]))
+-        cright[-right.shape[0]:, -right.shape[1]:] = 1
++        cright[-right.shape[0]:, -right.shape[1]:] = right
+ 
+     return np.hstack([cleft, cright])
+ 
+
+2026-03-07 11:50:44,200 - INFO - swea-agent-astropy__astropy-12907 - 🤖 MODEL INPUT
+OBSERVATION:
+diff --git a/astropy/modeling/separable.py b/astropy/modeling/separable.py
+index a308e2729..45bea3608 100644
+--- a/astropy/modeling/separable.py
++++ b/astropy/modeling/separable.py
+@@ -242,7 +242,7 @@ def _cstack(left, right):
+         cright = _coord_matrix(right, 'right', noutp)
+     else:
+         cright = np.zeros((noutp, right.shape[1]))
+-        cright[-right.shape[0]:, -right.shape[1]:] = 1
++        cright[-right.shape[0]:, -right.shape[1]:] = right
+ 
+     return np.hstack([cleft, cright])
+ 
+
+2026-03-07 11:50:44,250 - INFO - swea-agent-astropy__astropy-12907 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.4__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok100k_mt8_probev3_gpt54_rerun1/astropy__astropy-12907/astropy__astropy-12907.traj
+2026-03-07 11:50:44,257 - INFO - swea-env-astropy__astropy-12907 - Beginning environment shutdown...

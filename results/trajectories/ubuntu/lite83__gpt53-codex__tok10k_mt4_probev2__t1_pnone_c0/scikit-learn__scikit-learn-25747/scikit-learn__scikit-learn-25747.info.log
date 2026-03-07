@@ -1,0 +1,561 @@
+2026-03-04 21:15:50,478 - INFO - rex-deploy-scikit-learn__scikit-learn-25747 - Starting container docker.ioswebenchsweb.eval.x86_64.scikit-learn_1776_scikit-learn-25747latest-abe904fb-2fce-4ad8-b1a0-10c4eacd8dc2 with image docker.io/swebench/sweb.eval.x86_64.scikit-learn_1776_scikit-learn-25747:latest serving on port 46931
+2026-03-04 21:15:50,481 - INFO - rex-deploy-scikit-learn__scikit-learn-25747 - Starting runtime at 46931
+2026-03-04 21:15:52,049 - INFO - rex-deploy-scikit-learn__scikit-learn-25747 - Runtime started in 1.57s
+2026-03-04 21:15:53,076 - INFO - swea-env-scikit-learn__scikit-learn-25747 - Environment Initialized
+2026-03-04 21:15:53,759 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - Setting up agent for instance scikit-learn__scikit-learn-25747
+2026-03-04 21:15:53,759 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok10k_mt4_probev2/scikit-learn__scikit-learn-25747/scikit-learn__scikit-learn-25747.traj
+2026-03-04 21:19:56,756 - INFO - swea-tools-scikit-learn__scikit-learn-25747 - Resetting tools
+2026-03-04 21:19:57,225 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-04 21:19:57,448 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+FeatureUnion not working when aggregating data and pandas transform output selected
+### Describe the bug
+
+I would like to use `pandas` transform output and use a custom transformer in a feature union which aggregates data. When I'm using this combination I got an error. When I use default `numpy` output it works fine.
+
+### Steps/Code to Reproduce
+
+```python
+import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn import set_config
+from sklearn.pipeline import make_union
+
+index = pd.date_range(start="2020-01-01", end="2020-01-05", inclusive="left", freq="H")
+data = pd.DataFrame(index=index, data=[10] * len(index), columns=["value"])
+data["date"] = index.date
+
+
+class MyTransformer(BaseEstimator, TransformerMixin):
+    def fit(self, X: pd.DataFrame, y: pd.Series | None = None, **kwargs):
+        return self
+
+    def transform(self, X: pd.DataFrame, y: pd.Series | None = None) -> pd.DataFrame:
+        return X["value"].groupby(X["date"]).sum()
+
+
+# This works.
+set_config(transform_output="default")
+print(make_union(MyTransformer()).fit_transform(data))
+
+# This does not work.
+set_config(transform_output="pandas")
+print(make_union(MyTransformer()).fit_transform(data))
+```
+
+### Expected Results
+
+No error is thrown when using `pandas` transform output.
+
+### Actual Results
+
+```python
+---------------------------------------------------------------------------
+ValueError                                Traceback (most recent call last)
+Cell In[5], line 25
+     23 # This does not work.
+     24 set_config(transform_output="pandas")
+---> 25 print(make_union(MyTransformer()).fit_transform(data))
+
+File ~/.local/share/virtualenvs/3e_VBrf2/lib/python3.10/site-packages/sklearn/utils/_set_output.py:150, in _wrap_method_output.<locals>.wrapped(self, X, *args, **kwargs)
+    143 if isinstance(data_to_wrap, tuple):
+    144     # only wrap the first output for cross decomposition
+    145     return (
+    146         _wrap_data_with_container(method, data_to_wrap[0], X, self),
+    147         *data_to_wrap[1:],
+    148     )
+--> 150 return _wrap_data_with_container(method, data_to_wrap, X, self)
+
+File ~/.local/share/virtualenvs/3e_VBrf2/lib/python3.10/site-packages/sklearn/utils/_set_output.py:130, in _wrap_data_with_container(method, data_to_wrap, original_input, estimator)
+    127     return data_to_wrap
+    129 # dense_config == "pandas"
+--> 130 return _wrap_in_pandas_container(
+    131     data_to_wrap=data_to_wrap,
+    132     index=getattr(original_input, "index", None),
+    133     columns=estimator.get_feature_names_out,
+    134 )
+
+File ~/.local/share/virtualenvs/3e_VBrf2/lib/python3.10/site-packages/sklearn/utils/_set_output.py:59, in _wrap_in_pandas_container(data_to_wrap, columns, index)
+     57         data_to_wrap.columns = columns
+     58     if index is not None:
+---> 59         data_to_wrap.index = index
+     60     return data_to_wrap
+     62 return pd.DataFrame(data_to_wrap, index=index, columns=columns)
+
+File ~/.local/share/virtualenvs/3e_VBrf2/lib/python3.10/site-packages/pandas/core/generic.py:5588, in NDFrame.__setattr__(self, name, value)
+   5586 try:
+   5587     object.__getattribute__(self, name)
+-> 5588     return object.__setattr__(self, name, value)
+   5589 except AttributeError:
+   5590     pass
+
+File ~/.local/share/virtualenvs/3e_VBrf2/lib/python3.10/site-packages/pandas/_libs/properties.pyx:70, in pandas._libs.properties.AxisProperty.__set__()
+
+File ~/.local/share/virtualenvs/3e_VBrf2/lib/python3.10/site-packages/pandas/core/generic.py:769, in NDFrame._set_axis(self, axis, labels)
+    767 def _set_axis(self, axis: int, labels: Index) -> None:
+    768     labels = ensure_index(labels)
+--> 769     self._mgr.set_axis(axis, labels)
+    770     self._clear_item_cache()
+
+File ~/.local/share/virtualenvs/3e_VBrf2/lib/python3.10/site-packages/pandas/core/internals/managers.py:214, in BaseBlockManager.set_axis(self, axis, new_labels)
+    212 def set_axis(self, axis: int, new_labels: Index) -> None:
+    213     # Caller is responsible for ensuring we have an Index object.
+--> 214     self._validate_set_axis(axis, new_labels)
+    215     self.axes[axis] = new_labels
+
+File ~/.local/share/virtualenvs/3e_VBrf2/lib/python3.10/site-packages/pandas/core/internals/base.py:69, in DataManager._validate_set_axis(self, axis, new_labels)
+     66     pass
+     68 elif new_len != old_len:
+---> 69     raise ValueError(
+     70         f"Length mismatch: Expected axis has {old_len} elements, new "
+     71         f"values have {new_len} elements"
+     72     )
+
+ValueError: Length mismatch: Expected axis has 4 elements, new values have 96 elements
+```
+
+### Versions
+
+```shell
+System:
+    python: 3.10.6 (main, Aug 30 2022, 05:11:14) [Clang 13.0.0 (clang-1300.0.29.30)]
+executable: /Users/macbookpro/.local/share/virtualenvs/3e_VBrf2/bin/python
+   machine: macOS-11.3-x86_64-i386-64bit
+
+Python dependencies:
+      sklearn: 1.2.1
+          pip: 22.3.1
+   setuptools: 67.3.2
+        numpy: 1.23.5
+        scipy: 1.10.1
+       Cython: None
+       pandas: 1.4.4
+   matplotlib: 3.7.0
+       joblib: 1.2.0
+threadpoolctl: 3.1.0
+
+Built with OpenMP: True
+
+threadpoolctl info:
+       user_api: blas
+   internal_api: openblas
+         prefix: libopenblas
+       filepath: /Users/macbookpro/.local/share/virtualenvs/3e_VBrf2/lib/python3.10/site-packages/numpy/.dylibs/libopenblas64_.0.dylib
+        version: 0.3.20
+threading_layer: pthreads
+   architecture: Haswell
+    num_threads: 4
+
+       user_api: openmp
+   internal_api: openmp
+         prefix: libomp
+       filepath: /Users/macbookpro/.local/share/virtualenvs/3e_VBrf2/lib/python3.10/site-packages/sklearn/.dylibs/libomp.dylib
+        version: None
+    num_threads: 8
+
+       user_api: blas
+   internal_api: openblas
+         prefix: libopenblas
+       filepath: /Users/macbookpro/.local/share/virtualenvs/3e_VBrf2/lib/python3.10/site-packages/scipy/.dylibs/libopenblas.0.dylib
+        version: 0.3.18
+threading_layer: pthreads
+   architecture: Haswell
+    num_threads: 4
+```
+
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-04 21:19:57,449 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - ========================= STEP 1 =========================
+2026-03-04 21:20:00,628 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - 💭 THOUGHT
+
+
+🎬 ACTION
+ls -la /testbed
+2026-03-04 21:20:00,981 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - 🤖 MODEL INPUT
+OBSERVATION:
+total 136
+drwxrwxrwx  1 root root    18 Sep 10 15:45 .
+drwxr-xr-x  1 root root    55 Mar  4 13:15 ..
+drwxrwxrwx  2 root root    66 Sep 10 15:39 .binder
+drwxrwxrwx  2 root root    24 Sep 10 15:39 .circleci
+-rw-r--r--  1 root root  1392 Sep 10 15:39 .cirrus.star
+-rw-r--r--  1 root root   921 Sep 10 15:39 .codecov.yml
+-rw-r--r--  1 root root   150 Sep 10 15:39 .coveragerc
+drwxrwxrwx  1 root root   105 Mar  4 13:15 .git
+-rw-r--r--  1 root root   844 Sep 10 15:39 .git-blame-ignore-revs
+drwxrwxrwx  5 root root   172 Sep 10 15:39 .github
+-rw-r--r--  1 root root  1883 Sep 10 15:39 .gitignore
+-rw-r--r--  1 root root  7263 Sep 10 15:39 .mailmap
+-rw-r--r--  1 root root   547 Sep 10 15:39 .pre-commit-config.yaml
+-rw-r--r--  1 root root   645 Sep 10 15:39 CODE_OF_CONDUCT.md
+-rw-r--r--  1 root root  2109 Sep 10 15:39 CONTRIBUTING.md
+-rw-r--r--  1 root root  1532 Sep 10 15:39 COPYING
+-rw-r--r--  1 root root   971 Sep 10 15:39 MANIFEST.in
+-rw-r--r--  1 root root  1567 Sep 10 15:39 Makefile
+-rw-r--r--  1 root root  7688 Sep 10 15:39 README.rst
+-rw-r--r--  1 root root   692 Sep 10 15:39 SECURITY.md
+drwxrwxrwx  3 root root    63 Sep 10 15:39 asv_benchmarks
+-rw-r--r--  1 root root  9818 Sep 10 15:39 azure-pipelines.yml
+drwxrwxrwx  2 root root  4096 Sep 10 15:39 benchmarks
+drwxr-xr-x  4 root root    77 Sep 10 15:45 build
+drwxrwxrwx  7 root root  4096 Sep 10 15:39 build_tools
+-rw-r--r--  1 root root   388 Sep 10 15:39 conftest.py
+drwxrwxrwx 16 root root  4096 Sep 10 15:39 doc
+drwxrwxrwx 33 root root  4096 Sep 10 15:39 examples
+drwxrwxrwx  2 root root   123 Sep 10 15:39 maint_tools
+-rw-r--r--  1 root root  1275 Sep 10 15:39 pyproject.toml
+drwxr-xr-x  2 root root   130 Sep 10 15:45 scikit_learn.egg-info
+-rw-r--r--  1 root root  3142 Sep 10 15:39 setup.cfg
+-rwxr-xr-x  1 root root 25301 Sep 10 15:39 setup.py
+drwxrwxrwx 33 root root  4096 Sep 10 15:51 sklearn
+
+2026-03-04 21:20:00,985 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - ========================= STEP 2 =========================
+2026-03-04 21:20:03,208 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - 💭 THOUGHT
+
+
+🎬 ACTION
+grep -R "def _wrap_in_pandas_container\|_wrap_data_with_container\|class FeatureUnion\|make_union" -n /testbed/sklearn | head -n 40
+2026-03-04 21:20:04,611 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - 🤖 MODEL INPUT
+OBSERVATION:
+/testbed/sklearn/impute/tests/test_impute.py:25:from sklearn.pipeline import make_union
+/testbed/sklearn/impute/tests/test_impute.py:1279:    trans = make_union(
+/testbed/sklearn/pipeline.py:37:__all__ = ["Pipeline", "FeatureUnion", "make_pipeline", "make_union"]
+/testbed/sklearn/pipeline.py:931:class FeatureUnion(TransformerMixin, _BaseComposition):
+/testbed/sklearn/pipeline.py:1005:    make_union : Convenience function for simplified feature union
+/testbed/sklearn/pipeline.py:1328:def make_union(*transformers, n_jobs=None, verbose=False):
+/testbed/sklearn/pipeline.py:1367:    >>> from sklearn.pipeline import make_union
+/testbed/sklearn/pipeline.py:1368:    >>> make_union(PCA(), TruncatedSVD())
+/testbed/sklearn/tests/test_docstring_parameters.py:54:    "sklearn.pipeline.make_union",
+/testbed/sklearn/tests/test_pipeline.py:27:from sklearn.pipeline import Pipeline, FeatureUnion, make_pipeline, make_union
+/testbed/sklearn/tests/test_pipeline.py:540:def test_make_union():
+/testbed/sklearn/tests/test_pipeline.py:543:    fu = make_union(pca, mock)
+/testbed/sklearn/tests/test_pipeline.py:549:def test_make_union_kwargs():
+/testbed/sklearn/tests/test_pipeline.py:552:    fu = make_union(pca, mock, n_jobs=3)
+/testbed/sklearn/tests/test_pipeline.py:553:    assert fu.transformer_list == make_union(pca, mock).transformer_list
+/testbed/sklearn/tests/test_pipeline.py:558:        "make_union() got an unexpected keyword argument 'transformer_weights'"
+/testbed/sklearn/tests/test_pipeline.py:561:        make_union(pca, mock, transformer_weights={"pca": 10, "Transf": 1})
+/testbed/sklearn/tests/test_pipeline.py:1435:    fu = make_union(ss)
+/testbed/sklearn/tests/test_pipeline.py:1443:    fu = make_union(ss)
+/testbed/sklearn/utils/_set_output.py:10:def _wrap_in_pandas_container(
+/testbed/sklearn/utils/_set_output.py:99:def _wrap_data_with_container(method, data_to_wrap, original_input, estimator):
+/testbed/sklearn/utils/_set_output.py:146:                _wrap_data_with_container(method, data_to_wrap[0], X, self),
+/testbed/sklearn/utils/_set_output.py:150:        return _wrap_data_with_container(method, data_to_wrap, X, self)
+
+2026-03-04 21:20:04,615 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - ========================= STEP 3 =========================
+2026-03-04 21:20:07,474 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/sklearn/utils/_set_output.py
+2026-03-04 21:20:07,929 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/sklearn/utils/_set_output.py:
+     1	from functools import wraps
+     2	
+     3	from scipy.sparse import issparse
+     4	
+     5	from . import check_pandas_support
+     6	from .._config import get_config
+     7	from ._available_if import available_if
+     8	
+     9	
+    10	def _wrap_in_pandas_container(
+    11	    data_to_wrap,
+    12	    *,
+    13	    columns,
+    14	    index=None,
+    15	):
+    16	    """Create a Pandas DataFrame.
+    17	
+    18	    If `data_to_wrap` is a DataFrame, then the `columns` and `index` will be changed
+    19	    inplace. If `data_to_wrap` is a ndarray, then a new DataFrame is created with
+    20	    `columns` and `index`.
+    21	
+    22	    Parameters
+    23	    ----------
+    24	    data_to_wrap : {ndarray, dataframe}
+    25	        Data to be wrapped as pandas dataframe.
+    26	
+    27	    columns : callable, ndarray, or None
+    28	        The column names or a callable that returns the column names. The
+    29	        callable is useful if the column names require some computation.
+    30	        If `columns` is a callable that raises an error, `columns` will have
+    31	        the same semantics as `None`. If `None` and `data_to_wrap` is already a
+    32	        dataframe, then the column names are not changed. If `None` and
+    33	        `data_to_wrap` is **not** a dataframe, then columns are
+    34	        `range(n_features)`.
+    35	
+    36	    index : array-like, default=None
+    37	        Index for data.
+    38	
+    39	    Returns
+    40	    -------
+    41	    dataframe : DataFrame
+    42	        Container with column names or unchanged `output`.
+    43	    """
+    44	    if issparse(data_to_wrap):
+    45	        raise ValueError("Pandas output does not support sparse data.")
+    46	
+    47	    if callable(columns):
+    48	        try:
+    49	            columns = columns()
+    50	        except Exception:
+    51	            columns = None
+    52	
+    53	    pd = check_pandas_support("Setting output container to 'pandas'")
+    54	
+    55	    if isinstance(data_to_wrap, pd.DataFrame):
+    56	        if columns is not None:
+    57	            data_to_wrap.columns = columns
+    58	        if index is not None:
+    59	            data_to_wrap.index = index
+    60	        return data_to_wrap
+    61	
+    62	    return pd.DataFrame(data_to_wrap, index=index, columns=columns)
+    63	
+    64	
+    65	def _get_output_config(method, estimator=None):
+    66	    """Get output config based on estimator and global configuration.
+    67	
+    68	    Parameters
+    69	    ----------
+    70	    method : {"transform"}
+    71	        Estimator's method for which the output container is looked up.
+    72	
+    73	    estimator : estimator instance or None
+    74	        Estimator to get the output configuration from. If `None`, check global
+    75	        configuration is used.
+    76	
+    77	    Returns
+    78	    -------
+    79	    config : dict
+    80	        Dictionary with keys:
+    81	
+    82	        - "dense": specifies the dense container for `method`. This can be
+    83	          `"default"` or `"pandas"`.
+    84	    """
+    85	    est_sklearn_output_config = getattr(estimator, "_sklearn_output_config", {})
+    86	    if method in est_sklearn_output_config:
+    87	        dense_config = est_sklearn_output_config[method]
+    88	    else:
+    89	        dense_config = get_config()[f"{method}_output"]
+    90	
+    91	    if dense_config not in {"default", "pandas"}:
+    92	        raise ValueError(
+    93	            f"output config must be 'default' or 'pandas' got {dense_config}"
+    94	        )
+    95	
+    96	    return {"dense": dense_config}
+    97	
+    98	
+    99	def _wrap_data_with_container(method, data_to_wrap, original_input, estimator):
+   100	    """Wrap output with container based on an estimator's or global config.
+   101	
+   102	    Parameters
+   103	    ----------
+   104	    method : {"transform"}
+   105	        Estimator's method to get container output for.
+   106	
+   107	    data_to_wrap : {ndarray, dataframe}
+   108	        Data to wrap with container.
+   109	
+   110	    original_input : {ndarray, dataframe}
+   111	        Original input of function.
+   112	
+   113	    estimator : estimator instance
+   114	        Estimator with to get the output configuration from.
+   115	
+   116	    Returns
+   117	    -------
+   118	    output : {ndarray, dataframe}
+   119	        If the output config is "default" or the estimator is not configured
+   120	        for wrapping return `data_to_wrap` unchanged.
+   121	        If the output config is "pandas", return `data_to_wrap` as a pandas
+   122	        DataFrame.
+   123	    """
+   124	    output_config = _get_output_config(method, estimator)
+   125	
+   126	    if output_config["dense"] == "default" or not _auto_wrap_is_configured(estimator):
+   127	        return data_to_wrap
+   128	
+   129	    # dense_config == "pandas"
+   130	    return _wrap_in_pandas_container(
+   131	        data_to_wrap=data_to_wrap,
+   132	        index=getattr(original_input, "index", None),
+   133	        columns=estimator.get_feature_names_out,
+   134	    )
+   135	
+   136	
+   137	def _wrap_method_output(f, method):
+   138	    """Wrapper used by `_SetOutputMixin` to automatically wrap methods."""
+   139	
+   140	    @wraps(f)
+   141	    def wrapped(self, X, *args, **kwargs):
+   142	        data_to_wrap = f(self, X, *args, **kwargs)
+   143	        if isinstance(data_to_wrap, tuple):
+   144	            # only wrap the first output for cross decomposition
+   145	            return (
+   146	                _wrap_data_with_container(method, data_to_wrap[0], X, self),
+   147	                *data_to_wrap[1:],
+   148	            )
+   149	
+   150	        return _wrap_data_with_container(method, data_to_wrap, X, self)
+   151	
+   152	    return wrapped
+   153	
+   154	
+   155	def _auto_wrap_is_configured(estimator):
+   156	    """Return True if estimator is configured for auto-wrapping the transform method.
+   157	
+   158	    `_SetOutputMixin` sets `_sklearn_auto_wrap_output_keys` to `set()` if auto wrapping
+   159	    is manually disabled.
+   160	    """
+   161	    auto_wrap_output_keys = getattr(estimator, "_sklearn_auto_wrap_output_keys", set())
+   162	    return (
+   163	        hasattr(estimator, "get_feature_names_out")
+   164	        and "transform" in auto_wrap_output_keys
+   165	    )
+   166	
+   167	
+   168	class _SetOutputMixin:
+   169	    """Mixin that dynamically wraps methods to return container based on config.
+   170	
+   171	    Currently `_SetOutputMixin` wraps `transform` and `fit_transform` and configures
+   172	    it based on `set_output` of the global configuration.
+   173	
+   174	    `set_output` is only defined if `get_feature_names_out` is defined and
+   175	    `auto_wrap_output_keys` is the default value.
+   176	    """
+   177	
+   178	    def __init_subclass__(cls, auto_wrap_output_keys=("transform",), **kwargs):
+   179	        super().__init_subclass__(**kwargs)
+   180	
+   181	        # Dynamically wraps `transform` and `fit_transform` and configure it's
+   182	        # output based on `set_output`.
+   183	        if not (
+   184	            isinstance(auto_wrap_output_keys, tuple) or auto_wrap_output_keys is None
+   185	        ):
+   186	            raise ValueError("auto_wrap_output_keys must be None or a tuple of keys.")
+   187	
+   188	        if auto_wrap_output_keys is None:
+   189	            cls._sklearn_auto_wrap_output_keys = set()
+   190	            return
+   191	
+   192	        # Mapping from method to key in configurations
+   193	        method_to_key = {
+   194	            "transform": "transform",
+   195	            "fit_transform": "transform",
+   196	        }
+   197	        cls._sklearn_auto_wrap_output_keys = set()
+   198	
+   199	        for method, key in method_to_key.items():
+   200	            if not hasattr(cls, method) or key not in auto_wrap_output_keys:
+   201	                continue
+   202	            cls._sklearn_auto_wrap_output_keys.add(key)
+   203	
+   204	            # Only wrap methods defined by cls itself
+   205	            if method not in cls.__dict__:
+   206	                continue
+   207	            wrapped_method = _wrap_method_output(getattr(cls, method), key)
+   208	            setattr(cls, method, wrapped_method)
+   209	
+   210	    @available_if(_auto_wrap_is_configured)
+   211	    def set_output(self, *, transform=None):
+   212	        """Set output container.
+   213	
+   214	        See :ref:`sphx_glr_auto_examples_miscellaneous_plot_set_output.py`
+   215	        for an example on how to use the API.
+   216	
+   217	        Parameters
+   218	        ----------
+   219	        transform : {"default", "pandas"}, default=None
+   220	            Configure output of `transform` and `fit_transform`.
+   221	
+   222	            - `"default"`: Default output format of a transformer
+   223	            - `"pandas"`: DataFrame output
+   224	            - `None`: Transform configuration is unchanged
+   225	
+   226	        Returns
+   227	        -------
+   228	        self : estimator instance
+   229	            Estimator instance.
+   230	        """
+   231	        if transform is None:
+   232	            return self
+   233	
+   234	        if not hasattr(self, "_sklearn_output_config"):
+   235	            self._sklearn_output_config = {}
+   236	
+   237	        self._sklearn_output_config["transform"] = transform
+   238	        return self
+   239	
+   240	
+   241	def _safe_set_output(estimator, *, transform=None):
+   242	    """Safely call estimator.set_output and error if it not available.
+   243	
+   244	    This is used by meta-estimators to set the output for child estimators.
+   245	
+   246	    Parameters
+   247	    ----------
+   248	    estimator : estimator instance
+   249	        Estimator instance.
+   250	
+   251	    transform : {"default", "pandas"}, default=None
+   252	        Configure output of the following estimator's methods:
+   253	
+   254	        - `"transform"`
+   255	        - `"fit_transform"`
+   256	
+   257	        If `None`, this operation is a no-op.
+   258	
+   259	    Returns
+   260	    -------
+   261	    estimator : estimator instance
+   262	        Estimator instance.
+   263	    """
+   264	    set_output_for_transform = (
+   265	        hasattr(estimator, "transform")
+   266	        or hasattr(estimator, "fit_transform")
+   267	        and transform is not None
+   268	    )
+   269	    if not set_output_for_transform:
+   270	        # If estimator can not transform, then `set_output` does not need to be
+   271	        # called.
+   272	        return
+   273	
+   274	    if not hasattr(estimator, "set_output"):
+   275	        raise ValueError(
+   276	            f"Unable to configure output for {estimator} because `set_output` "
+   277	            "is not available."
+   278	        )
+   279	    return estimator.set_output(transform=transform)
+   280	
+
+
+2026-03-04 21:20:07,934 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - ========================= STEP 4 =========================
+2026-03-04 21:20:14,783 - WARNING - swea-lm-scikit-learn__scikit-learn-25747 - Token budget exhausted: 14700 > 10000
+2026-03-04 21:20:14,786 - WARNING - swea-agent-scikit-learn__scikit-learn-25747 - Exit due to token budget exhaustion
+2026-03-04 21:20:14,787 - WARNING - swea-agent-scikit-learn__scikit-learn-25747 - Attempting autosubmission after error
+2026-03-04 21:20:14,796 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - Executing submission command git add -A && git diff --cached > /tmp/model.patch in /testbed
+2026-03-04 21:20:14,851 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - Found submission: 
+2026-03-04 21:20:14,852 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - 🤖 MODEL INPUT
+Your command ran successfully and did not produce any output.
+2026-03-04 21:20:14,859 - INFO - swea-agent-scikit-learn__scikit-learn-25747 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok10k_mt4_probev2/scikit-learn__scikit-learn-25747/scikit-learn__scikit-learn-25747.traj
+2026-03-04 21:20:14,864 - INFO - swea-env-scikit-learn__scikit-learn-25747 - Beginning environment shutdown...

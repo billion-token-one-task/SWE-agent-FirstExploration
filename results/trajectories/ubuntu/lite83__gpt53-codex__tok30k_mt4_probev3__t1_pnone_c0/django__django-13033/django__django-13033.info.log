@@ -1,0 +1,380 @@
+2026-03-05 09:27:17,922 - INFO - rex-deploy-django__django-13033 - Starting container docker.ioswebenchsweb.eval.x86_64.django_1776_django-13033latest-c04d9245-ab29-43b7-9525-ae6a21638197 with image docker.io/swebench/sweb.eval.x86_64.django_1776_django-13033:latest serving on port 55781
+2026-03-05 09:27:17,925 - INFO - rex-deploy-django__django-13033 - Starting runtime at 55781
+2026-03-05 09:27:19,492 - INFO - rex-deploy-django__django-13033 - Runtime started in 1.57s
+2026-03-05 09:27:20,516 - INFO - swea-env-django__django-13033 - Environment Initialized
+2026-03-05 09:27:21,709 - INFO - swea-agent-django__django-13033 - Setting up agent for instance django__django-13033
+2026-03-05 09:27:21,709 - INFO - swea-agent-django__django-13033 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok30k_mt4_probev3/django__django-13033/django__django-13033.traj
+2026-03-05 09:30:53,737 - INFO - swea-tools-django__django-13033 - Resetting tools
+2026-03-05 09:30:54,198 - INFO - swea-agent-django__django-13033 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-05 09:30:54,446 - INFO - swea-agent-django__django-13033 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+Self referencing foreign key doesn't correctly order by a relation "_id" field.
+Description
+	
+Initially discovered on 2.2.10 but verified still happens on 3.0.6. Given the following models:
+class OneModel(models.Model):
+	class Meta:
+		ordering = ("-id",)
+	id = models.BigAutoField(primary_key=True)
+	root = models.ForeignKey("OneModel", on_delete=models.CASCADE, null=True)
+	oneval = models.BigIntegerField(null=True)
+class TwoModel(models.Model):
+	id = models.BigAutoField(primary_key=True)
+	record = models.ForeignKey(OneModel, on_delete=models.CASCADE)
+	twoval = models.BigIntegerField(null=True)
+The following queryset gives unexpected results and appears to be an incorrect SQL query:
+qs = TwoModel.objects.filter(record__oneval__in=[1,2,3])
+qs = qs.order_by("record__root_id")
+print(qs.query)
+SELECT "orion_twomodel"."id", "orion_twomodel"."record_id", "orion_twomodel"."twoval" FROM "orion_twomodel" INNER JOIN "orion_onemodel" ON ("orion_twomodel"."record_id" = "orion_onemodel"."id") LEFT OUTER JOIN "orion_onemodel" T3 ON ("orion_onemodel"."root_id" = T3."id") WHERE "orion_onemodel"."oneval" IN (1, 2, 3) ORDER BY T3."id" DESC
+The query has an unexpected DESCENDING sort. That appears to come from the default sort order on the OneModel class, but I would expect the order_by() to take prececence. The the query has two JOINS, which is unnecessary. It appears that, since OneModel.root is a foreign key to itself, that is causing it to do the unnecessary extra join. In fact, testing a model where root is a foreign key to a third model doesn't show the problem behavior.
+Note also that the queryset with order_by("record__root") gives the exact same SQL.
+This queryset gives correct results and what looks like a pretty optimal SQL:
+qs = TwoModel.objects.filter(record__oneval__in=[1,2,3])
+qs = qs.order_by("record__root__id")
+print(qs.query)
+SELECT "orion_twomodel"."id", "orion_twomodel"."record_id", "orion_twomodel"."twoval" FROM "orion_twomodel" INNER JOIN "orion_onemodel" ON ("orion_twomodel"."record_id" = "orion_onemodel"."id") WHERE "orion_onemodel"."oneval" IN (1, 2, 3) ORDER BY "orion_onemodel"."root_id" ASC
+So is this a potential bug or a misunderstanding on my part?
+Another queryset that works around the issue and gives a reasonable SQL query and expected results:
+qs = TwoModel.objects.filter(record__oneval__in=[1,2,3])
+qs = qs.annotate(root_id=F("record__root_id"))
+qs = qs.order_by("root_id")
+print(qs.query)
+SELECT "orion_twomodel"."id", "orion_twomodel"."record_id", "orion_twomodel"."twoval" FROM "orion_twomodel" INNER JOIN "orion_onemodel" ON ("orion_twomodel"."record_id" = "orion_onemodel"."id") WHERE "orion_onemodel"."oneval" IN (1, 2, 3) ORDER BY "orion_onemodel"."zero_id" ASC
+ASCENDING sort, and a single INNER JOIN, as I'd expect. That actually works for my use because I need that output column anyway.
+One final oddity; with the original queryset but the inverted sort order_by():
+qs = TwoModel.objects.filter(record__oneval__in=[1,2,3])
+qs = qs.order_by("-record__root_id")
+print(qs.query)
+SELECT "orion_twomodel"."id", "orion_twomodel"."record_id", "orion_twomodel"."twoval" FROM "orion_twomodel" INNER JOIN "orion_onemodel" ON ("orion_twomodel"."record_id" = "orion_onemodel"."id") LEFT OUTER JOIN "orion_onemodel" T3 ON ("orion_onemodel"."root_id" = T3."id") WHERE "orion_onemodel"."oneval" IN (1, 2, 3) ORDER BY T3."id" ASC
+One gets the query with the two JOINs but an ASCENDING sort order. I was not under the impression that sort orders are somehow relative to the class level sort order, eg: does specifing order_by("-record__root_id") invert the class sort order? Testing that on a simple case doesn't show that behavior at all.
+Thanks for any assistance and clarification.
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-05 09:30:54,447 - INFO - swea-agent-django__django-13033 - ========================= STEP 1 =========================
+2026-03-05 09:30:57,333 - INFO - swea-agent-django__django-13033 - 💭 THOUGHT
+
+
+🎬 ACTION
+ls -la /testbed
+2026-03-05 09:30:57,693 - INFO - swea-agent-django__django-13033 - 🤖 MODEL INPUT
+OBSERVATION:
+total 140
+drwxrwxrwx   1 root root    18 Sep 10 10:52 .
+drwxr-xr-x   1 root root    55 Mar  5 01:27 ..
+-rw-r--r--   1 root root   782 Sep 10 10:45 .editorconfig
+-rw-r--r--   1 root root    86 Sep 10 10:45 .eslintignore
+-rw-r--r--   1 root root  1407 Sep 10 10:45 .eslintrc
+drwxrwxrwx   1 root root   105 Mar  5 01:27 .git
+-rw-r--r--   1 root root   297 Sep 10 10:45 .gitattributes
+drwxrwxrwx   2 root root    44 Sep 10 10:45 .github
+-rw-r--r--   1 root root   353 Sep 10 10:45 .gitignore
+-rw-r--r--   1 root root   164 Sep 10 10:45 .hgignore
+drwxrwxrwx   2 root root    20 Sep 10 10:45 .tx
+-rw-r--r--   1 root root 37737 Sep 10 10:45 AUTHORS
+-rw-r--r--   1 root root  1115 Sep 10 10:45 CONTRIBUTING.rst
+drwxr-xr-x   2 root root   154 Sep 10 10:52 Django.egg-info
+-rw-r--r--   1 root root   353 Sep 10 10:45 Gruntfile.js
+-rw-r--r--   1 root root   236 Sep 10 10:45 INSTALL
+-rw-r--r--   1 root root  1552 Sep 10 10:45 LICENSE
+-rw-r--r--   1 root root 13227 Sep 10 10:45 LICENSE.python
+-rw-r--r--   1 root root   276 Sep 10 10:45 MANIFEST.in
+-rw-r--r--   1 root root  1881 Sep 10 10:45 README.rst
+drwxrwxrwx  19 root root  4096 Sep 10 10:52 django
+drwxrwxrwx  13 root root  4096 Sep 10 10:45 docs
+drwxrwxrwx   2 root root    70 Sep 10 10:45 extras
+drwxrwxrwx   4 root root    48 Sep 10 10:45 js_tests
+-rw-r--r--   1 root root   369 Sep 10 10:45 package.json
+drwxrwxrwx   2 root root    58 Sep 10 10:45 scripts
+-rw-r--r--   1 root root  2192 Sep 10 10:45 setup.cfg
+-rw-r--r--   1 root root  2368 Sep 10 10:45 setup.py
+drwxrwxrwx 212 root root  8192 Sep 10 10:45 tests
+-rw-r--r--   1 root root  1535 Sep 10 10:45 tox.ini
+
+2026-03-05 09:30:57,697 - INFO - swea-agent-django__django-13033 - ========================= STEP 2 =========================
+2026-03-05 09:31:00,034 - INFO - swea-agent-django__django-13033 - 💭 THOUGHT
+
+
+🎬 ACTION
+grep -R "order_by(\"record__root_id\"\|self referencing\|root_id" -n /testbed/tests | head
+2026-03-05 09:31:00,510 - INFO - swea-agent-django__django-13033 - 🤖 MODEL INPUT
+Your command ran successfully and did not produce any output.
+2026-03-05 09:31:00,515 - INFO - swea-agent-django__django-13033 - ========================= STEP 3 =========================
+2026-03-05 09:31:04,574 - INFO - swea-agent-django__django-13033 - 💭 THOUGHT
+
+
+🎬 ACTION
+grep -R "_id" -n /testbed/django/db/models/sql/query.py | head -n 40
+2026-03-05 09:31:04,928 - INFO - swea-agent-django__django-13033 - 🤖 MODEL INPUT
+OBSERVATION:
+1078:        Solve the lookup type from the lookup (e.g.: 'foobar__id__icontains').
+1549:        conversions (convert 'obj' in fk__id=obj to pk val using the foreign
+1710:            WHERE NOT (pk IN (SELECT parent_id FROM thetable
+1711:                              WHERE name = 'foo' AND parent_id IS NOT NULL))
+
+2026-03-05 09:31:04,933 - INFO - swea-agent-django__django-13033 - ========================= STEP 4 =========================
+2026-03-05 09:31:08,288 - INFO - swea-agent-django__django-13033 - 💭 THOUGHT
+
+
+🎬 ACTION
+grep -R "find_ordering_name\|names_to_path\|get_order_dir\|ORDER BY" -n /testbed/django/db/models/sql
+2026-03-05 09:31:08,645 - INFO - swea-agent-django__django-13033 - 🤖 MODEL INPUT
+OBSERVATION:
+/testbed/django/db/models/sql/compiler.py:15:from django.db.models.sql.query import Query, get_order_dir
+/testbed/django/db/models/sql/compiler.py:89:        # HAVING, ORDER BY, and SELECT clauses are added to it. Unfortunately
+/testbed/django/db/models/sql/compiler.py:274:        ORDER BY clause.
+/testbed/django/db/models/sql/compiler.py:313:            col, order = get_order_dir(field, asc)
+/testbed/django/db/models/sql/compiler.py:346:                order_by.extend(self.find_ordering_name(
+/testbed/django/db/models/sql/compiler.py:380:                        raise DatabaseError('ORDER BY term does not match any column in the result set.')
+/testbed/django/db/models/sql/compiler.py:381:                    # Add column used in ORDER BY clause without an alias to
+/testbed/django/db/models/sql/compiler.py:444:                    raise DatabaseError('ORDER BY not allowed in subqueries of compound statements.')
+/testbed/django/db/models/sql/compiler.py:607:                result.append('ORDER BY %s' % ', '.join(ordering))
+/testbed/django/db/models/sql/compiler.py:715:    def find_ordering_name(self, name, opts, alias=None, default_order='ASC',
+/testbed/django/db/models/sql/compiler.py:722:        name, order = get_order_dir(name, default_order)
+/testbed/django/db/models/sql/compiler.py:745:                results.extend(self.find_ordering_name(item, opts, alias,
+/testbed/django/db/models/sql/query.py:1085:        _, field, _, lookup_parts = self.names_to_path(lookup_splitted, self.get_meta())
+/testbed/django/db/models/sql/query.py:1424:    def names_to_path(self, names, opts, allow_many=True, fail_on_missing=False):
+/testbed/django/db/models/sql/query.py:1566:                path, final_field, targets, rest = self.names_to_path(
+/testbed/django/db/models/sql/query.py:1918:                # names_to_path() validates the lookup. A descriptive
+/testbed/django/db/models/sql/query.py:1920:                self.names_to_path(item.split(LOOKUP_SEP), self.model._meta)
+/testbed/django/db/models/sql/query.py:2302:def get_order_dir(field, default='ASC'):
+
+2026-03-05 09:31:08,651 - INFO - swea-agent-django__django-13033 - ========================= STEP 5 =========================
+2026-03-05 09:31:11,672 - INFO - swea-agent-django__django-13033 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/django/db/models/sql/compiler.py  --view_range 700 790
+2026-03-05 09:31:12,218 - INFO - swea-agent-django__django-13033 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/django/db/models/sql/compiler.py:
+   700	        opts = self.query.get_meta()
+   701	
+   702	        for name in self.query.distinct_fields:
+   703	            parts = name.split(LOOKUP_SEP)
+   704	            _, targets, alias, joins, path, _, transform_function = self._setup_joins(parts, opts, None)
+   705	            targets, alias, _ = self.query.trim_joins(targets, joins, path)
+   706	            for target in targets:
+   707	                if name in self.query.annotation_select:
+   708	                    result.append(name)
+   709	                else:
+   710	                    r, p = self.compile(transform_function(target, alias))
+   711	                    result.append(r)
+   712	                    params.append(p)
+   713	        return result, params
+   714	
+   715	    def find_ordering_name(self, name, opts, alias=None, default_order='ASC',
+   716	                           already_seen=None):
+   717	        """
+   718	        Return the table alias (the name might be ambiguous, the alias will
+   719	        not be) and column name for ordering by the given 'name' parameter.
+   720	        The 'name' is of the form 'field1__field2__...__fieldN'.
+   721	        """
+   722	        name, order = get_order_dir(name, default_order)
+   723	        descending = order == 'DESC'
+   724	        pieces = name.split(LOOKUP_SEP)
+   725	        field, targets, alias, joins, path, opts, transform_function = self._setup_joins(pieces, opts, alias)
+   726	
+   727	        # If we get to this point and the field is a relation to another model,
+   728	        # append the default ordering for that model unless it is the pk
+   729	        # shortcut or the attribute name of the field that is specified.
+   730	        if field.is_relation and opts.ordering and getattr(field, 'attname', None) != name and name != 'pk':
+   731	            # Firstly, avoid infinite loops.
+   732	            already_seen = already_seen or set()
+   733	            join_tuple = tuple(getattr(self.query.alias_map[j], 'join_cols', None) for j in joins)
+   734	            if join_tuple in already_seen:
+   735	                raise FieldError('Infinite loop caused by ordering.')
+   736	            already_seen.add(join_tuple)
+   737	
+   738	            results = []
+   739	            for item in opts.ordering:
+   740	                if hasattr(item, 'resolve_expression') and not isinstance(item, OrderBy):
+   741	                    item = item.desc() if descending else item.asc()
+   742	                if isinstance(item, OrderBy):
+   743	                    results.append((item, False))
+   744	                    continue
+   745	                results.extend(self.find_ordering_name(item, opts, alias,
+   746	                                                       order, already_seen))
+   747	            return results
+   748	        targets, alias, _ = self.query.trim_joins(targets, joins, path)
+   749	        return [(OrderBy(transform_function(t, alias), descending=descending), False) for t in targets]
+   750	
+   751	    def _setup_joins(self, pieces, opts, alias):
+   752	        """
+   753	        Helper method for get_order_by() and get_distinct().
+   754	
+   755	        get_ordering() and get_distinct() must produce same target columns on
+   756	        same input, as the prefixes of get_ordering() and get_distinct() must
+   757	        match. Executing SQL where this is not true is an error.
+   758	        """
+   759	        alias = alias or self.query.get_initial_alias()
+   760	        field, targets, opts, joins, path, transform_function = self.query.setup_joins(pieces, opts, alias)
+   761	        alias = joins[-1]
+   762	        return field, targets, alias, joins, path, opts, transform_function
+   763	
+   764	    def get_from_clause(self):
+   765	        """
+   766	        Return a list of strings that are joined together to go after the
+   767	        "FROM" part of the query, as well as a list any extra parameters that
+   768	        need to be included. Subclasses, can override this to create a
+   769	        from-clause via a "select".
+   770	
+   771	        This should only be called after any SQL construction methods that
+   772	        might change the tables that are needed. This means the select columns,
+   773	        ordering, and distinct must be done first.
+   774	        """
+   775	        result = []
+   776	        params = []
+   777	        for alias in tuple(self.query.alias_map):
+   778	            if not self.query.alias_refcount[alias]:
+   779	                continue
+   780	            try:
+   781	                from_clause = self.query.alias_map[alias]
+   782	            except KeyError:
+   783	                # Extra tables can end up in self.tables, but not in the
+   784	                # alias_map if they aren't in a join. That's OK. We skip them.
+   785	                continue
+   786	            clause_sql, clause_params = self.compile(from_clause)
+   787	            result.append(clause_sql)
+   788	            params.extend(clause_params)
+   789	        for t in self.query.extra_tables:
+   790	            alias, _ = self.query.table_alias(t)
+
+
+2026-03-05 09:31:12,226 - INFO - swea-agent-django__django-13033 - ========================= STEP 6 =========================
+2026-03-05 09:31:20,189 - INFO - swea-agent-django__django-13033 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/django/db/models/sql/compiler.py   --old_str '        # If we get to this point and the field is a relation to another model,
+        # append the default ordering for that model unless it is the pk
+        # shortcut or the attribute name of the field that is specified.
+        if field.is_relation and opts.ordering and getattr(field, '"'"'attname'"'"', None) != name and name != '"'"'pk'"'"':' --new_str '        # If we get to this point and the field is a relation to another model,
+        # append the default ordering for that model unless it is the pk
+        # shortcut or the attribute name of the field that is specified.
+        #
+        # Skip this for relation attribute references that end with "_id" (or
+        # "pk"), e.g. "record__root_id". Those should order by the concrete
+        # column value and must not be expanded to the related model'"'"'s default
+        # ordering.
+        if field.is_relation and opts.ordering and getattr(field, '"'"'attname'"'"', None) != pieces[-1] and pieces[-1] != '"'"'pk'"'"':'
+2026-03-05 09:31:20,668 - INFO - swea-agent-django__django-13033 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/django/db/models/sql/compiler.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/django/db/models/sql/compiler.py:
+   722	        name, order = get_order_dir(name, default_order)
+   723	        descending = order == 'DESC'
+   724	        pieces = name.split(LOOKUP_SEP)
+   725	        field, targets, alias, joins, path, opts, transform_function = self._setup_joins(pieces, opts, alias)
+   726	
+   727	        # If we get to this point and the field is a relation to another model,
+   728	        # append the default ordering for that model unless it is the pk
+   729	        # shortcut or the attribute name of the field that is specified.
+   730	        #
+   731	        # Skip this for relation attribute references that end with "_id" (or
+   732	        # "pk"), e.g. "record__root_id". Those should order by the concrete
+   733	        # column value and must not be expanded to the related model's default
+   734	        # ordering.
+   735	        if field.is_relation and opts.ordering and getattr(field, 'attname', None) != pieces[-1] and pieces[-1] != 'pk':
+   736	            # Firstly, avoid infinite loops.
+   737	            already_seen = already_seen or set()
+   738	            join_tuple = tuple(getattr(self.query.alias_map[j], 'join_cols', None) for j in joins)
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-05 09:31:20,678 - INFO - swea-agent-django__django-13033 - ========================= STEP 7 =========================
+2026-03-05 09:31:28,270 - WARNING - swea-agent-django__django-13033 - Requerying model after FunctionCallingFormatError (1th requery)
+2026-03-05 09:31:28,281 - WARNING - swea-agent-django__django-13033 - Your last output did not use any tool calls!
+Please make sure your output includes exactly _ONE_ function call!
+You must invoke the function directly using the function call format.
+You cannot invoke commands with ```, you have to use the function call format.
+If you think you have already resolved the issue, please submit your changes by running the `submit` command.
+If you think you cannot solve the problem, please run `exit_forfeit` (if available) or `submit`.
+Else, please continue with a new tool call!
+2026-03-05 09:31:30,677 - INFO - swea-agent-django__django-13033 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-05 09:31:31,505 - INFO - swea-agent-django__django-13033 - 🤖 MODEL INPUT
+OBSERVATION:
+Thank you for your work on this issue. Please carefully follow the steps below to help review your changes.
+
+1. If you made any changes to your code after running the reproduction script, please run the reproduction script again.
+  If the reproduction script is failing, please revisit your changes and make sure they are correct.
+  If you have already removed your reproduction script, please ignore this step.
+2. Remove your reproduction script (if you haven't done so already).
+3. If you have modified any TEST files, please revert them to the state they had before you started fixing the issue.
+  You can do this with `git checkout -- /path/to/test/file.py`. Use below <diff> to find the files you need to revert.
+4. Run the submit command again to confirm.
+
+Here is a list of all of your changes:
+
+<diff>
+diff --git a/django/db/models/sql/compiler.py b/django/db/models/sql/compiler.py
+index abbb1e37cb..12b0665bbc 100644
+--- a/django/db/models/sql/compiler.py
++++ b/django/db/models/sql/compiler.py
+@@ -727,7 +727,12 @@ class SQLCompiler:
+         # If we get to this point and the field is a relation to another model,
+         # append the default ordering for that model unless it is the pk
+         # shortcut or the attribute name of the field that is specified.
+-        if field.is_relation and opts.ordering and getattr(field, 'attname', None) != name and name != 'pk':
++        #
++        # Skip this for relation attribute references that end with "_id" (or
++        # "pk"), e.g. "record__root_id". Those should order by the concrete
++        # column value and must not be expanded to the related model's default
++        # ordering.
++        if field.is_relation and opts.ordering and getattr(field, 'attname', None) != pieces[-1] and pieces[-1] != 'pk':
+             # Firstly, avoid infinite loops.
+             already_seen = already_seen or set()
+             join_tuple = tuple(getattr(self.query.alias_map[j], 'join_cols', None) for j in joins)
+
+</diff>
+
+
+2026-03-05 09:31:31,586 - INFO - swea-agent-django__django-13033 - ========================= STEP 9 =========================
+2026-03-05 09:31:40,311 - WARNING - swea-lm-django__django-13033 - Token budget exhausted: 30531 > 30000
+2026-03-05 09:31:40,320 - WARNING - swea-agent-django__django-13033 - Exit due to token budget exhaustion
+2026-03-05 09:31:40,330 - WARNING - swea-agent-django__django-13033 - Attempting autosubmission after error
+2026-03-05 09:31:40,371 - INFO - swea-agent-django__django-13033 - Executing submission command git add -A && git diff --cached > /tmp/model.patch in /testbed
+2026-03-05 09:31:40,618 - INFO - swea-agent-django__django-13033 - Found submission: diff --git a/django/db/models/sql/compiler.py b/django/db/models/sql/compiler.py
+index abbb1e37cb..12b0665bbc 100644
+--- a/django/db/models/sql/compiler.py
++++ b/django/db/models/sql/compiler.py
+@@ -727,7 +727,12 @@ class SQLCompiler:
+         # If we get to this point and the field is a relation to another model,
+         # append the default ordering for that model unless it is the pk
+         # shortcut or the attribute name of the field that is specified.
+-        if field.is_relation and opts.ordering and getattr(field, 'attname', None) != name and name != 'pk':
++        #
++        # Skip this for relation attribute references that end with "_id" (or
++        # "pk"), e.g. "record__root_id". Those should order by the concrete
++        # column value and must not be expanded to the related model's default
++        # ordering.
++        if field.is_relation and opts.ordering and getattr(field, 'attname', None) != pieces[-1] and pieces[-1] != 'pk':
+             # Firstly, avoid infinite loops.
+             already_seen = already_seen or set()
+             join_tuple = tuple(getattr(self.query.alias_map[j], 'join_cols', None) for j in joins)
+
+2026-03-05 09:31:40,619 - INFO - swea-agent-django__django-13033 - Exiting with autosubmission
+2026-03-05 09:31:40,622 - INFO - swea-agent-django__django-13033 - 🤖 MODEL INPUT
+OBSERVATION:
+Exited (autosubmitted)
+2026-03-05 09:31:40,661 - INFO - swea-agent-django__django-13033 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok30k_mt4_probev3/django__django-13033/django__django-13033.traj
+2026-03-05 09:31:40,667 - INFO - swea-env-django__django-13033 - Beginning environment shutdown...

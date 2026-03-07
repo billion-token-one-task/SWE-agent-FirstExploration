@@ -1,0 +1,32 @@
+diff --git a/repro_tuple_printer.py b/repro_tuple_printer.py
+new file mode 100644
+index 0000000000..e5285b0c40
+--- /dev/null
++++ b/repro_tuple_printer.py
+@@ -0,0 +1,7 @@
++import inspect
++from sympy import lambdify
++
++for expr in [tuple([1]), tuple([1, 2]), (1,), ()]:
++    src = inspect.getsource(lambdify([], expr))
++    print(repr(expr), '->')
++    print(src)
+diff --git a/sympy/printing/pycode.py b/sympy/printing/pycode.py
+index 1877c3f92a..eccf2d15e4 100644
+--- a/sympy/printing/pycode.py
++++ b/sympy/printing/pycode.py
+@@ -310,6 +310,14 @@ def _print_Return(self, ret):
+         arg, = ret.args
+         return 'return %s' % self._print(arg)
+ 
++    def _print_tuple(self, expr):
++        if len(expr) == 1:
++            return "(%s,)" % self._print(expr[0])
++        return "(%s)" % ', '.join(map(self._print, expr))
++
++    _print_Tuple = _print_tuple
++
++
+     def _print_Print(self, prnt):
+         print_args = ', '.join(map(lambda arg: self._print(arg), prnt.print_args))
+         if prnt.format_string != None: # Must be '!= None', cannot be 'is not None'

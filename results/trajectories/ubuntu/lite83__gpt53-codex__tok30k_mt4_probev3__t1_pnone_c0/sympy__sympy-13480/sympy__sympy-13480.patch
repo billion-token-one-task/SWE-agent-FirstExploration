@@ -1,0 +1,49 @@
+diff --git a/repro.py b/repro.py
+new file mode 100644
+index 000000000..79d2fadf7
+--- /dev/null
++++ b/repro.py
+@@ -0,0 +1,14 @@
++from sympy import *
++from sympy import Q as Query
++
++n = Symbol('n', integer=True, positive=True)
++i, j = symbols('i j', integer=True)
++M = MatrixSymbol('M', n, n)
++
++with assuming(Query.orthogonal(M)):
++    e = refine((M.T * M).doit())
++
++print(e, e[0, 0], e[0, 1], e[1, 0], e[1, 1])
++print(ask(Query.diagonal(e)), ask(Query.integer_elements(e)))
++print(Sum(e[i, i], (i, 0, n-1)).doit())
++print(Sum(Sum(e[i, j], (i, 0, n-1)), (j, 0, n-1)).doit())
+diff --git a/sympy/matrices/expressions/matexpr.py b/sympy/matrices/expressions/matexpr.py
+index b4d759836..b32d9c026 100644
+--- a/sympy/matrices/expressions/matexpr.py
++++ b/sympy/matrices/expressions/matexpr.py
+@@ -484,6 +484,24 @@ def _entry(self, i, j):
+     def _eval_determinant(self):
+         return S.One
+ 
++    def _eval_sum(self, expr, limits):
++        from sympy.concrete.summations import Sum
++        from sympy.core.symbol import Dummy
++
++        if len(limits) != 2:
++            return None
++
++        first, second = limits
++        i, i_lower, i_upper = first
++        j, j_lower, j_upper = second
++
++        i_dummy = Dummy('i', integer=True)
++        j_dummy = Dummy('j', integer=True)
++
++        term = self._entry(i_dummy, j_dummy)
++        return Sum(Sum(term, (i_dummy, i_lower, i_upper)), (j_dummy, j_lower, j_upper))
++
++
+ 
+ class ZeroMatrix(MatrixExpr):
+     """The Matrix Zero 0 - additive identity

@@ -1,0 +1,60 @@
+diff --git a/repro_viewcode_epub.py b/repro_viewcode_epub.py
+new file mode 100644
+index 000000000..8311dab08
+--- /dev/null
++++ b/repro_viewcode_epub.py
+@@ -0,0 +1,54 @@
++from pathlib import Path
++import shutil
++import sys
++import textwrap
++
++import jinja2
++
++if not hasattr(jinja2, 'environmentfilter'):
++    jinja2.environmentfilter = jinja2.pass_environment
++if not hasattr(jinja2, 'contextfunction'):
++    jinja2.contextfunction = jinja2.pass_context
++
++from sphinx.application import Sphinx
++
++base = Path('/tmp/sphinx_viewcode_epub_repro')
++if base.exists():
++    shutil.rmtree(base)
++(base / 'src').mkdir(parents=True)
++(base / 'src' / '_static').mkdir()
++(base / 'src' / 'mypkg').mkdir()
++sys.path.insert(0, str(base / 'src'))
++
++
++(base / 'src' / 'conf.py').write_text(textwrap.dedent('''\
++extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
++master_doc = 'index'
++project = 'demo'
++html_theme = 'basic'
++'''))
++
++(base / 'src' / 'index.rst').write_text(textwrap.dedent('''\
++Demo
++====
++
++.. automodule:: mypkg.mod
++   :members:
++'''))
++
++(base / 'src' / 'mypkg' / '__init__.py').write_text('')
++(base / 'src' / 'mypkg' / 'mod.py').write_text(textwrap.dedent('''\
++def hello():
++    return 42
++'''))
++
++for builder in ('html', 'epub'):
++    outdir = base / '_build' / builder
++    doctreedir = base / '_build' / 'doctrees'
++    app = Sphinx(str(base / 'src'), str(base / 'src'), str(outdir), str(doctreedir), builder, freshenv=False)
++    app.build(force_all=True)
++
++html_module = base / '_build' / 'html' / '_modules' / 'mypkg' / 'mod.html'
++epub_module = base / '_build' / 'epub' / '_modules' / 'mypkg' / 'mod.xhtml'
++print('html module page exists:', html_module.exists())
++print('epub module page exists:', epub_module.exists())

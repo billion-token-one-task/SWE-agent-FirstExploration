@@ -1,0 +1,46 @@
+diff --git a/repro_w042_inherited_pk.py b/repro_w042_inherited_pk.py
+new file mode 100644
+index 0000000000..80933675c1
+--- /dev/null
++++ b/repro_w042_inherited_pk.py
+@@ -0,0 +1,40 @@
++from unittest import mock
++
++from django.conf import settings
++
++
++if not settings.configured:
++    settings.configure(
++        INSTALLED_APPS=['django.contrib.contenttypes'],
++        DATABASES={'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'}},
++        DEFAULT_AUTO_FIELD='django.db.models.AutoField',
++    )
++
++import django
++
++django.setup()
++
++from django.core import checks
++from django.db import models
++
++
++def mocked_is_overridden(self, setting):
++    return setting != 'DEFAULT_AUTO_FIELD' or self.DEFAULT_AUTO_FIELD != 'django.db.models.AutoField'
++
++
++with mock.patch('django.conf.UserSettingsHolder.is_overridden', mocked_is_overridden):
++    class Parent(models.Model):
++        custom_id = models.AutoField(primary_key=True)
++
++        class Meta:
++            app_label = 'contenttypes'
++
++    class Child(Parent):
++        class Meta:
++            app_label = 'contenttypes'
++
++    errors = [e for e in checks.run_checks() if getattr(e.obj, '__name__', None) == 'Child']
++    print('child_pk_name=', Child._meta.pk.name)
++    print('child_pk_auto_created=', Child._meta.pk.auto_created)
++    print('child_pk_parent_link=', getattr(Child._meta.pk.remote_field, 'parent_link', False))
++    print('child_warnings=', [(e.id, e.msg) for e in errors])

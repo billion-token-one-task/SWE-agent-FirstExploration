@@ -1,0 +1,30 @@
+diff --git a/sympy/polys/polytools.py b/sympy/polys/polytools.py
+index c9e77a901f..872e5419b4 100644
+--- a/sympy/polys/polytools.py
++++ b/sympy/polys/polytools.py
+@@ -5877,6 +5877,25 @@ def sqf_part(f, *gens, **args):
+ def _sorted_factors(factors, method):
+     """Sort a list of ``(expr, exp)`` pairs. """
+     if method == 'sqf':
++        # For square-free decomposition, factors with the same multiplicity
++        # should be grouped together by multiplication, so that sqf/sqf_list
++        # stay consistent (e.g. (x - 2)**3*(x - 3)**3 -> (x**2 - 5*x + 6, 3)).
++        grouped = {}
++        for poly, exp in factors:
++            grouped.setdefault(exp, []).append(poly)
++
++        factors = []
++        for exp, polys in grouped.items():
++            if len(polys) == 1:
++                factors.append((polys[0], exp))
++            else:
++                merged = Poly(
++                    Mul(*[p.as_expr() for p in polys]),
++                    *polys[0].gens,
++                    expand=True,
++                )
++                factors.append((merged, exp))
++
+         def key(obj):
+             poly, exp = obj
+             rep = poly.rep.rep

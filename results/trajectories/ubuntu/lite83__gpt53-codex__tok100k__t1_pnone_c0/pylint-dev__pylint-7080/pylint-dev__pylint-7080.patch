@@ -1,0 +1,19 @@
+diff --git a/xarray/core/dataarray.py b/xarray/core/dataarray.py
+index b0df8749..3d494a31 100644
+--- a/xarray/core/dataarray.py
++++ b/xarray/core/dataarray.py
+@@ -1961,7 +1961,13 @@ class DataArray(AbstractArray, DataWithCoords):
+         # pull variables out of datarray
+         data_dict = {}
+         for k in variables:
+-            data_dict[k] = self.sel({variable_dim: k}).squeeze(drop=True)
++            data = self.sel({variable_dim: k}).squeeze(drop=True)
++            # when variables only depend on sample dimensions, each selection
++            # still carries a scalar coordinate for ``variable_dim`` (e.g. the
++            # "y" coord from to_stacked_array). Keeping that coordinate on each
++            # variable can trigger merge conflicts when building the Dataset.
++            data = data.drop_vars(variable_dim, errors="ignore")
++            data_dict[k] = data
+ 
+         # unstacked dataset
+         return Dataset(data_dict)

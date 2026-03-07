@@ -1,0 +1,38 @@
+diff --git a/repro_fk_charpk.py b/repro_fk_charpk.py
+new file mode 100644
+index 0000000000..e0022852aa
+--- /dev/null
++++ b/repro_fk_charpk.py
+@@ -0,0 +1,32 @@
++from django.conf import settings
++
++settings.configure(
++    INSTALLED_APPS=['__main__'],
++    DATABASES={'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'}},
++    SECRET_KEY='x',
++)
++
++import django
++from django.db import models, connection
++
++django.setup()
++
++class Product(models.Model):
++    sku = models.CharField(primary_key=True, max_length=50)
++
++class Order(models.Model):
++    product = models.ForeignKey(Product, on_delete=models.CASCADE)
++
++with connection.schema_editor() as editor:
++    editor.create_model(Product)
++    editor.create_model(Order)
++
++order = Order()
++order.product = Product()
++order.product.sku = 'foo'
++order.product.save()
++order.save()
++
++print('order.product_id =', repr(order.product_id))
++print('exists empty product_id:', Order.objects.filter(product_id='').exists())
++print('exists by object:', Order.objects.filter(product=order.product).exists())

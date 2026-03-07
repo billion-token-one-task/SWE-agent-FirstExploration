@@ -1,0 +1,54 @@
+diff --git a/django/contrib/auth/validators.py b/django/contrib/auth/validators.py
+index b4878cfd45..1304f20a60 100644
+--- a/django/contrib/auth/validators.py
++++ b/django/contrib/auth/validators.py
+@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
+ 
+ @deconstructible
+ class ASCIIUsernameValidator(validators.RegexValidator):
+-    regex = r'^[\w.@+-]+$'
++    regex = r'\A[\w.@+-]+\Z'
+     message = _(
+         'Enter a valid username. This value may contain only English letters, '
+         'numbers, and @/./+/-/_ characters.'
+@@ -17,7 +17,7 @@ class ASCIIUsernameValidator(validators.RegexValidator):
+ 
+ @deconstructible
+ class UnicodeUsernameValidator(validators.RegexValidator):
+-    regex = r'^[\w.@+-]+$'
++    regex = r'\A[\w.@+-]+\Z'
+     message = _(
+         'Enter a valid username. This value may contain only letters, '
+         'numbers, and @/./+/-/_ characters.'
+diff --git a/repro_username_newline.py b/repro_username_newline.py
+new file mode 100644
+index 0000000000..a16f4a6e45
+--- /dev/null
++++ b/repro_username_newline.py
+@@ -0,0 +1,26 @@
++import importlib.util
++
++spec = importlib.util.spec_from_file_location(
++    "auth_validators", "/testbed/django/contrib/auth/validators.py"
++)
++mod = importlib.util.module_from_spec(spec)
++spec.loader.exec_module(mod)
++
++ASCIIUsernameValidator = mod.ASCIIUsernameValidator
++UnicodeUsernameValidator = mod.UnicodeUsernameValidator
++ValidationError = mod.validators.ValidationError
++
++
++def check(validator, value):
++    try:
++        validator(value)
++        return True
++    except ValidationError:
++        return False
++
++
++ascii_validator = ASCIIUsernameValidator()
++unicode_validator = UnicodeUsernameValidator()
++
++for v in ["normaluser", "user\n", "user\r\n", "\n"]:
++    print(repr(v), "ASCII:", check(ascii_validator, v), "Unicode:", check(unicode_validator, v))

@@ -1,0 +1,69 @@
+diff --git a/django/db/migrations/recorder.py b/django/db/migrations/recorder.py
+index 1a37c6b7d0..b031d558a6 100644
+--- a/django/db/migrations/recorder.py
++++ b/django/db/migrations/recorder.py
+@@ -1,5 +1,5 @@
+ from django.apps.registry import Apps
+-from django.db import DatabaseError, models
++from django.db import DatabaseError, models, router
+ from django.utils.functional import classproperty
+ from django.utils.timezone import now
+ 
+@@ -58,6 +58,10 @@ class MigrationRecorder:
+ 
+     def ensure_schema(self):
+         """Ensure the table exists and has the correct schema."""
++        # If the django_migrations model isn't migratable on this database,
++        # don't create the table.
++        if not router.allow_migrate_model(self.connection.alias, self.Migration):
++            return
+         # If the table's there, that's fine - we've never changed its schema
+         # in the codebase.
+         if self.has_table():
+diff --git a/repro.py b/repro.py
+new file mode 100644
+index 0000000000..79d8a64bfa
+--- /dev/null
++++ b/repro.py
+@@ -0,0 +1,41 @@
++import os
++from django.conf import settings
++
++BASE = '/tmp/dj_repro_router'
++os.makedirs(BASE, exist_ok=True)
++
++def dbpath(name):
++    return os.path.join(BASE, f'{name}.sqlite3')
++
++class Router:
++    def allow_migrate(self, db, app_label, **hints):
++        return db == 'default'
++
++if not settings.configured:
++    settings.configure(
++        INSTALLED_APPS=[],
++        DATABASES={
++            'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': dbpath('default')},
++            'other': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': dbpath('other')},
++        },
++        DATABASE_ROUTERS=[Router()],
++        SECRET_KEY='x',
++    )
++
++import django
++from django.db import connections
++from django.db.migrations.recorder import MigrationRecorder
++
++django.setup()
++
++other_conn = connections['other']
++rec = MigrationRecorder(other_conn)
++
++print('allow_migrate for migrations app on other:', Router().allow_migrate('other', 'migrations', model=rec.Migration))
++print('has table before:', rec.has_table())
++try:
++    rec.record_applied('app1', '0001_initial')
++    print('record_applied succeeded')
++except Exception as e:
++    print('record_applied raised:', type(e).__name__, e)
++print('has table after:', rec.has_table())

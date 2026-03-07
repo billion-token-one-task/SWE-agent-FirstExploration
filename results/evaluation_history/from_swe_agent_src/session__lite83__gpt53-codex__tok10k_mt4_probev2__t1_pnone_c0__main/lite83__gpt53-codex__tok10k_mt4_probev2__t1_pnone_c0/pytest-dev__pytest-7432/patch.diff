@@ -1,0 +1,41 @@
+diff --git a/repro_skip_runxfail.py b/repro_skip_runxfail.py
+new file mode 100644
+index 000000000..b4c7c9b82
+--- /dev/null
++++ b/repro_skip_runxfail.py
+@@ -0,0 +1,20 @@
++import os, subprocess, tempfile, textwrap, sys
++
++with tempfile.TemporaryDirectory() as td:
++    testfile = os.path.join(td, 'test_it.py')
++    with open(testfile, 'w') as f:
++        f.write(textwrap.dedent('''\
++            import pytest
++            @pytest.mark.skip
++            def test_skip_location():
++                assert 0
++        '''))
++    env = os.environ.copy()
++    env['PYTHONPATH'] = '/testbed/src'
++    for args in (["-rs"], ["-rs", "--runxfail"]):
++        cmd = [sys.executable, '-m', 'pytest', testfile, *args, '-q']
++        print('\n$', ' '.join(cmd))
++        p = subprocess.run(cmd, env=env, capture_output=True, text=True)
++        print(p.stdout)
++        if p.stderr:
++            print('STDERR:', p.stderr)
+diff --git a/src/_pytest/skipping.py b/src/_pytest/skipping.py
+index 7bd975e5a..02d7b2db6 100644
+--- a/src/_pytest/skipping.py
++++ b/src/_pytest/skipping.py
+@@ -271,7 +271,9 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]):
+             rep.longrepr = "Unexpected success"
+         rep.outcome = "failed"
+     elif item.config.option.runxfail:
+-        pass  # don't interfere
++        # don't interfere with xfail behavior when --runxfail is active,
++        # but still let regular skip/skipif location adjustment happen below.
++        pass
+     elif call.excinfo and isinstance(call.excinfo.value, xfail.Exception):
+         assert call.excinfo.value.msg is not None
+         rep.wasxfail = "reason: " + call.excinfo.value.msg

@@ -1,0 +1,51 @@
+diff --git a/lib/matplotlib/cbook.py b/lib/matplotlib/cbook.py
+index c9699b2e21..48c435c649 100644
+--- a/lib/matplotlib/cbook.py
++++ b/lib/matplotlib/cbook.py
+@@ -752,6 +752,19 @@ def print_cycles(objects, outstream=sys.stdout, show_progress=False):
+ 
+ 
+ class Grouper:
++    def __getstate__(self):
++        return {
++            "_mapping": {
++                *(ref() for ref in group if ref() is not None)
++            }
++            for group in self
++        }
++
++    def __setstate__(self, state):
++        self.__init__()
++        for group in state["_mapping"]:
++            self.join(*group)
++
+     """
+     A disjoint-set data structure.
+ 
+diff --git a/repro_align_pickle.py b/repro_align_pickle.py
+new file mode 100644
+index 0000000000..73b1ddc782
+--- /dev/null
++++ b/repro_align_pickle.py
+@@ -0,0 +1,21 @@
++import pickle
++from matplotlib.figure import Figure
++from matplotlib.backends.backend_agg import FigureCanvasAgg
++
++fig = Figure()
++FigureCanvasAgg(fig)
++ax1 = fig.add_subplot(211)
++ax2 = fig.add_subplot(212)
++
++time = [0, 1, 2, 3, 4]
++speed = [40000, 4300, 4500, 4700, 4800]
++acc = [10, 11, 12, 13, 14]
++ax1.plot(time, speed)
++ax1.set_ylabel('speed')
++ax2.plot(time, acc)
++ax2.set_ylabel('acc')
++
++fig.align_labels()
++
++pickle.dumps(fig)
++print('pickle ok')

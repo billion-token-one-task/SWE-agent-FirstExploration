@@ -1,0 +1,54 @@
+diff --git a/django/db/migrations/recorder.py b/django/db/migrations/recorder.py
+index 1a37c6b7d0..957471bcac 100644
+--- a/django/db/migrations/recorder.py
++++ b/django/db/migrations/recorder.py
+@@ -1,5 +1,5 @@
+ from django.apps.registry import Apps
+-from django.db import DatabaseError, models
++from django.db import DatabaseError, models, router
+ from django.utils.functional import classproperty
+ from django.utils.timezone import now
+ 
+diff --git a/repro.py b/repro.py
+new file mode 100644
+index 0000000000..6ed1e2d182
+--- /dev/null
++++ b/repro.py
+@@ -0,0 +1,37 @@
++from django.conf import settings
++
++if not settings.configured:
++    settings.configure(
++        SECRET_KEY='x',
++        INSTALLED_APPS=[],
++        DATABASES={
++            'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'},
++            'other': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'},
++        },
++        DATABASE_ROUTERS=['__main__.Router'],
++    )
++
++import django
++django.setup()
++
++from django.db import connections
++from django.db.migrations.recorder import MigrationRecorder
++
++
++class Router:
++    def allow_migrate(self, db, app_label, model_name=None, **hints):
++        return db == 'default'
++
++
++def check(alias):
++    conn = connections[alias]
++    recorder = MigrationRecorder(conn)
++    before = recorder.has_table()
++    recorder.record_applied('app', '0001_initial')
++    after = recorder.has_table()
++    print(alias, before, after)
++
++
++if __name__ == '__main__':
++    check('default')
++    check('other')

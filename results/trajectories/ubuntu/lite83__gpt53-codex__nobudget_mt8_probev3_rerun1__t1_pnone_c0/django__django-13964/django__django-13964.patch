@@ -1,0 +1,19 @@
+diff --git a/django/db/backends/base/schema.py b/django/db/backends/base/schema.py
+index 61f88401ab..9e59c26d12 100644
+--- a/django/db/backends/base/schema.py
++++ b/django/db/backends/base/schema.py
+@@ -407,6 +407,14 @@ class BaseDatabaseSchemaEditor:
+             model, columns, exclude=meta_constraint_names | meta_index_names,
+             **constraint_kwargs
+         )
++        if len(constraint_names) != 1:
++            # Constraints matching `unique_together`/`index_together` can have
++            # different default names across Django versions. If the backend
++            # introspection finds more than one matching name, prefer one that
++            # matches the default generated name for this composed index.
++            default_name = self._create_index_name(model, columns, suffix='_uniq' if constraint_kwargs.get('unique') else '_idx')
++            if default_name in constraint_names:
++                constraint_names = [default_name]
+         if len(constraint_names) != 1:
+             raise ValueError("Found wrong number (%s) of constraints for %s(%s)" % (
+                 len(constraint_names),

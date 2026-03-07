@@ -1,0 +1,750 @@
+2026-03-06 09:36:34,704 - INFO - rex-deploy-sympy__sympy-21847 - Starting container docker.ioswebenchsweb.eval.x86_64.sympy_1776_sympy-21847latest-c2c3be31-aa93-4540-a7a3-127d88359f0e with image docker.io/swebench/sweb.eval.x86_64.sympy_1776_sympy-21847:latest serving on port 58923
+2026-03-06 09:36:34,707 - INFO - rex-deploy-sympy__sympy-21847 - Starting runtime at 58923
+2026-03-06 09:36:36,105 - INFO - rex-deploy-sympy__sympy-21847 - Runtime started in 1.40s
+2026-03-06 09:36:37,128 - INFO - swea-env-sympy__sympy-21847 - Environment Initialized
+2026-03-06 09:36:37,863 - INFO - swea-agent-sympy__sympy-21847 - Setting up agent for instance sympy__sympy-21847
+2026-03-06 09:36:37,863 - INFO - swea-agent-sympy__sympy-21847 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok25k_mt8_probev3_rerun2/sympy__sympy-21847/sympy__sympy-21847.traj
+2026-03-06 09:38:50,366 - INFO - swea-tools-sympy__sympy-21847 - Resetting tools
+2026-03-06 09:38:50,883 - INFO - swea-agent-sympy__sympy-21847 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-06 09:38:51,155 - INFO - swea-agent-sympy__sympy-21847 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+itermonomials returns incorrect monomials when using min_degrees argument
+`itermonomials` returns incorrect monomials when using optional `min_degrees` argument
+
+For example, the following code introduces three symbolic variables and generates monomials with max and min degree of 3:
+
+
+```
+import sympy as sp
+from sympy.polys.orderings import monomial_key
+
+x1, x2, x3 = sp.symbols('x1, x2, x3')
+states = [x1, x2, x3]
+max_degrees = 3
+min_degrees = 3
+monomials = sorted(sp.itermonomials(states, max_degrees, min_degrees=min_degrees), 
+                   key=monomial_key('grlex', states))
+print(monomials)
+```
+The code returns `[x3**3, x2**3, x1**3]`, when it _should_ also return monomials such as `x1*x2**2, x2*x3**2, etc...` that also have total degree of 3. This behaviour is inconsistent with the documentation that states that 
+
+> A generator of all monomials `monom` is returned, such that either `min_degree <= total_degree(monom) <= max_degree`...
+
+The monomials are also missing when `max_degrees` is increased above `min_degrees`.
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-06 09:38:51,156 - INFO - swea-agent-sympy__sympy-21847 - ========================= STEP 1 =========================
+2026-03-06 09:38:55,277 - INFO - swea-agent-sympy__sympy-21847 - 💭 THOUGHT
+
+
+🎬 ACTION
+ls -la /testbed
+2026-03-06 09:38:55,608 - INFO - swea-agent-sympy__sympy-21847 - 🤖 MODEL INPUT
+OBSERVATION:
+total 304
+drwxrwxrwx  1 root root    18 Sep 10 16:46 .
+drwxr-xr-x  1 root root    55 Mar  6 01:36 ..
+drwxrwxrwx  2 root root   133 Sep 10 16:42 .ci
+-rw-r--r--  1 root root   497 Sep 10 16:42 .editorconfig
+drwxrwxrwx  1 root root   105 Mar  6 01:36 .git
+-rw-r--r--  1 root root   139 Sep 10 16:42 .gitattributes
+drwxrwxrwx  3 root root    23 Sep 10 16:42 .github
+-rw-r--r--  1 root root  1696 Sep 10 16:42 .gitignore
+-rw-r--r--  1 root root 32408 Sep 10 16:42 .mailmap
+-rw-r--r--  1 root root  6514 Sep 10 16:42 .travis.yml
+-rw-r--r--  1 root root 41853 Sep 10 16:42 AUTHORS
+-rw-r--r--  1 root root   590 Sep 10 16:42 CODEOWNERS
+-rw-r--r--  1 root root  3267 Sep 10 16:42 CODE_OF_CONDUCT.md
+-rw-r--r--  1 root root   625 Sep 10 16:42 CONTRIBUTING.md
+-rw-r--r--  1 root root  7885 Sep 10 16:42 LICENSE
+-rw-r--r--  1 root root   496 Sep 10 16:42 MANIFEST.in
+-rw-r--r--  1 root root  1168 Sep 10 16:42 PULL_REQUEST_TEMPLATE.md
+-rw-r--r--  1 root root 10987 Sep 10 16:42 README.md
+-rw-r--r--  1 root root  3140 Sep 10 16:42 asv.conf.actions.json
+-rw-r--r--  1 root root  2774 Sep 10 16:42 asv.conf.travis.json
+-rw-r--r--  1 root root 87868 Sep 10 16:42 banner.svg
+drwxrwxrwx  2 root root  4096 Sep 10 16:42 bin
+-rw-r--r--  1 root root   196 Sep 10 16:42 codecov.yml
+-rw-r--r--  1 root root  2921 Sep 10 16:42 conftest.py
+-rw-r--r--  1 root root   316 Sep 10 16:42 coveragerc_travis
+drwxrwxrwx  3 root root    21 Sep 10 16:42 data
+drwxrwxrwx  7 root root   146 Sep 10 16:42 doc
+drwxr-xr-x  6 root root   103 Sep 10 16:42 examples
+-rw-r--r--  1 root root  4408 Sep 10 16:42 github_deploy_key.enc
+-rw-r--r--  1 root root 11199 Sep 10 16:42 isympy.py
+-rw-r--r--  1 root root   812 Sep 10 16:42 pytest.ini
+drwxrwxrwx  2 root root  4096 Sep 10 16:42 release
+-rw-r--r--  1 root root  1788 Sep 10 16:42 setup.cfg
+-rwxr-xr-x  1 root root 14722 Sep 10 16:42 setup.py
+-rw-r--r--  1 root root    49 Sep 10 16:42 setupegg.py
+drwxrwxrwx 42 root root  4096 Sep 10 16:42 sympy
+drwxr-xr-x  2 root root   154 Sep 10 16:46 sympy.egg-info
+
+2026-03-06 09:38:55,612 - INFO - swea-agent-sympy__sympy-21847 - ========================= STEP 2 =========================
+2026-03-06 09:39:00,290 - INFO - swea-agent-sympy__sympy-21847 - 💭 THOUGHT
+
+
+🎬 ACTION
+grep -R "def itermonomials" -n /testbed/sympy | head
+2026-03-06 09:39:00,728 - INFO - swea-agent-sympy__sympy-21847 - 🤖 MODEL INPUT
+OBSERVATION:
+/testbed/sympy/polys/monomials.py:15:def itermonomials(variables, max_degrees, min_degrees=None):
+
+2026-03-06 09:39:00,734 - INFO - swea-agent-sympy__sympy-21847 - ========================= STEP 3 =========================
+2026-03-06 09:39:02,950 - INFO - swea-agent-sympy__sympy-21847 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/sympy/polys/monomials.py
+2026-03-06 09:39:03,397 - INFO - swea-agent-sympy__sympy-21847 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/sympy/polys/monomials.py:
+     1	"""Tools and arithmetics for monomials of distributed polynomials. """
+     2	
+     3	
+     4	from itertools import combinations_with_replacement, product
+     5	from textwrap import dedent
+     6	
+     7	from sympy.core import Mul, S, Tuple, sympify
+     8	from sympy.core.compatibility import iterable
+     9	from sympy.polys.polyerrors import ExactQuotientFailed
+    10	from sympy.polys.polyutils import PicklableWithSlots, dict_from_expr
+    11	from sympy.utilities import public
+    12	from sympy.core.compatibility import is_sequence
+    13	
+    14	@public
+    15	def itermonomials(variables, max_degrees, min_degrees=None):
+    16	    r"""
+    17	    ``max_degrees`` and ``min_degrees`` are either both integers or both lists.
+    18	    Unless otherwise specified, ``min_degrees`` is either ``0`` or
+    19	    ``[0, ..., 0]``.
+    20	
+    21	    A generator of all monomials ``monom`` is returned, such that
+    22	    either
+    23	    ``min_degree <= total_degree(monom) <= max_degree``,
+    24	    or
+    25	    ``min_degrees[i] <= degree_list(monom)[i] <= max_degrees[i]``,
+    26	    for all ``i``.
+    27	
+    28	    Case I. ``max_degrees`` and ``min_degrees`` are both integers
+    29	    =============================================================
+    30	
+    31	    Given a set of variables $V$ and a min_degree $N$ and a max_degree $M$
+    32	    generate a set of monomials of degree less than or equal to $N$ and greater
+    33	    than or equal to $M$. The total number of monomials in commutative
+    34	    variables is huge and is given by the following formula if $M = 0$:
+    35	
+    36	        .. math::
+    37	            \frac{(\#V + N)!}{\#V! N!}
+    38	
+    39	    For example if we would like to generate a dense polynomial of
+    40	    a total degree $N = 50$ and $M = 0$, which is the worst case, in 5
+    41	    variables, assuming that exponents and all of coefficients are 32-bit long
+    42	    and stored in an array we would need almost 80 GiB of memory! Fortunately
+    43	    most polynomials, that we will encounter, are sparse.
+    44	
+    45	    Consider monomials in commutative variables $x$ and $y$
+    46	    and non-commutative variables $a$ and $b$::
+    47	
+    48	        >>> from sympy import symbols
+    49	        >>> from sympy.polys.monomials import itermonomials
+    50	        >>> from sympy.polys.orderings import monomial_key
+    51	        >>> from sympy.abc import x, y
+    52	
+    53	        >>> sorted(itermonomials([x, y], 2), key=monomial_key('grlex', [y, x]))
+    54	        [1, x, y, x**2, x*y, y**2]
+    55	
+    56	        >>> sorted(itermonomials([x, y], 3), key=monomial_key('grlex', [y, x]))
+    57	        [1, x, y, x**2, x*y, y**2, x**3, x**2*y, x*y**2, y**3]
+    58	
+    59	        >>> a, b = symbols('a, b', commutative=False)
+    60	        >>> set(itermonomials([a, b, x], 2))
+    61	        {1, a, a**2, b, b**2, x, x**2, a*b, b*a, x*a, x*b}
+    62	
+    63	        >>> sorted(itermonomials([x, y], 2, 1), key=monomial_key('grlex', [y, x]))
+    64	        [x, y, x**2, x*y, y**2]
+    65	
+    66	    Case II. ``max_degrees`` and ``min_degrees`` are both lists
+    67	    ===========================================================
+    68	
+    69	    If ``max_degrees = [d_1, ..., d_n]`` and
+    70	    ``min_degrees = [e_1, ..., e_n]``, the number of monomials generated
+    71	    is:
+    72	
+    73	    .. math::
+    74	        (d_1 - e_1 + 1) (d_2 - e_2 + 1) \cdots (d_n - e_n + 1)
+    75	
+    76	    Let us generate all monomials ``monom`` in variables $x$ and $y$
+    77	    such that ``[1, 2][i] <= degree_list(monom)[i] <= [2, 4][i]``,
+    78	    ``i = 0, 1`` ::
+    79	
+    80	        >>> from sympy import symbols
+    81	        >>> from sympy.polys.monomials import itermonomials
+    82	        >>> from sympy.polys.orderings import monomial_key
+    83	        >>> from sympy.abc import x, y
+    84	
+    85	        >>> sorted(itermonomials([x, y], [2, 4], [1, 2]), reverse=True, key=monomial_key('lex', [x, y]))
+    86	        [x**2*y**4, x**2*y**3, x**2*y**2, x*y**4, x*y**3, x*y**2]
+    87	    """
+    88	    n = len(variables)
+    89	    if is_sequence(max_degrees):
+    90	        if len(max_degrees) != n:
+    91	            raise ValueError('Argument sizes do not match')
+    92	        if min_degrees is None:
+    93	            min_degrees = [0]*n
+    94	        elif not is_sequence(min_degrees):
+    95	            raise ValueError('min_degrees is not a list')
+    96	        else:
+    97	            if len(min_degrees) != n:
+    98	                raise ValueError('Argument sizes do not match')
+    99	            if any(i < 0 for i in min_degrees):
+   100	                raise ValueError("min_degrees can't contain negative numbers")
+   101	        total_degree = False
+   102	    else:
+   103	        max_degree = max_degrees
+   104	        if max_degree < 0:
+   105	            raise ValueError("max_degrees can't be negative")
+   106	        if min_degrees is None:
+   107	            min_degree = 0
+   108	        else:
+   109	            if min_degrees < 0:
+   110	                raise ValueError("min_degrees can't be negative")
+   111	            min_degree = min_degrees
+   112	        total_degree = True
+   113	    if total_degree:
+   114	        if min_degree > max_degree:
+   115	            return
+   116	        if not variables or max_degree == 0:
+   117	            yield S.One
+   118	            return
+   119	        # Force to list in case of passed tuple or other incompatible collection
+   120	        variables = list(variables) + [S.One]
+   121	        if all(variable.is_commutative for variable in variables):
+   122	            monomials_list_comm = []
+   123	            for item in combinations_with_replacement(variables, max_degree):
+   124	                powers = dict()
+   125	                for variable in variables:
+   126	                    powers[variable] = 0
+   127	                for variable in item:
+   128	                    if variable != 1:
+   129	                        powers[variable] += 1
+   130	                if max(powers.values()) >= min_degree:
+   131	                    monomials_list_comm.append(Mul(*item))
+   132	            yield from set(monomials_list_comm)
+   133	        else:
+   134	            monomials_list_non_comm = []
+   135	            for item in product(variables, repeat=max_degree):
+   136	                powers = dict()
+   137	                for variable in variables:
+   138	                    powers[variable] = 0
+   139	                for variable in item:
+   140	                    if variable != 1:
+   141	                        powers[variable] += 1
+   142	                if max(powers.values()) >= min_degree:
+   143	                    monomials_list_non_comm.append(Mul(*item))
+   144	            yield from set(monomials_list_non_comm)
+   145	    else:
+   146	        if any(min_degrees[i] > max_degrees[i] for i in range(n)):
+   147	            raise ValueError('min_degrees[i] must be <= max_degrees[i] for all i')
+   148	        power_lists = []
+   149	        for var, min_d, max_d in zip(variables, min_degrees, max_degrees):
+   150	            power_lists.append([var**i for i in range(min_d, max_d + 1)])
+   151	        for powers in product(*power_lists):
+   152	            yield Mul(*powers)
+   153	
+   154	def monomial_count(V, N):
+   155	    r"""
+   156	    Computes the number of monomials.
+   157	
+   158	    The number of monomials is given by the following formula:
+   159	
+   160	    .. math::
+   161	
+   162	        \frac{(\#V + N)!}{\#V! N!}
+   163	
+   164	    where `N` is a total degree and `V` is a set of variables.
+   165	
+   166	    Examples
+   167	    ========
+   168	
+   169	    >>> from sympy.polys.monomials import itermonomials, monomial_count
+   170	    >>> from sympy.polys.orderings import monomial_key
+   171	    >>> from sympy.abc import x, y
+   172	
+   173	    >>> monomial_count(2, 2)
+   174	    6
+   175	
+   176	    >>> M = list(itermonomials([x, y], 2))
+   177	
+   178	    >>> sorted(M, key=monomial_key('grlex', [y, x]))
+   179	    [1, x, y, x**2, x*y, y**2]
+   180	    >>> len(M)
+   181	    6
+   182	
+   183	    """
+   184	    from sympy import factorial
+   185	    return factorial(V + N) / factorial(V) / factorial(N)
+   186	
+   187	def monomial_mul(A, B):
+   188	    """
+   189	    Multiplication of tuples representing monomials.
+   190	
+   191	    Examples
+   192	    ========
+   193	
+   194	    Lets multiply `x**3*y**4*z` with `x*y**2`::
+   195	
+   196	        >>> from sympy.polys.monomials import monomial_mul
+   197	
+   198	        >>> monomial_mul((3, 4, 1), (1, 2, 0))
+   199	        (4, 6, 1)
+   200	
+   201	    which gives `x**4*y**5*z`.
+   202	
+   203	    """
+   204	    return tuple([ a + b for a, b in zip(A, B) ])
+   205	
+   206	def monomial_div(A, B):
+   207	    """
+   208	    Division of tuples representing monomials.
+   209	
+   210	    Examples
+   211	    ========
+   212	
+   213	    Lets divide `x**3*y**4*z` by `x*y**2`::
+   214	
+   215	        >>> from sympy.polys.monomials import monomial_div
+   216	
+   217	        >>> monomial_div((3, 4, 1), (1, 2, 0))
+   218	        (2, 2, 1)
+   219	
+   220	    which gives `x**2*y**2*z`. However::
+   221	
+   222	        >>> monomial_div((3, 4, 1), (1, 2, 2)) is None
+   223	        True
+   224	
+   225	    `x*y**2*z**2` does not divide `x**3*y**4*z`.
+   226	
+   227	    """
+   228	    C = monomial_ldiv(A, B)
+   229	
+   230	    if all(c >= 0 for c in C):
+   231	        return tuple(C)
+   232	    else:
+   233	        return None
+   234	
+   235	def monomial_ldiv(A, B):
+   236	    """
+   237	    Division of tuples representing monomials.
+   238	
+   239	    Examples
+   240	    ========
+   241	
+   242	    Lets divide `x**3*y**4*z` by `x*y**2`::
+   243	
+   244	        >>> from sympy.polys.monomials import monomial_ldiv
+   245	
+   246	        >>> monomial_ldiv((3, 4, 1), (1, 2, 0))
+   247	        (2, 2, 1)
+   248	
+   249	    which gives `x**2*y**2*z`.
+   250	
+   251	        >>> monomial_ldiv((3, 4, 1), (1, 2, 2))
+   252	        (2, 2, -1)
+   253	
+   254	    which gives `x**2*y**2*z**-1`.
+   255	
+   256	    """
+   257	    return tuple([ a - b for a, b in zip(A, B) ])
+   258	
+   259	def monomial_pow(A, n):
+   260	    """Return the n-th pow of the monomial. """
+   261	    return tuple([ a*n for a in A ])
+   262	
+   263	def monomial_gcd(A, B):
+   264	    """
+   265	    Greatest common divisor of tuples representing monomials.
+   266	
+   267	    Examples
+   268	    ========
+   269	
+   270	    Lets compute GCD of `x*y**4*z` and `x**3*y**2`::
+   271	
+   272	        >>> from sympy.polys.monomials import monomial_gcd
+   273	
+   274	        >>> monomial_gcd((1, 4, 1), (3, 2, 0))
+   275	        (1, 2, 0)
+   276	
+   277	    which gives `x*y**2`.
+   278	
+   279	    """
+   280	    return tuple([ min(a, b) for a, b in zip(A, B) ])
+   281	
+   282	def monomial_lcm(A, B):
+   283	    """
+   284	    Least common multiple of tuples representing monomials.
+   285	
+   286	    Examples
+   287	    ========
+   288	
+   289	    Lets compute LCM of `x*y**4*z` and `x**3*y**2`::
+   290	
+   291	        >>> from sympy.polys.monomials import monomial_lcm
+   292	
+   293	        >>> monomial_lcm((1, 4, 1), (3, 2, 0))
+   294	        (3, 4, 1)
+   295	
+   296	    which gives `x**3*y**4*z`.
+   297	
+   298	    """
+   299	    return tuple([ max(a, b) for a, b in zip(A, B) ])
+   300	
+   301	def monomial_divides(A, B):
+   302	    """
+   303	    Does there exist a monomial X such that XA == B?
+   304	
+   305	    Examples
+   306	    ========
+   307	
+   308	    >>> from sympy.polys.monomials import monomial_divides
+   309	    >>> monomial_divides((1, 2), (3, 4))
+   310	    True
+   311	    >>> monomial_divides((1, 2), (0, 2))
+   312	    False
+   313	    """
+   314	    return all(a <= b for a, b in zip(A, B))
+   315	
+   316	def monomial_max(*monoms):
+   317	    """
+   318	    Returns maximal degree for each variable in a set of monomials.
+   319	
+   320	    Examples
+   321	    ========
+   322	
+   323	    Consider monomials `x**3*y**4*z**5`, `y**5*z` and `x**6*y**3*z**9`.
+   324	    We wish to find out what is the maximal degree for each of `x`, `y`
+   325	    and `z` variables::
+   326	
+   327	        >>> from sympy.polys.monomials import monomial_max
+   328	
+   329	        >>> monomial_max((3,4,5), (0,5,1), (6,3,9))
+   330	        (6, 5, 9)
+   331	
+   332	    """
+   333	    M = list(monoms[0])
+   334	
+   335	    for N in monoms[1:]:
+   336	        for i, n in enumerate(N):
+   337	            M[i] = max(M[i], n)
+   338	
+   339	    return tuple(M)
+   340	
+   341	def monomial_min(*monoms):
+   342	    """
+   343	    Returns minimal degree for each variable in a set of monomials.
+   344	
+   345	    Examples
+   346	    ========
+   347	
+   348	    Consider monomials `x**3*y**4*z**5`, `y**5*z` and `x**6*y**3*z**9`.
+   349	    We wish to find out what is the minimal degree for each of `x`, `y`
+   350	    and `z` variables::
+   351	
+   352	        >>> from sympy.polys.monomials import monomial_min
+   353	
+   354	        >>> monomial_min((3,4,5), (0,5,1), (6,3,9))
+   355	        (0, 3, 1)
+   356	
+   357	    """
+   358	    M = list(monoms[0])
+   359	
+   360	    for N in monoms[1:]:
+   361	        for i, n in enumerate(N):
+   362	            M[i] = min(M[i], n)
+   363	
+   364	    return tuple(M)
+   365	
+   366	def monomial_deg(M):
+   367	    """
+   368	    Returns the total degree of a monomial.
+   369	
+   370	    Examples
+   371	    ========
+   372	
+   373	    The total degree of `xy^2` is 3:
+   374	
+   375	    >>> from sympy.polys.monomials import monomial_deg
+   376	    >>> monomial_deg((1, 2))
+   377	    3
+   378	    """
+   379	    return sum(M)
+   380	
+   381	def term_div(a, b, domain):
+   382	    """Division of two terms in over a ring/field. """
+   383	    a_lm, a_lc = a
+   384	    b_lm, b_lc = b
+   385	
+   386	    monom = monomial_div(a_lm, b_lm)
+   387	
+   388	    if domain.is_Field:
+   389	        if monom is not None:
+   390	            return monom, domain.quo(a_lc, b_lc)
+   391	        else:
+   392	            return None
+   393	    else:
+   394	        if not (monom is None or a_lc % b_lc):
+   395	            return monom, domain.quo(a_lc, b_lc)
+   396	        else:
+   397	            return None
+   398	
+   399	class MonomialOps:
+   400	    """Code generator of fast monomial arithmetic functions. """
+   401	
+   402	    def __init__(self, ngens):
+   403	        self.ngens = ngens
+   404	
+   405	    def _build(self, code, name):
+   406	        ns = {}
+   407	        exec(code, ns)
+   408	        return ns[name]
+   409	
+   410	    def _vars(self, name):
+   411	        return [ "%s%s" % (name, i) for i in range(self.ngens) ]
+   412	
+   413	    def mul(self):
+   414	        name = "monomial_mul"
+   415	        template = dedent("""\
+   416	        def %(name)s(A, B):
+   417	            (%(A)s,) = A
+   418	            (%(B)s,) = B
+   419	            return (%(AB)s,)
+   420	        """)
+   421	        A = self._vars("a")
+   422	        B = self._vars("b")
+   423	        AB = [ "%s + %s" % (a, b) for a, b in zip(A, B) ]
+   424	        code = template % dict(name=name, A=", ".join(A), B=", ".join(B), AB=", ".join(AB))
+   425	        return self._build(code, name)
+   426	
+   427	    def pow(self):
+   428	        name = "monomial_pow"
+   429	        template = dedent("""\
+   430	        def %(name)s(A, k):
+   431	            (%(A)s,) = A
+   432	            return (%(Ak)s,)
+   433	        """)
+   434	        A = self._vars("a")
+   435	        Ak = [ "%s*k" % a for a in A ]
+   436	        code = template % dict(name=name, A=", ".join(A), Ak=", ".join(Ak))
+   437	        return self._build(code, name)
+   438	
+   439	    def mulpow(self):
+   440	        name = "monomial_mulpow"
+   441	        template = dedent("""\
+   442	        def %(name)s(A, B, k):
+   443	            (%(A)s,) = A
+   444	            (%(B)s,) = B
+   445	            return (%(ABk)s,)
+   446	        """)
+   447	        A = self._vars("a")
+   448	        B = self._vars("b")
+   449	        ABk = [ "%s + %s*k" % (a, b) for a, b in zip(A, B) ]
+   450	        code = template % dict(name=name, A=", ".join(A), B=", ".join(B), ABk=", ".join(ABk))
+   451	        return self._build(code, name)
+   452	
+   453	    def ldiv(self):
+   454	        name = "monomial_ldiv"
+   455	        template = dedent("""\
+   456	        def %(name)s(A, B):
+   457	            (%(A)s,) = A
+   458	            (%(B)s,) = B
+   459	            return (%(AB)s,)
+   460	        """)
+   461	        A = self._vars("a")
+   462	        B = self._vars("b")
+   463	        AB = [ "%s - %s" % (a, b) for a, b in zip(A, B) ]
+   464	        code = template % dict(name=name, A=", ".join(A), B=", ".join(B), AB=", ".join(AB))
+   465	        return self._build(code, name)
+   466	
+   467	    def div(self):
+   468	        name = "monomial_div"
+   469	        template = dedent("""\
+   470	        def %(name)s(A, B):
+   471	            (%(A)s,) = A
+   472	            (%(B)s,) = B
+   473	            %(RAB)s
+   474	            return (%(R)s,)
+   475	        """)
+   476	        A = self._vars("a")
+   477	        B = self._vars("b")
+   478	        RAB = [ "r%(i)s = a%(i)s - b%(i)s\n    if r%(i)s < 0: return None" % dict(i=i) for i in range(self.ngens) ]
+   479	        R = self._vars("r")
+   480	        code = template % dict(name=name, A=", ".join(A), B=", ".join(B), RAB="\n    ".join(RAB), R=", ".join(R))
+   481	        return self._build(code, name)
+   482	
+   483	    def lcm(self):
+   484	        name = "monomial_lcm"
+   485	        template = dedent("""\
+   486	        def %(name)s(A, B):
+   487	            (%(A)s,) = A
+   488	            (%(B)s,) = B
+   489	            return (%(AB)s,)
+   490	        """)
+   491	        A = self._vars("a")
+   492	        B = self._vars("b")
+   493	        AB = [ "%s if %s >= %s else %s" % (a, a, b, b) for a, b in zip(A, B) ]
+   494	        code = template % dict(name=name, A=", ".join(A), B=", ".join(B), AB=", ".join(AB))
+   495	        return self._build(code, name)
+   496	
+   497	    def gcd(self):
+   498	        name = "monomial_gcd"
+   499	        template = dedent("""\
+   500	        def %(name)s(A, B):
+   501	            (%(A)s,) = A
+   502	            (%(B)s,) = B
+   503	            return (%(AB)s,)
+   504	        """)
+   505	        A = self._vars("a")
+   506	        B = self._vars("b")
+   507	        AB = [ "%s if %s <= %s else %s" % (a, a, b, b) for a, b in zip(A, B) ]
+   508	        code = template % dict(name=name, A=", ".join(A), B=", ".join(B), AB=", ".join(AB))
+   509	        return self._build(code, name)
+   510	
+   511	@public
+   512	class Monomial(PicklableWithSlots):
+   513	    """Class representing a monomial, i.e. a product of powers. """
+   514	
+   515	    __slots__ = ('exponents', 'gens')
+   516	
+   517	    def __init__(self, monom, gens=None):
+   518	        if not iterable(monom):
+   519	            rep, gens = dict_from_expr(sympify(monom), gens=gens)
+   520	            if len(rep) == 1 and list(rep.values())[0] == 1:
+   521	                monom = list(rep.keys())[0]
+   522	            else:
+   523	                raise ValueError("Expected a monomial got {}".format(monom))
+   524	
+   525	        self.exponents = tuple(map(int, monom))
+   526	        self.gens = gens
+   527	
+   528	    def rebuild(self, exponents, gens=None):
+   529	        return self.__class__(exponents, gens or self.gens)
+   530	
+   531	    def __len__(self):
+   532	        return len(self.exponents)
+   533	
+   534	    def __iter__(self):
+   535	        return iter(self.exponents)
+   536	
+   537	    def __getitem__(self, item):
+   538	        return self.exponents[item]
+   539	
+   540	    def __hash__(self):
+   541	        return hash((self.__class__.__name__, self.exponents, self.gens))<response clipped><NOTE>To save on context only part of this file has been shown to you. You should retry this tool after you have searched inside the file with `grep -n` in order to find the line numbers of what you are looking for.</NOTE>
+
+
+2026-03-06 09:39:03,404 - INFO - swea-agent-sympy__sympy-21847 - ========================= STEP 4 =========================
+2026-03-06 09:39:14,196 - INFO - swea-agent-sympy__sympy-21847 - 💭 THOUGHT
+
+
+🎬 ACTION
+cat > /testbed/repro_itermonomials.py <<'PY'
+import sympy as sp
+from sympy.polys.orderings import monomial_key
+
+x1, x2, x3 = sp.symbols('x1, x2, x3')
+states = [x1, x2, x3]
+max_degrees = 3
+min_degrees = 3
+monomials = sorted(sp.itermonomials(states, max_degrees, min_degrees=min_degrees),
+                   key=monomial_key('grlex', states))
+print(monomials)
+print(len(monomials))
+PY
+python /testbed/repro_itermonomials.py
+2026-03-06 09:39:16,740 - INFO - swea-agent-sympy__sympy-21847 - 🤖 MODEL INPUT
+OBSERVATION:
+[x3**3, x2**3, x1**3]
+3
+
+2026-03-06 09:39:16,747 - INFO - swea-agent-sympy__sympy-21847 - ========================= STEP 5 =========================
+2026-03-06 09:39:20,637 - INFO - swea-agent-sympy__sympy-21847 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/sympy/polys/monomials.py   --old_str '                if max(powers.values()) >= min_degree:
+                    monomials_list_comm.append(Mul(*item))' --new_str '                if sum(powers.values()) >= min_degree:
+                    monomials_list_comm.append(Mul(*item))'
+2026-03-06 09:39:21,072 - INFO - swea-agent-sympy__sympy-21847 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/sympy/polys/monomials.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/sympy/polys/monomials.py:
+   125	                for variable in variables:
+   126	                    powers[variable] = 0
+   127	                for variable in item:
+   128	                    if variable != 1:
+   129	                        powers[variable] += 1
+   130	                if sum(powers.values()) >= min_degree:
+   131	                    monomials_list_comm.append(Mul(*item))
+   132	            yield from set(monomials_list_comm)
+   133	        else:
+   134	            monomials_list_non_comm = []
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-06 09:39:21,081 - INFO - swea-agent-sympy__sympy-21847 - ========================= STEP 6 =========================
+2026-03-06 09:39:24,808 - WARNING - swea-lm-sympy__sympy-21847 - Token budget exhausted: 29256 > 25000
+2026-03-06 09:39:24,811 - WARNING - swea-agent-sympy__sympy-21847 - Exit due to token budget exhaustion
+2026-03-06 09:39:24,813 - WARNING - swea-agent-sympy__sympy-21847 - Attempting autosubmission after error
+2026-03-06 09:39:24,822 - INFO - swea-agent-sympy__sympy-21847 - Executing submission command git add -A && git diff --cached > /tmp/model.patch in /testbed
+2026-03-06 09:39:24,884 - INFO - swea-agent-sympy__sympy-21847 - Found submission: diff --git a/repro_itermonomials.py b/repro_itermonomials.py
+new file mode 100644
+index 0000000000..9de2e4a612
+--- /dev/null
++++ b/repro_itermonomials.py
+@@ -0,0 +1,11 @@
++import sympy as sp
++from sympy.polys.orderings import monomial_key
++
++x1, x2, x3 = sp.symbols('x1, x2, x3')
++states = [x1, x2, x3]
++max_degrees = 3
++min_degrees = 3
++monomials = sorted(sp.itermonomials(states, max_degrees, min_degrees=min_degrees),
++                   key=monomial_key('grlex', states))
++print(monomials)
++print(len(monomials))
+diff --git a/sympy/polys/monomials.py b/sympy/polys/monomials.py
+index 0e84403307..7c6a37933b 100644
+--- a/sympy/polys/monomials.py
++++ b/sympy/polys/monomials.py
+@@ -127,7 +127,7 @@ def itermonomials(variables, max_degrees, min_degrees=None):
+                 for variable in item:
+                     if variable != 1:
+                         powers[variable] += 1
+-                if max(powers.values()) >= min_degree:
++                if sum(powers.values()) >= min_degree:
+                     monomials_list_comm.append(Mul(*item))
+             yield from set(monomials_list_comm)
+         else:
+
+2026-03-06 09:39:24,884 - INFO - swea-agent-sympy__sympy-21847 - Exiting with autosubmission
+2026-03-06 09:39:24,886 - INFO - swea-agent-sympy__sympy-21847 - 🤖 MODEL INPUT
+OBSERVATION:
+Exited (autosubmitted)
+2026-03-06 09:39:24,909 - INFO - swea-agent-sympy__sympy-21847 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok25k_mt8_probev3_rerun2/sympy__sympy-21847/sympy__sympy-21847.traj
+2026-03-06 09:39:24,913 - INFO - swea-env-sympy__sympy-21847 - Beginning environment shutdown...

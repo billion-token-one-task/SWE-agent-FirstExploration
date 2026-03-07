@@ -1,0 +1,547 @@
+2026-03-06 09:09:06,343 - INFO - rex-deploy-django__django-13158 - Starting container docker.ioswebenchsweb.eval.x86_64.django_1776_django-13158latest-7ad7ab07-b916-4176-8c38-f6081cc37031 with image docker.io/swebench/sweb.eval.x86_64.django_1776_django-13158:latest serving on port 34951
+2026-03-06 09:09:06,346 - INFO - rex-deploy-django__django-13158 - Starting runtime at 34951
+2026-03-06 09:09:07,910 - INFO - rex-deploy-django__django-13158 - Runtime started in 1.56s
+2026-03-06 09:09:08,952 - INFO - swea-env-django__django-13158 - Environment Initialized
+2026-03-06 09:09:10,205 - INFO - swea-agent-django__django-13158 - Setting up agent for instance django__django-13158
+2026-03-06 09:09:10,206 - INFO - swea-agent-django__django-13158 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok25k_mt8_probev3_rerun2/django__django-13158/django__django-13158.traj
+2026-03-06 09:10:56,928 - INFO - swea-tools-django__django-13158 - Resetting tools
+2026-03-06 09:10:57,330 - INFO - swea-agent-django__django-13158 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-06 09:10:57,543 - INFO - swea-agent-django__django-13158 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+QuerySet.none() on combined queries returns all results.
+Description
+	
+I came across this issue on Stack Overflow. I'm not 100% sure it's a bug, but it does seem strange. With this code (excuse the bizarre example filtering):
+class Publication(models.Model):
+	pass
+class Article(models.Model):
+	publications = models.ManyToManyField(to=Publication, blank=True, null=True)
+class ArticleForm(forms.ModelForm):
+	publications = forms.ModelMultipleChoiceField(
+		Publication.objects.filter(id__lt=2) | Publication.objects.filter(id__gt=5),
+		required=False,
+	)
+	class Meta:
+		model = Article
+		fields = ["publications"]
+class ArticleAdmin(admin.ModelAdmin):
+	form = ArticleForm
+This works well. However, changing the ModelMultipleChoiceField queryset to use union() breaks things.
+publications = forms.ModelMultipleChoiceField(
+	Publication.objects.filter(id__lt=2).union(
+		Publication.objects.filter(id__gt=5)
+	),
+	required=False,
+)
+The form correctly shows only the matching objects. However, if you submit this form while empty (i.e. you didn't select any publications), ALL objects matching the queryset will be added. Using the OR query, NO objects are added, as I'd expect.
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-06 09:10:57,543 - INFO - swea-agent-django__django-13158 - ========================= STEP 1 =========================
+2026-03-06 09:10:59,631 - INFO - swea-agent-django__django-13158 - 💭 THOUGHT
+
+
+🎬 ACTION
+ls -la /testbed
+2026-03-06 09:10:59,994 - INFO - swea-agent-django__django-13158 - 🤖 MODEL INPUT
+OBSERVATION:
+total 140
+drwxrwxrwx   1 root root    18 Sep 10 11:01 .
+drwxr-xr-x   1 root root    55 Mar  6 01:09 ..
+-rw-r--r--   1 root root   782 Sep 10 10:53 .editorconfig
+-rw-r--r--   1 root root    86 Sep 10 10:53 .eslintignore
+-rw-r--r--   1 root root  1407 Sep 10 10:53 .eslintrc
+drwxrwxrwx   1 root root   105 Mar  6 01:09 .git
+-rw-r--r--   1 root root   297 Sep 10 10:53 .gitattributes
+drwxrwxrwx   2 root root    44 Sep 10 10:53 .github
+-rw-r--r--   1 root root   353 Sep 10 10:53 .gitignore
+-rw-r--r--   1 root root   164 Sep 10 10:53 .hgignore
+drwxrwxrwx   2 root root    20 Sep 10 10:53 .tx
+-rw-r--r--   1 root root 37868 Sep 10 10:53 AUTHORS
+-rw-r--r--   1 root root  1115 Sep 10 10:53 CONTRIBUTING.rst
+drwxr-xr-x   2 root root   154 Sep 10 11:01 Django.egg-info
+-rw-r--r--   1 root root   353 Sep 10 10:53 Gruntfile.js
+-rw-r--r--   1 root root   236 Sep 10 10:53 INSTALL
+-rw-r--r--   1 root root  1552 Sep 10 10:53 LICENSE
+-rw-r--r--   1 root root 13227 Sep 10 10:53 LICENSE.python
+-rw-r--r--   1 root root   276 Sep 10 10:53 MANIFEST.in
+-rw-r--r--   1 root root  1881 Sep 10 10:53 README.rst
+drwxrwxrwx  19 root root  4096 Sep 10 11:01 django
+drwxrwxrwx  13 root root  4096 Sep 10 10:53 docs
+drwxrwxrwx   2 root root    70 Sep 10 10:53 extras
+drwxrwxrwx   4 root root    48 Sep 10 10:53 js_tests
+-rw-r--r--   1 root root   369 Sep 10 10:53 package.json
+drwxrwxrwx   2 root root    58 Sep 10 10:53 scripts
+-rw-r--r--   1 root root  2192 Sep 10 10:53 setup.cfg
+-rw-r--r--   1 root root  2368 Sep 10 10:53 setup.py
+drwxrwxrwx 212 root root  8192 Sep 10 10:53 tests
+-rw-r--r--   1 root root  1535 Sep 10 10:53 tox.ini
+
+2026-03-06 09:10:59,998 - INFO - swea-agent-django__django-13158 - ========================= STEP 2 =========================
+2026-03-06 09:11:01,950 - INFO - swea-agent-django__django-13158 - 💭 THOUGHT
+
+
+🎬 ACTION
+grep -R "def none" -n /testbed/django/db/models | head
+2026-03-06 09:11:02,330 - INFO - swea-agent-django__django-13158 - 🤖 MODEL INPUT
+OBSERVATION:
+/testbed/django/db/models/query.py:919:    def none(self):
+
+2026-03-06 09:11:02,336 - INFO - swea-agent-django__django-13158 - ========================= STEP 3 =========================
+2026-03-06 09:11:06,339 - INFO - swea-agent-django__django-13158 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/django/db/models/query.py  --view_range 860 980
+2026-03-06 09:11:07,072 - INFO - swea-agent-django__django-13158 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/django/db/models/query.py:
+   860	                    counter += 1
+   861	                    if field_id not in field_names:
+   862	                        break
+   863	                expressions[field_id] = field
+   864	                _fields.append(field_id)
+   865	            else:
+   866	                _fields.append(field)
+   867	
+   868	        clone = self._values(*_fields, **expressions)
+   869	        clone._iterable_class = (
+   870	            NamedValuesListIterable if named
+   871	            else FlatValuesListIterable if flat
+   872	            else ValuesListIterable
+   873	        )
+   874	        return clone
+   875	
+   876	    def dates(self, field_name, kind, order='ASC'):
+   877	        """
+   878	        Return a list of date objects representing all available dates for
+   879	        the given field_name, scoped to 'kind'.
+   880	        """
+   881	        assert kind in ('year', 'month', 'week', 'day'), \
+   882	            "'kind' must be one of 'year', 'month', 'week', or 'day'."
+   883	        assert order in ('ASC', 'DESC'), \
+   884	            "'order' must be either 'ASC' or 'DESC'."
+   885	        return self.annotate(
+   886	            datefield=Trunc(field_name, kind, output_field=DateField()),
+   887	            plain_field=F(field_name)
+   888	        ).values_list(
+   889	            'datefield', flat=True
+   890	        ).distinct().filter(plain_field__isnull=False).order_by(('-' if order == 'DESC' else '') + 'datefield')
+   891	
+   892	    def datetimes(self, field_name, kind, order='ASC', tzinfo=None, is_dst=None):
+   893	        """
+   894	        Return a list of datetime objects representing all available
+   895	        datetimes for the given field_name, scoped to 'kind'.
+   896	        """
+   897	        assert kind in ('year', 'month', 'week', 'day', 'hour', 'minute', 'second'), \
+   898	            "'kind' must be one of 'year', 'month', 'week', 'day', 'hour', 'minute', or 'second'."
+   899	        assert order in ('ASC', 'DESC'), \
+   900	            "'order' must be either 'ASC' or 'DESC'."
+   901	        if settings.USE_TZ:
+   902	            if tzinfo is None:
+   903	                tzinfo = timezone.get_current_timezone()
+   904	        else:
+   905	            tzinfo = None
+   906	        return self.annotate(
+   907	            datetimefield=Trunc(
+   908	                field_name,
+   909	                kind,
+   910	                output_field=DateTimeField(),
+   911	                tzinfo=tzinfo,
+   912	                is_dst=is_dst,
+   913	            ),
+   914	            plain_field=F(field_name)
+   915	        ).values_list(
+   916	            'datetimefield', flat=True
+   917	        ).distinct().filter(plain_field__isnull=False).order_by(('-' if order == 'DESC' else '') + 'datetimefield')
+   918	
+   919	    def none(self):
+   920	        """Return an empty QuerySet."""
+   921	        clone = self._chain()
+   922	        clone.query.set_empty()
+   923	        return clone
+   924	
+   925	    ##################################################################
+   926	    # PUBLIC METHODS THAT ALTER ATTRIBUTES AND RETURN A NEW QUERYSET #
+   927	    ##################################################################
+   928	
+   929	    def all(self):
+   930	        """
+   931	        Return a new QuerySet that is a copy of the current one. This allows a
+   932	        QuerySet to proxy for a model manager in some cases.
+   933	        """
+   934	        return self._chain()
+   935	
+   936	    def filter(self, *args, **kwargs):
+   937	        """
+   938	        Return a new QuerySet instance with the args ANDed to the existing
+   939	        set.
+   940	        """
+   941	        self._not_support_combined_queries('filter')
+   942	        return self._filter_or_exclude(False, *args, **kwargs)
+   943	
+   944	    def exclude(self, *args, **kwargs):
+   945	        """
+   946	        Return a new QuerySet instance with NOT (args) ANDed to the existing
+   947	        set.
+   948	        """
+   949	        self._not_support_combined_queries('exclude')
+   950	        return self._filter_or_exclude(True, *args, **kwargs)
+   951	
+   952	    def _filter_or_exclude(self, negate, *args, **kwargs):
+   953	        if args or kwargs:
+   954	            assert not self.query.is_sliced, \
+   955	                "Cannot filter a query once a slice has been taken."
+   956	
+   957	        clone = self._chain()
+   958	        if self._defer_next_filter:
+   959	            self._defer_next_filter = False
+   960	            clone._deferred_filter = negate, args, kwargs
+   961	        else:
+   962	            clone._filter_or_exclude_inplace(negate, *args, **kwargs)
+   963	        return clone
+   964	
+   965	    def _filter_or_exclude_inplace(self, negate, *args, **kwargs):
+   966	        if negate:
+   967	            self._query.add_q(~Q(*args, **kwargs))
+   968	        else:
+   969	            self._query.add_q(Q(*args, **kwargs))
+   970	
+   971	    def complex_filter(self, filter_obj):
+   972	        """
+   973	        Return a new QuerySet instance with filter_obj added to the filters.
+   974	
+   975	        filter_obj can be a Q object or a dictionary of keyword lookup
+   976	        arguments.
+   977	
+   978	        This exists to support framework features such as 'limit_choices_to',
+   979	        and usually it will be more natural to use other methods.
+   980	        """
+
+
+2026-03-06 09:11:07,127 - INFO - swea-agent-django__django-13158 - ========================= STEP 4 =========================
+2026-03-06 09:11:10,092 - INFO - swea-agent-django__django-13158 - 💭 THOUGHT
+
+
+🎬 ACTION
+grep -R "class EmptyResultSet\|set_empty\|combined_queries" -n /testbed/django/db/models/sql | head -n 40
+2026-03-06 09:11:10,441 - INFO - swea-agent-django__django-13158 - 🤖 MODEL INPUT
+OBSERVATION:
+/testbed/django/db/models/sql/compiler.py:437:            for query in self.query.combined_queries if not query.is_empty()
+/testbed/django/db/models/sql/compiler.py:440:            for query, compiler in zip(self.query.combined_queries, compilers):
+/testbed/django/db/models/sql/query.py:210:        self.combined_queries = ()
+/testbed/django/db/models/sql/query.py:1778:    def set_empty(self):
+/testbed/django/db/models/sql/query.py:1805:            self.set_empty()
+
+2026-03-06 09:11:10,448 - INFO - swea-agent-django__django-13158 - ========================= STEP 5 =========================
+2026-03-06 09:11:13,693 - INFO - swea-agent-django__django-13158 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/django/db/models/sql/query.py  --view_range 1740 1835
+2026-03-06 09:11:14,284 - INFO - swea-agent-django__django-13158 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/django/db/models/sql/query.py:
+  1740	        # database from tripping over IN (...,NULL,...) selects and returning
+  1741	        # nothing
+  1742	        col = query.select[0]
+  1743	        select_field = col.target
+  1744	        alias = col.alias
+  1745	        if self.is_nullable(select_field):
+  1746	            lookup_class = select_field.get_lookup('isnull')
+  1747	            lookup = lookup_class(select_field.get_col(alias), False)
+  1748	            query.where.add(lookup, AND)
+  1749	        if alias in can_reuse:
+  1750	            pk = select_field.model._meta.pk
+  1751	            # Need to add a restriction so that outer query's filters are in effect for
+  1752	            # the subquery, too.
+  1753	            query.bump_prefix(self)
+  1754	            lookup_class = select_field.get_lookup('exact')
+  1755	            # Note that the query.select[0].alias is different from alias
+  1756	            # due to bump_prefix above.
+  1757	            lookup = lookup_class(pk.get_col(query.select[0].alias),
+  1758	                                  pk.get_col(alias))
+  1759	            query.where.add(lookup, AND)
+  1760	            query.external_aliases[alias] = True
+  1761	
+  1762	        condition, needed_inner = self.build_filter(
+  1763	            ('%s__in' % trimmed_prefix, query),
+  1764	            current_negated=True, branch_negated=True, can_reuse=can_reuse)
+  1765	        if contains_louter:
+  1766	            or_null_condition, _ = self.build_filter(
+  1767	                ('%s__isnull' % trimmed_prefix, True),
+  1768	                current_negated=True, branch_negated=True, can_reuse=can_reuse)
+  1769	            condition.add(or_null_condition, OR)
+  1770	            # Note that the end result will be:
+  1771	            # (outercol NOT IN innerq AND outercol IS NOT NULL) OR outercol IS NULL.
+  1772	            # This might look crazy but due to how IN works, this seems to be
+  1773	            # correct. If the IS NOT NULL check is removed then outercol NOT
+  1774	            # IN will return UNKNOWN. If the IS NULL check is removed, then if
+  1775	            # outercol IS NULL we will not match the row.
+  1776	        return condition, needed_inner
+  1777	
+  1778	    def set_empty(self):
+  1779	        self.where.add(NothingNode(), AND)
+  1780	
+  1781	    def is_empty(self):
+  1782	        return any(isinstance(c, NothingNode) for c in self.where.children)
+  1783	
+  1784	    def set_limits(self, low=None, high=None):
+  1785	        """
+  1786	        Adjust the limits on the rows retrieved. Use low/high to set these,
+  1787	        as it makes it more Pythonic to read and write. When the SQL query is
+  1788	        created, convert them to the appropriate offset and limit values.
+  1789	
+  1790	        Apply any limits passed in here to the existing constraints. Add low
+  1791	        to the current low value and clamp both to any existing high value.
+  1792	        """
+  1793	        if high is not None:
+  1794	            if self.high_mark is not None:
+  1795	                self.high_mark = min(self.high_mark, self.low_mark + high)
+  1796	            else:
+  1797	                self.high_mark = self.low_mark + high
+  1798	        if low is not None:
+  1799	            if self.high_mark is not None:
+  1800	                self.low_mark = min(self.high_mark, self.low_mark + low)
+  1801	            else:
+  1802	                self.low_mark = self.low_mark + low
+  1803	
+  1804	        if self.low_mark == self.high_mark:
+  1805	            self.set_empty()
+  1806	
+  1807	    def clear_limits(self):
+  1808	        """Clear any existing limits."""
+  1809	        self.low_mark, self.high_mark = 0, None
+  1810	
+  1811	    @property
+  1812	    def is_sliced(self):
+  1813	        return self.low_mark != 0 or self.high_mark is not None
+  1814	
+  1815	    def has_limit_one(self):
+  1816	        return self.high_mark is not None and (self.high_mark - self.low_mark) == 1
+  1817	
+  1818	    def can_filter(self):
+  1819	        """
+  1820	        Return True if adding filters to this instance is still possible.
+  1821	
+  1822	        Typically, this means no limits or offsets have been put on the results.
+  1823	        """
+  1824	        return not self.is_sliced
+  1825	
+  1826	    def clear_select_clause(self):
+  1827	        """Remove all fields from SELECT clause."""
+  1828	        self.select = ()
+  1829	        self.default_cols = False
+  1830	        self.select_related = False
+  1831	        self.set_extra_mask(())
+  1832	        self.set_annotation_mask(())
+  1833	
+  1834	    def clear_select_fields(self):
+  1835	        """
+
+
+2026-03-06 09:11:14,341 - INFO - swea-agent-django__django-13158 - ========================= STEP 6 =========================
+2026-03-06 09:11:23,716 - INFO - swea-agent-django__django-13158 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor create /testbed/repro_none_union.py --file_text 'from django import forms
+from django.conf import settings
+from django.db import connection, models
+
+settings.configure(
+    INSTALLED_APPS=["django.contrib.contenttypes"],
+    DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}},
+    SECRET_KEY="x",
+)
+
+import django
+
+django.setup()
+
+
+class Publication(models.Model):
+    class Meta:
+        app_label = "tests"
+
+
+with connection.schema_editor() as schema_editor:
+    schema_editor.create_model(Publication)
+
+for i in range(1, 8):
+    Publication.objects.create()
+
+qs = Publication.objects.filter(id__lt=2).union(Publication.objects.filter(id__gt=5))
+empty = qs.none()
+print("union count", qs.count())
+print("none count", empty.count())
+print("none ids", list(empty.values_list("id", flat=True)))
+
+field = forms.ModelMultipleChoiceField(qs, required=False)
+print("clean empty", list(field.clean([]).values_list("id", flat=True)))
+'
+2026-03-06 09:11:24,260 - INFO - swea-agent-django__django-13158 - 🤖 MODEL INPUT
+OBSERVATION:
+File created successfully at: /testbed/repro_none_union.py
+
+2026-03-06 09:11:24,271 - INFO - swea-agent-django__django-13158 - ========================= STEP 7 =========================
+2026-03-06 09:11:27,023 - WARNING - swea-lm-django__django-13158 - Retrying LM query: attempt 1 (slept for 10.00s) due to InternalServerError: litellm.InternalServerError: OpenAIException - {
+  "error": {
+    "message": "The server had an error processing your request. Sorry about that! You can retry your request, or contact us through our help center at help.openai.com if you keep seeing this error. (Please include the request ID 1b832906-6056-4d00-825d-db8dffc379ab in your email.)",
+    "type": "server_error",
+    "param": null,
+    "code": null
+  }
+}
+2026-03-06 09:11:39,532 - INFO - swea-agent-django__django-13158 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python repro_none_union.py
+2026-03-06 09:11:40,262 - INFO - swea-agent-django__django-13158 - 🤖 MODEL INPUT
+OBSERVATION:
+Traceback (most recent call last):
+  File "repro_none_union.py", line 1, in <module>
+    from django import forms
+  File "/testbed/django/forms/__init__.py", line 6, in <module>
+    from django.forms.boundfield import *  # NOQA
+  File "/testbed/django/forms/boundfield.py", line 5, in <module>
+    from django.forms.widgets import Textarea, TextInput
+  File "/testbed/django/forms/widgets.py", line 26, in <module>
+    from .renderers import get_default_renderer
+  File "/testbed/django/forms/renderers.py", line 11, in <module>
+    from django.template.backends.jinja2 import Jinja2
+  File "/testbed/django/template/backends/jinja2.py", line 3, in <module>
+    import jinja2
+  File "/opt/sweagent_deps/jinja2/__init__.py", line 9, in <module>
+    from .environment import Environment as Environment
+  File "/opt/sweagent_deps/jinja2/environment.py", line 15, in <module>
+    from markupsafe import Markup
+  File "/opt/sweagent_deps/markupsafe/__init__.py", line 17
+    def __html__(self, /) -> str: ...
+                       ^
+SyntaxError: invalid syntax
+
+2026-03-06 09:11:40,276 - INFO - swea-agent-django__django-13158 - ========================= STEP 8 =========================
+2026-03-06 09:11:48,390 - INFO - swea-agent-django__django-13158 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/django/db/models/query.py   --old_str '    def none(self):
+        """Return an empty QuerySet."""
+        clone = self._chain()
+        clone.query.set_empty()
+        return clone
+' --new_str '    def none(self):
+        """Return an empty QuerySet."""
+        clone = self._chain()
+        clone.query.clear_ordering(True)
+        clone.query.clear_limits()
+        clone.query.combined_queries = ()
+        clone.query.set_empty()
+        return clone
+'
+2026-03-06 09:11:49,202 - INFO - swea-agent-django__django-13158 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/django/db/models/query.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/django/db/models/query.py:
+   914	            plain_field=F(field_name)
+   915	        ).values_list(
+   916	            'datetimefield', flat=True
+   917	        ).distinct().filter(plain_field__isnull=False).order_by(('-' if order == 'DESC' else '') + 'datetimefield')
+   918	
+   919	    def none(self):
+   920	        """Return an empty QuerySet."""
+   921	        clone = self._chain()
+   922	        clone.query.clear_ordering(True)
+   923	        clone.query.clear_limits()
+   924	        clone.query.combined_queries = ()
+   925	        clone.query.set_empty()
+   926	        return clone
+   927	
+   928	    ##################################################################
+   929	    # PUBLIC METHODS THAT ALTER ATTRIBUTES AND RETURN A NEW QUERYSET #
+   930	    ##################################################################
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-06 09:11:49,272 - INFO - swea-agent-django__django-13158 - ========================= STEP 9 =========================
+2026-03-06 09:11:59,443 - WARNING - swea-lm-django__django-13158 - Token budget exhausted: 28729 > 25000
+2026-03-06 09:11:59,452 - WARNING - swea-agent-django__django-13158 - Exit due to token budget exhaustion
+2026-03-06 09:11:59,455 - WARNING - swea-agent-django__django-13158 - Attempting autosubmission after error
+2026-03-06 09:11:59,534 - INFO - swea-agent-django__django-13158 - Executing submission command git add -A && git diff --cached > /tmp/model.patch in /testbed
+2026-03-06 09:11:59,790 - INFO - swea-agent-django__django-13158 - Found submission: diff --git a/django/db/models/query.py b/django/db/models/query.py
+index 07d6ffd4ca..e8c48a5dc0 100644
+--- a/django/db/models/query.py
++++ b/django/db/models/query.py
+@@ -919,6 +919,9 @@ class QuerySet:
+     def none(self):
+         """Return an empty QuerySet."""
+         clone = self._chain()
++        clone.query.clear_ordering(True)
++        clone.query.clear_limits()
++        clone.query.combined_queries = ()
+         clone.query.set_empty()
+         return clone
+ 
+diff --git a/repro_none_union.py b/repro_none_union.py
+new file mode 100644
+index 0000000000..eb067d30f4
+--- /dev/null
++++ b/repro_none_union.py
+@@ -0,0 +1,34 @@
++from django import forms
++from django.conf import settings
++from django.db import connection, models
++
++settings.configure(
++    INSTALLED_APPS=["django.contrib.contenttypes"],
++    DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}},
++    SECRET_KEY="x",
++)
++
++import django
++
++django.setup()
++
++
++class Publication(models.Model):
++    class Meta:
++        app_label = "tests"
++
++
++with connection.schema_editor() as schema_editor:
++    schema_editor.create_model(Publication)
++
++for i in range(1, 8):
++    Publication.objects.create()
++
++qs = Publication.objects.filter(id__lt=2).union(Publication.objects.filter(id__gt=5))
++empty = qs.none()
++print("union count", qs.count())
++print("none count", empty.count())
++print("none ids", list(empty.values_list("id", flat=True)))
++
++field = forms.ModelMultipleChoiceField(qs, required=False)
++print("clean empty", list(field.clean([]).values_list("id", flat=True)))
+
+2026-03-06 09:11:59,791 - INFO - swea-agent-django__django-13158 - Exiting with autosubmission
+2026-03-06 09:11:59,793 - INFO - swea-agent-django__django-13158 - 🤖 MODEL INPUT
+OBSERVATION:
+Exited (autosubmitted)
+2026-03-06 09:11:59,828 - INFO - swea-agent-django__django-13158 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok25k_mt8_probev3_rerun2/django__django-13158/django__django-13158.traj
+2026-03-06 09:11:59,837 - INFO - swea-env-django__django-13158 - Beginning environment shutdown...

@@ -1,0 +1,958 @@
+2026-03-07 11:51:53,370 - INFO - rex-deploy-django__django-12708 - Starting container docker.ioswebenchsweb.eval.x86_64.django_1776_django-12708latest-3a5f4cad-fcd4-42c1-a140-47bdea74513b with image docker.io/swebench/sweb.eval.x86_64.django_1776_django-12708:latest serving on port 45389
+2026-03-07 11:51:53,373 - INFO - rex-deploy-django__django-12708 - Starting runtime at 45389
+2026-03-07 11:51:55,197 - INFO - rex-deploy-django__django-12708 - Runtime started in 1.82s
+2026-03-07 11:51:56,266 - INFO - swea-env-django__django-12708 - Environment Initialized
+2026-03-07 11:51:57,524 - INFO - swea-agent-django__django-12708 - Setting up agent for instance django__django-12708
+2026-03-07 11:51:57,525 - INFO - swea-agent-django__django-12708 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.4__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok100k_mt8_probev3_gpt54_rerun1/django__django-12708/django__django-12708.traj
+2026-03-07 11:52:31,560 - INFO - swea-tools-django__django-12708 - Resetting tools
+2026-03-07 11:52:32,077 - INFO - swea-agent-django__django-12708 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-07 11:52:32,395 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+Migration crashes deleting an index_together if there is a unique_together on the same fields
+Description
+	
+Happens with Django 1.11.10
+Steps to reproduce:
+1) Create models with 2 fields, add 2 same fields to unique_together and to index_together
+2) Delete index_together -> Fail
+It will fail at django/db/backends/base/schema.py, line 378, in _delete_composed_index(), ValueError: Found wrong number (2) of constraints for as this one will find two constraints, the _uniq and the _idx one. No way to get out of this...
+The worst in my case is that happened as I wanted to refactor my code to use the "new" (Dj 1.11) Options.indexes feature. I am actually not deleting the index, just the way it is declared in my code.
+I think there are 2 different points here:
+1) The deletion of index_together should be possible alone or made coherent (migrations side?) with unique_together
+2) Moving the declaration of an index should not result in an index re-creation
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-07 11:52:32,396 - INFO - swea-agent-django__django-12708 - ========================= STEP 1 =========================
+2026-03-07 11:52:35,535 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -R "_delete_composed_index\|index_together\|unique_together" -n django/db/backends/base/schema.py django/db/models/options.py django/db/migrations 2>/dev/null | head -200
+2026-03-07 11:52:35,887 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+django/db/backends/base/schema.py:149:        # Add any unique_togethers (always deferred, as some fields might be
+django/db/backends/base/schema.py:151:        for fields in model._meta.unique_together:
+django/db/backends/base/schema.py:326:        # Add any field index and index_together's (deferred as SQLite _remake_table needs it)
+django/db/backends/base/schema.py:370:    def alter_unique_together(self, model, old_unique_together, new_unique_together):
+django/db/backends/base/schema.py:372:        Deal with a model changing its unique_together. The input
+django/db/backends/base/schema.py:373:        unique_togethers must be doubly-nested, not the single-nested
+django/db/backends/base/schema.py:376:        olds = {tuple(fields) for fields in old_unique_together}
+django/db/backends/base/schema.py:377:        news = {tuple(fields) for fields in new_unique_together}
+django/db/backends/base/schema.py:380:            self._delete_composed_index(model, fields, {'unique': True}, self.sql_delete_unique)
+django/db/backends/base/schema.py:386:    def alter_index_together(self, model, old_index_together, new_index_together):
+django/db/backends/base/schema.py:388:        Deal with a model changing its index_together. The input
+django/db/backends/base/schema.py:389:        index_togethers must be doubly-nested, not the single-nested
+django/db/backends/base/schema.py:392:        olds = {tuple(fields) for fields in old_index_together}
+django/db/backends/base/schema.py:393:        news = {tuple(fields) for fields in new_index_together}
+django/db/backends/base/schema.py:396:            self._delete_composed_index(model, fields, {'index': True}, self.sql_delete_index)
+django/db/backends/base/schema.py:402:    def _delete_composed_index(self, model, fields, constraint_kwargs, sql):
+django/db/backends/base/schema.py:991:        index_together, Meta.indexes) for the specified model.
+django/db/backends/base/schema.py:999:        for field_names in model._meta.index_together:
+django/db/models/options.py:28:    'unique_together', 'permissions', 'get_latest_by', 'order_with_respect_to',
+django/db/models/options.py:30:    'auto_created', 'index_together', 'apps', 'default_permissions',
+django/db/models/options.py:89:        self.unique_together = []
+django/db/models/options.py:90:        self.index_together = []
+django/db/models/options.py:179:            self.unique_together = normalize_together(self.unique_together)
+django/db/models/options.py:180:            self.index_together = normalize_together(self.index_together)
+django/db/migrations/autodetector.py:187:        self.generate_altered_unique_together()
+django/db/migrations/autodetector.py:188:        self.generate_altered_index_together()
+django/db/migrations/autodetector.py:426:        # Field is removed and part of an index/unique_together
+django/db/migrations/autodetector.py:519:        be deferred (e.g. unique_together, index_together).
+django/db/migrations/autodetector.py:551:            # Are there indexes/unique|index_together to defer?
+django/db/migrations/autodetector.py:554:            unique_together = model_state.options.pop('unique_together', None)
+django/db/migrations/autodetector.py:555:            index_together = model_state.options.pop('index_together', None)
+django/db/migrations/autodetector.py:631:            if unique_together:
+django/db/migrations/autodetector.py:636:                        unique_together=unique_together,
+django/db/migrations/autodetector.py:640:            if index_together:
+django/db/migrations/autodetector.py:645:                        index_together=index_together,
+django/db/migrations/autodetector.py:744:            unique_together = model_state.options.pop('unique_together', None)
+django/db/migrations/autodetector.py:745:            index_together = model_state.options.pop('index_together', None)
+django/db/migrations/autodetector.py:746:            if unique_together:
+django/db/migrations/autodetector.py:751:                        unique_together=None,
+django/db/migrations/autodetector.py:754:            if index_together:
+django/db/migrations/autodetector.py:759:                        index_together=None,
+django/db/migrations/autodetector.py:899:            # order_with_respect_to or index/unique_together operation;
+django/db/migrations/autodetector.py:1126:    def generate_altered_unique_together(self):
+django/db/migrations/autodetector.py:1129:    def generate_altered_index_together(self):
+django/db/migrations/operations/fields.py:308:        # Fix index/unique_together to refer to the new field
+django/db/migrations/operations/fields.py:310:        for option in ('index_together', 'unique_together'):
+django/db/migrations/operations/models.py:191:                for option_name in ('unique_together', 'index_together'):
+django/db/migrations/operations/models.py:217:                for option_name in ('unique_together', 'index_together'):
+django/db/migrations/operations/models.py:532:    Change the value of unique_together to the target one.
+django/db/migrations/operations/models.py:533:    Input value of unique_together must be a set of tuples.
+django/db/migrations/operations/models.py:535:    option_name = 'unique_together'
+django/db/migrations/operations/models.py:537:    def __init__(self, name, unique_together):
+django/db/migrations/operations/models.py:538:        super().__init__(name, unique_together)
+django/db/migrations/operations/models.py:543:    Change the value of index_together to the target one.
+django/db/migrations/operations/models.py:544:    Input value of index_together must be a set of tuples.
+django/db/migrations/operations/models.py:546:    option_name = "index_together"
+django/db/migrations/operations/models.py:548:    def __init__(self, name, index_together):
+django/db/migrations/operations/models.py:549:        super().__init__(name, index_together)
+django/db/migrations/state.py:434:                if name == "unique_together":
+django/db/migrations/state.py:435:                    ut = model._meta.original_attrs["unique_together"]
+django/db/migrations/state.py:437:                elif name == "index_together":
+django/db/migrations/state.py:438:                    it = model._meta.original_attrs["index_together"]
+django/db/migrations/state.py:453:            for key in ["unique_together", "index_together", "order_with_respect_to"]:
+
+2026-03-07 11:52:35,891 - INFO - swea-agent-django__django-12708 - ========================= STEP 2 =========================
+2026-03-07 11:52:40,117 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/django/db/backends/base/schema.py  --view_range 390 460
+2026-03-07 11:52:40,691 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/django/db/backends/base/schema.py:
+   390	        ["foo", "bar"] format.
+   391	        """
+   392	        olds = {tuple(fields) for fields in old_index_together}
+   393	        news = {tuple(fields) for fields in new_index_together}
+   394	        # Deleted indexes
+   395	        for fields in olds.difference(news):
+   396	            self._delete_composed_index(model, fields, {'index': True}, self.sql_delete_index)
+   397	        # Created indexes
+   398	        for field_names in news.difference(olds):
+   399	            fields = [model._meta.get_field(field) for field in field_names]
+   400	            self.execute(self._create_index_sql(model, fields, suffix="_idx"))
+   401	
+   402	    def _delete_composed_index(self, model, fields, constraint_kwargs, sql):
+   403	        meta_constraint_names = {constraint.name for constraint in model._meta.constraints}
+   404	        meta_index_names = {constraint.name for constraint in model._meta.indexes}
+   405	        columns = [model._meta.get_field(field).column for field in fields]
+   406	        constraint_names = self._constraint_names(
+   407	            model, columns, exclude=meta_constraint_names | meta_index_names,
+   408	            **constraint_kwargs
+   409	        )
+   410	        if len(constraint_names) != 1:
+   411	            raise ValueError("Found wrong number (%s) of constraints for %s(%s)" % (
+   412	                len(constraint_names),
+   413	                model._meta.db_table,
+   414	                ", ".join(columns),
+   415	            ))
+   416	        self.execute(self._delete_constraint_sql(sql, model, constraint_names[0]))
+   417	
+   418	    def alter_db_table(self, model, old_db_table, new_db_table):
+   419	        """Rename the table a model points to."""
+   420	        if (old_db_table == new_db_table or
+   421	            (self.connection.features.ignores_table_name_case and
+   422	                old_db_table.lower() == new_db_table.lower())):
+   423	            return
+   424	        self.execute(self.sql_rename_table % {
+   425	            "old_table": self.quote_name(old_db_table),
+   426	            "new_table": self.quote_name(new_db_table),
+   427	        })
+   428	        # Rename all references to the old table name.
+   429	        for sql in self.deferred_sql:
+   430	            if isinstance(sql, Statement):
+   431	                sql.rename_table_references(old_db_table, new_db_table)
+   432	
+   433	    def alter_db_tablespace(self, model, old_db_tablespace, new_db_tablespace):
+   434	        """Move a model's table between tablespaces."""
+   435	        self.execute(self.sql_retablespace_table % {
+   436	            "table": self.quote_name(model._meta.db_table),
+   437	            "old_tablespace": self.quote_name(old_db_tablespace),
+   438	            "new_tablespace": self.quote_name(new_db_tablespace),
+   439	        })
+   440	
+   441	    def add_field(self, model, field):
+   442	        """
+   443	        Create a field on a model. Usually involves adding a column, but may
+   444	        involve adding a table instead (for M2M fields).
+   445	        """
+   446	        # Special-case implicit M2M tables
+   447	        if field.many_to_many and field.remote_field.through._meta.auto_created:
+   448	            return self.create_model(field.remote_field.through)
+   449	        # Get the column's definition
+   450	        definition, params = self.column_sql(model, field, include_default=True)
+   451	        # It might not actually have a column behind it
+   452	        if definition is None:
+   453	            return
+   454	        # Check constraints can go on the column SQL here
+   455	        db_params = field.db_parameters(connection=self.connection)
+   456	        if db_params['check']:
+   457	            definition += " " + self.sql_check_constraint % db_params
+   458	        if field.remote_field and self.connection.features.supports_foreign_keys and field.db_constraint:
+   459	            constraint_suffix = '_fk_%(to_table)s_%(to_column)s'
+   460	            # Add FK constraint inline, if supported.
+
+
+2026-03-07 11:52:40,696 - INFO - swea-agent-django__django-12708 - ========================= STEP 3 =========================
+2026-03-07 11:52:44,682 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.test_sqlite')
+from django.conf import settings
+print(settings.DATABASES)
+PY
+2026-03-07 11:52:45,392 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+{'default': {'ENGINE': 'django.db.backends.sqlite3'}, 'other': {'ENGINE': 'django.db.backends.sqlite3'}}
+
+2026-03-07 11:52:45,398 - INFO - swea-agent-django__django-12708 - ========================= STEP 4 =========================
+2026-03-07 11:52:56,831 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && cat > reproduce_index_together_bug.py <<'PY'
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.test_sqlite')
+
+import django
+from django.db import connection, models
+from django.db.backends.base.schema import BaseDatabaseSchemaEditor
+
+django.setup()
+
+class TestModel(models.Model):
+    a = models.IntegerField()
+    b = models.IntegerField()
+
+    class Meta:
+        app_label = 'tests'
+        index_together = [('a', 'b')]
+        unique_together = [('a', 'b')]
+
+with connection.schema_editor() as editor:
+    table = TestModel._meta.db_table
+    existing = connection.introspection.table_names()
+    if table in existing:
+        editor.delete_model(TestModel)
+    editor.create_model(TestModel)
+
+# Simulate migration removing index_together but keeping unique_together.
+old = [('a', 'b')]
+new = []
+
+try:
+    with connection.schema_editor() as editor:
+        editor.alter_index_together(TestModel, old, new)
+    print('SUCCESS')
+except Exception as e:
+    print(type(e).__name__, e)
+    raise
+finally:
+    with connection.schema_editor() as editor:
+        if TestModel._meta.db_table in connection.introspection.table_names():
+            editor.delete_model(TestModel)
+PY
+python reproduce_index_together_bug.py
+2026-03-07 11:52:57,737 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+Traceback (most recent call last):
+  File "reproduce_index_together_bug.py", line 5, in <module>
+    from django.db import connection, models
+  File "/testbed/django/db/models/__init__.py", line 3, in <module>
+    from django.db.models.aggregates import *  # NOQA
+  File "/testbed/django/db/models/aggregates.py", line 5, in <module>
+    from django.db.models.expressions import Case, Func, Star, When
+  File "/testbed/django/db/models/expressions.py", line 8, in <module>
+    from django.db.models import fields
+  File "/testbed/django/db/models/fields/__init__.py", line 11, in <module>
+    from django import forms
+  File "/testbed/django/forms/__init__.py", line 6, in <module>
+    from django.forms.boundfield import *  # NOQA
+  File "/testbed/django/forms/boundfield.py", line 5, in <module>
+    from django.forms.widgets import Textarea, TextInput
+  File "/testbed/django/forms/widgets.py", line 26, in <module>
+    from .renderers import get_default_renderer
+  File "/testbed/django/forms/renderers.py", line 11, in <module>
+    from django.template.backends.jinja2 import Jinja2
+  File "/testbed/django/template/backends/jinja2.py", line 3, in <module>
+    import jinja2
+  File "/opt/sweagent_deps/jinja2/__init__.py", line 9, in <module>
+    from .environment import Environment as Environment
+  File "/opt/sweagent_deps/jinja2/environment.py", line 15, in <module>
+    from markupsafe import Markup
+  File "/opt/sweagent_deps/markupsafe/__init__.py", line 17
+    def __html__(self, /) -> str: ...
+                       ^
+SyntaxError: invalid syntax
+
+2026-03-07 11:52:57,856 - INFO - swea-agent-django__django-12708 - ========================= STEP 5 =========================
+2026-03-07 11:53:01,000 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && sed -n '1,220p' tests/test_sqlite.py
+2026-03-07 11:53:01,567 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+# This is an example test settings file for use with the Django test suite.
+#
+# The 'sqlite3' backend requires only the ENGINE setting (an in-
+# memory database will be used). All other backends will require a
+# NAME and potentially authentication information. See the
+# following section in the docs for more information:
+#
+# https://docs.djangoproject.com/en/dev/internals/contributing/writing-code/unit-tests/
+#
+# The different databases that Django supports behave differently in certain
+# situations, so it is recommended to run the test suite against as many
+# database backends as possible.  You may want to create a separate settings
+# file for each of the backends you test against.
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+    },
+    'other': {
+        'ENGINE': 'django.db.backends.sqlite3',
+    }
+}
+
+SECRET_KEY = "django_tests_secret_key"
+
+# Use a fast hasher to speed up tests.
+PASSWORD_HASHERS = [
+    'django.contrib.auth.hashers.MD5PasswordHasher',
+]
+
+2026-03-07 11:53:01,619 - INFO - swea-agent-django__django-12708 - ========================= STEP 6 =========================
+2026-03-07 11:53:12,508 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && cat > reproduce_index_together_bug.py <<'PY'
+import os
+import sys
+import types
+
+# Stub jinja2 to avoid importing external dependency versions incompatible with this Python.
+jinja2 = types.ModuleType('jinja2')
+jinja2.Environment = type('Environment', (), {})
+jinja2.FileSystemLoader = type('FileSystemLoader', (), {})
+jinja2.Template = type('Template', (), {})
+jinja2.TemplateDoesNotExist = type('TemplateDoesNotExist', (Exception,), {})
+jinja2.TemplateSyntaxError = type('TemplateSyntaxError', (Exception,), {})
+sys.modules.setdefault('jinja2', jinja2)
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.test_sqlite')
+
+import django
+from django.db import connection, models
+
+django.setup()
+
+class TestModel(models.Model):
+    a = models.IntegerField()
+    b = models.IntegerField()
+
+    class Meta:
+        app_label = 'tests'
+        index_together = [('a', 'b')]
+        unique_together = [('a', 'b')]
+
+with connection.schema_editor() as editor:
+    table = TestModel._meta.db_table
+    if table in connection.introspection.table_names():
+        editor.delete_model(TestModel)
+    editor.create_model(TestModel)
+
+try:
+    with connection.schema_editor() as editor:
+        editor.alter_index_together(TestModel, [('a', 'b')], [])
+    print('SUCCESS')
+except Exception as e:
+    print(type(e).__name__, e)
+    raise
+finally:
+    with connection.schema_editor() as editor:
+        if TestModel._meta.db_table in connection.introspection.table_names():
+            editor.delete_model(TestModel)
+PY
+python reproduce_index_together_bug.py
+2026-03-07 11:53:13,653 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+Traceback (most recent call last):
+  File "reproduce_index_together_bug.py", line 30, in <module>
+    with connection.schema_editor() as editor:
+  File "/testbed/django/db/backends/sqlite3/schema.py", line 24, in __enter__
+    if not self.connection.disable_constraint_checking():
+  File "/testbed/django/db/backends/sqlite3/base.py", line 299, in disable_constraint_checking
+    with self.cursor() as cursor:
+  File "/testbed/django/utils/asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "/testbed/django/db/backends/base/base.py", line 259, in cursor
+    return self._cursor()
+  File "/testbed/django/db/backends/base/base.py", line 235, in _cursor
+    self.ensure_connection()
+  File "/testbed/django/utils/asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "/testbed/django/db/backends/base/base.py", line 219, in ensure_connection
+    self.connect()
+  File "/testbed/django/utils/asyncio.py", line 26, in inner
+    return func(*args, **kwargs)
+  File "/testbed/django/db/backends/base/base.py", line 199, in connect
+    conn_params = self.get_connection_params()
+  File "/testbed/django/db/backends/sqlite3/base.py", line 177, in get_connection_params
+    "settings.DATABASES is improperly configured. "
+django.core.exceptions.ImproperlyConfigured: settings.DATABASES is improperly configured. Please supply the NAME value.
+
+2026-03-07 11:53:13,665 - INFO - swea-agent-django__django-12708 - ========================= STEP 7 =========================
+2026-03-07 11:53:14,352 - WARNING - swea-lm-django__django-12708 - Retrying LM query: attempt 1 (slept for 10.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 11:53:24,822 - WARNING - swea-lm-django__django-12708 - Retrying LM query: attempt 2 (slept for 20.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 11:53:47,060 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && cat > reproduce_index_together_bug.py <<'PY'
+import os
+import sys
+import types
+
+jinja2 = types.ModuleType('jinja2')
+jinja2.Environment = type('Environment', (), {})
+jinja2.FileSystemLoader = type('FileSystemLoader', (), {})
+jinja2.Template = type('Template', (), {})
+jinja2.TemplateDoesNotExist = type('TemplateDoesNotExist', (Exception,), {})
+jinja2.TemplateSyntaxError = type('TemplateSyntaxError', (Exception,), {})
+sys.modules.setdefault('jinja2', jinja2)
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.test_sqlite')
+
+import django
+from django.conf import settings
+settings.DATABASES['default']['NAME'] = ':memory:'
+settings.DATABASES['other']['NAME'] = ':memory:'
+from django.db import connection, models
+
+django.setup()
+
+class TestModel(models.Model):
+    a = models.IntegerField()
+    b = models.IntegerField()
+
+    class Meta:
+        app_label = 'tests'
+        index_together = [('a', 'b')]
+        unique_together = [('a', 'b')]
+
+with connection.schema_editor() as editor:
+    editor.create_model(TestModel)
+
+try:
+    with connection.schema_editor() as editor:
+        editor.alter_index_together(TestModel, [('a', 'b')], [])
+    print('SUCCESS')
+except Exception as e:
+    print(type(e).__name__, e)
+    raise
+PY
+python reproduce_index_together_bug.py
+2026-03-07 11:53:48,284 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+ValueError Found wrong number (2) of constraints for tests_testmodel(a, b)
+Traceback (most recent call last):
+  File "reproduce_index_together_bug.py", line 37, in <module>
+    editor.alter_index_together(TestModel, [('a', 'b')], [])
+  File "/testbed/django/db/backends/base/schema.py", line 396, in alter_index_together
+    self._delete_composed_index(model, fields, {'index': True}, self.sql_delete_index)
+  File "/testbed/django/db/backends/base/schema.py", line 414, in _delete_composed_index
+    ", ".join(columns),
+ValueError: Found wrong number (2) of constraints for tests_testmodel(a, b)
+
+2026-03-07 11:53:48,359 - INFO - swea-agent-django__django-12708 - ========================= STEP 8 =========================
+2026-03-07 11:53:50,983 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -R "allows_multiple_constraints_on_same_fields\|multiple constraints" -n django/db/backends django/db | head -50
+2026-03-07 11:53:51,370 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+grep: django/db/backends/base/__pycache__/features.cpython-36.pyc: binary file matches
+django/db/backends/base/features.py:296:    allows_multiple_constraints_on_same_fields = True
+grep: django/db/backends/base/__pycache__/features.cpython-36.pyc: binary file matches
+django/db/backends/oracle/features.py:60:    allows_multiple_constraints_on_same_fields = False
+django/db/backends/base/features.py:296:    allows_multiple_constraints_on_same_fields = True
+django/db/backends/oracle/features.py:60:    allows_multiple_constraints_on_same_fields = False
+
+2026-03-07 11:53:51,384 - INFO - swea-agent-django__django-12708 - ========================= STEP 9 =========================
+2026-03-07 11:53:55,285 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/django/db/backends/base/features.py  --view_range 286 305
+2026-03-07 11:53:55,843 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/django/db/backends/base/features.py:
+   286	    # Does this backend require casting the results of CASE expressions used
+   287	    # in UPDATE statements to ensure the expression has the correct type?
+   288	    requires_casted_case_in_updates = False
+   289	
+   290	    # Does the backend support partial indexes (CREATE INDEX ... WHERE ...)?
+   291	    supports_partial_indexes = True
+   292	    supports_functions_in_partial_indexes = True
+   293	
+   294	    # Does the database allow more than one constraint or index on the same
+   295	    # field(s)?
+   296	    allows_multiple_constraints_on_same_fields = True
+   297	
+   298	    # Does the backend support boolean expressions in the SELECT clause?
+   299	    supports_boolean_expr_in_select_clause = True
+   300	
+   301	    def __init__(self, connection):
+   302	        self.connection = connection
+   303	
+   304	    @cached_property
+   305	    def supports_explaining_query_execution(self):
+
+
+2026-03-07 11:53:55,883 - INFO - swea-agent-django__django-12708 - ========================= STEP 10 =========================
+2026-03-07 11:54:00,626 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -R "_constraint_names(" -n django/db/backends | head -50
+2026-03-07 11:54:01,262 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+django/db/backends/base/schema.py:406:        constraint_names = self._constraint_names(
+django/db/backends/base/schema.py:509:            fk_names = self._constraint_names(model, [field.column], foreign_key=True)
+django/db/backends/base/schema.py:577:            fk_names = self._constraint_names(model, [old_field.column], foreign_key=True)
+django/db/backends/base/schema.py:591:            constraint_names = self._constraint_names(
+django/db/backends/base/schema.py:615:                rel_fk_names = self._constraint_names(
+django/db/backends/base/schema.py:635:            index_names = self._constraint_names(
+django/db/backends/base/schema.py:647:            constraint_names = self._constraint_names(
+django/db/backends/base/schema.py:1142:    def _constraint_names(self, model, column_names=None, unique=None,
+django/db/backends/base/schema.py:1173:        constraint_names = self._constraint_names(model, primary_key=True)
+django/db/backends/mysql/schema.py:126:            constraint_names = self._constraint_names(model, [first_field.column], index=True)
+
+2026-03-07 11:54:01,303 - INFO - swea-agent-django__django-12708 - ========================= STEP 11 =========================
+2026-03-07 11:54:04,215 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/django/db/backends/base/schema.py  --view_range 1138 1170
+2026-03-07 11:54:04,940 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/django/db/backends/base/schema.py:
+  1138	            table=Table(model._meta.db_table, self.quote_name),
+  1139	            name=self.quote_name(name),
+  1140	        )
+  1141	
+  1142	    def _constraint_names(self, model, column_names=None, unique=None,
+  1143	                          primary_key=None, index=None, foreign_key=None,
+  1144	                          check=None, type_=None, exclude=None):
+  1145	        """Return all constraint names matching the columns and conditions."""
+  1146	        if column_names is not None:
+  1147	            column_names = [
+  1148	                self.connection.introspection.identifier_converter(name)
+  1149	                for name in column_names
+  1150	            ]
+  1151	        with self.connection.cursor() as cursor:
+  1152	            constraints = self.connection.introspection.get_constraints(cursor, model._meta.db_table)
+  1153	        result = []
+  1154	        for name, infodict in constraints.items():
+  1155	            if column_names is None or column_names == infodict['columns']:
+  1156	                if unique is not None and infodict['unique'] != unique:
+  1157	                    continue
+  1158	                if primary_key is not None and infodict['primary_key'] != primary_key:
+  1159	                    continue
+  1160	                if index is not None and infodict['index'] != index:
+  1161	                    continue
+  1162	                if check is not None and infodict['check'] != check:
+  1163	                    continue
+  1164	                if foreign_key is not None and not infodict['foreign_key']:
+  1165	                    continue
+  1166	                if type_ is not None and infodict['type'] != type_:
+  1167	                    continue
+  1168	                if not exclude or name not in exclude:
+  1169	                    result.append(name)
+  1170	        return result
+
+
+2026-03-07 11:54:04,999 - INFO - swea-agent-django__django-12708 - ========================= STEP 12 =========================
+2026-03-07 11:54:12,999 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+import os, sys, types
+jinja2 = types.ModuleType('jinja2')
+jinja2.Environment = type('Environment', (), {})
+jinja2.FileSystemLoader = type('FileSystemLoader', (), {})
+jinja2.Template = type('Template', (), {})
+jinja2.TemplateDoesNotExist = type('TemplateDoesNotExist', (Exception,), {})
+jinja2.TemplateSyntaxError = type('TemplateSyntaxError', (Exception,), {})
+sys.modules.setdefault('jinja2', jinja2)
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.test_sqlite')
+import django
+from django.conf import settings
+settings.DATABASES['default']['NAME'] = ':memory:'
+settings.DATABASES['other']['NAME'] = ':memory:'
+from django.db import connection, models
+
+django.setup()
+class TestModel(models.Model):
+    a = models.IntegerField()
+    b = models.IntegerField()
+    class Meta:
+        app_label = 'tests'
+        index_together = [('a','b')]
+        unique_together = [('a','b')]
+with connection.schema_editor() as editor:
+    editor.create_model(TestModel)
+with connection.cursor() as cursor:
+    print(connection.introspection.get_constraints(cursor, TestModel._meta.db_table))
+PY
+2026-03-07 11:54:13,940 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+{'tests_testmodel_a_b_a43e5043_idx': {'columns': ['a', 'b'], 'primary_key': False, 'unique': False, 'foreign_key': None, 'check': False, 'index': True, 'type': 'idx', 'orders': ['ASC', 'ASC']}, 'tests_testmodel_a_b_a43e5043_uniq': {'columns': ['a', 'b'], 'primary_key': False, 'unique': True, 'foreign_key': None, 'check': False, 'index': True}, '__primary__': {'columns': ['id'], 'primary_key': True, 'unique': False, 'foreign_key': None, 'check': False, 'index': False}}
+
+2026-03-07 11:54:13,991 - INFO - swea-agent-django__django-12708 - ========================= STEP 13 =========================
+2026-03-07 11:54:26,734 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/django/db/backends/base/schema.py   --old_str '    def _delete_composed_index(self, model, fields, constraint_kwargs, sql):
+        meta_constraint_names = {constraint.name for constraint in model._meta.constraints}
+        meta_index_names = {constraint.name for constraint in model._meta.indexes}
+        columns = [model._meta.get_field(field).column for field in fields]
+        constraint_names = self._constraint_names(
+            model, columns, exclude=meta_constraint_names | meta_index_names,
+            **constraint_kwargs
+        )
+        if len(constraint_names) != 1:
+            raise ValueError("Found wrong number (%s) of constraints for %s(%s)" % (
+                len(constraint_names),
+                model._meta.db_table,
+                ", ".join(columns),
+            ))
+        self.execute(self._delete_constraint_sql(sql, model, constraint_names[0]))
+' --new_str '    def _delete_composed_index(self, model, fields, constraint_kwargs, sql):
+        meta_constraint_names = {constraint.name for constraint in model._meta.constraints}
+        meta_index_names = {constraint.name for constraint in model._meta.indexes}
+        columns = [model._meta.get_field(field).column for field in fields]
+        constraint_names = self._constraint_names(
+            model, columns, exclude=meta_constraint_names | meta_index_names,
+            **constraint_kwargs
+        )
+        if (
+            constraint_kwargs.get('"'"'index'"'"') and
+            self.connection.features.allows_multiple_constraints_on_same_fields
+        ):
+            default_name = self._create_index_name(model._meta.db_table, columns, suffix="_idx")
+            if default_name in constraint_names:
+                constraint_names = [default_name]
+        if len(constraint_names) != 1:
+            raise ValueError("Found wrong number (%s) of constraints for %s(%s)" % (
+                len(constraint_names),
+                model._meta.db_table,
+                ", ".join(columns),
+            ))
+        self.execute(self._delete_constraint_sql(sql, model, constraint_names[0]))
+'
+2026-03-07 11:54:27,222 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/django/db/backends/base/schema.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/django/db/backends/base/schema.py:
+   397	        # Created indexes
+   398	        for field_names in news.difference(olds):
+   399	            fields = [model._meta.get_field(field) for field in field_names]
+   400	            self.execute(self._create_index_sql(model, fields, suffix="_idx"))
+   401	
+   402	    def _delete_composed_index(self, model, fields, constraint_kwargs, sql):
+   403	        meta_constraint_names = {constraint.name for constraint in model._meta.constraints}
+   404	        meta_index_names = {constraint.name for constraint in model._meta.indexes}
+   405	        columns = [model._meta.get_field(field).column for field in fields]
+   406	        constraint_names = self._constraint_names(
+   407	            model, columns, exclude=meta_constraint_names | meta_index_names,
+   408	            **constraint_kwargs
+   409	        )
+   410	        if (
+   411	            constraint_kwargs.get('index') and
+   412	            self.connection.features.allows_multiple_constraints_on_same_fields
+   413	        ):
+   414	            default_name = self._create_index_name(model._meta.db_table, columns, suffix="_idx")
+   415	            if default_name in constraint_names:
+   416	                constraint_names = [default_name]
+   417	        if len(constraint_names) != 1:
+   418	            raise ValueError("Found wrong number (%s) of constraints for %s(%s)" % (
+   419	                len(constraint_names),
+   420	                model._meta.db_table,
+   421	                ", ".join(columns),
+   422	            ))
+   423	        self.execute(self._delete_constraint_sql(sql, model, constraint_names[0]))
+   424	
+   425	    def alter_db_table(self, model, old_db_table, new_db_table):
+   426	        """Rename the table a model points to."""
+   427	        if (old_db_table == new_db_table or
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-07 11:54:27,256 - INFO - swea-agent-django__django-12708 - ========================= STEP 14 =========================
+2026-03-07 11:54:27,809 - WARNING - swea-lm-django__django-12708 - Retrying LM query: attempt 1 (slept for 10.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 11:54:40,235 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python reproduce_index_together_bug.py
+2026-03-07 11:54:41,127 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+SUCCESS
+
+2026-03-07 11:54:41,161 - INFO - swea-agent-django__django-12708 - ========================= STEP 15 =========================
+2026-03-07 11:54:51,690 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && cat > edgecase_check.py <<'PY'
+import os
+import sys
+import types
+
+jinja2 = types.ModuleType('jinja2')
+jinja2.Environment = type('Environment', (), {})
+jinja2.FileSystemLoader = type('FileSystemLoader', (), {})
+jinja2.Template = type('Template', (), {})
+jinja2.TemplateDoesNotExist = type('TemplateDoesNotExist', (Exception,), {})
+jinja2.TemplateSyntaxError = type('TemplateSyntaxError', (Exception,), {})
+sys.modules.setdefault('jinja2', jinja2)
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.test_sqlite')
+
+import django
+from django.conf import settings
+settings.DATABASES['default']['NAME'] = ':memory:'
+settings.DATABASES['other']['NAME'] = ':memory:'
+from django.db import connection, models
+
+django.setup()
+
+class UniqueOnly(models.Model):
+    a = models.IntegerField()
+    b = models.IntegerField()
+    class Meta:
+        app_label = 'tests'
+        unique_together = [('a', 'b')]
+
+class IndexOnly(models.Model):
+    a = models.IntegerField()
+    b = models.IntegerField()
+    class Meta:
+        app_label = 'tests'
+        index_together = [('a', 'b')]
+
+# Unique deletion still works.
+with connection.schema_editor() as editor:
+    editor.create_model(UniqueOnly)
+with connection.schema_editor() as editor:
+    editor.alter_unique_together(UniqueOnly, [('a', 'b')], [])
+print('unique deletion ok')
+
+# Plain index deletion still works.
+with connection.schema_editor() as editor:
+    editor.create_model(IndexOnly)
+with connection.schema_editor() as editor:
+    editor.alter_index_together(IndexOnly, [('a', 'b')], [])
+print('index deletion ok')
+PY
+python edgecase_check.py
+2026-03-07 11:54:52,624 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+unique deletion ok
+index deletion ok
+
+2026-03-07 11:54:52,690 - INFO - swea-agent-django__django-12708 - ========================= STEP 16 =========================
+2026-03-07 11:54:55,422 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-07 11:54:56,059 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+Thank you for your work on this issue. Please carefully follow the steps below to help review your changes.
+
+1. If you made any changes to your code after running the reproduction script, please run the reproduction script again.
+  If the reproduction script is failing, please revisit your changes and make sure they are correct.
+  If you have already removed your reproduction script, please ignore this step.
+2. Remove your reproduction script (if you haven't done so already).
+3. If you have modified any TEST files, please revert them to the state they had before you started fixing the issue.
+  You can do this with `git checkout -- /path/to/test/file.py`. Use below <diff> to find the files you need to revert.
+4. Run the submit command again to confirm.
+
+Here is a list of all of your changes:
+
+<diff>
+diff --git a/django/db/backends/base/schema.py b/django/db/backends/base/schema.py
+index 61f88401ab..17bbee7238 100644
+--- a/django/db/backends/base/schema.py
++++ b/django/db/backends/base/schema.py
+@@ -407,6 +407,13 @@ class BaseDatabaseSchemaEditor:
+             model, columns, exclude=meta_constraint_names | meta_index_names,
+             **constraint_kwargs
+         )
++        if (
++            constraint_kwargs.get('index') and
++            self.connection.features.allows_multiple_constraints_on_same_fields
++        ):
++            default_name = self._create_index_name(model._meta.db_table, columns, suffix="_idx")
++            if default_name in constraint_names:
++                constraint_names = [default_name]
+         if len(constraint_names) != 1:
+             raise ValueError("Found wrong number (%s) of constraints for %s(%s)" % (
+                 len(constraint_names),
+diff --git a/edgecase_check.py b/edgecase_check.py
+new file mode 100644
+index 0000000000..7f94e89154
+--- /dev/null
++++ b/edgecase_check.py
+@@ -0,0 +1,49 @@
++import os
++import sys
++import types
++
++jinja2 = types.ModuleType('jinja2')
++jinja2.Environment = type('Environment', (), {})
++jinja2.FileSystemLoader = type('FileSystemLoader', (), {})
++jinja2.Template = type('Template', (), {})
++jinja2.TemplateDoesNotExist = type('TemplateDoesNotExist', (Exception,), {})
++jinja2.TemplateSyntaxError = type('TemplateSyntaxError', (Exception,), {})
++sys.modules.setdefault('jinja2', jinja2)
++
++os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.test_sqlite')
++
++import django
++from django.conf import settings
++settings.DATABASES['default']['NAME'] = ':memory:'
++settings.DATABASES['other']['NAME'] = ':memory:'
++from django.db import connection, models
++
++django.setup()
++
++class UniqueOnly(models.Model):
++    a = models.IntegerField()
++    b = models.IntegerField()
++    class Meta:
++        app_label = 'tests'
++        unique_together = [('a', 'b')]
++
++class IndexOnly(models.Model):
++    a = models.IntegerField()
++    b = models.IntegerField()
++    class Meta:
++        app_label = 'tests'
++        index_together = [('a', 'b')]
++
++# Unique deletion still works.
++with connection.schema_editor() as editor:
++    editor.create_model(UniqueOnly)
++with connection.schema_editor() as editor:
++    editor.alter_unique_together(UniqueOnly, [('a', 'b')], [])
++print('unique deletion ok')
++
++# Plain index deletion still works.
++with connection.schema_editor() as editor:
++    editor.create_model(IndexOnly)
++with connection.schema_editor() as editor:
++    editor.alter_index_together(IndexOnly, [('a', 'b')], [])
++print('index deletion ok')
+diff --git a/reproduce_index_together_bug.py b/reproduce_index_together_bug.py
+new file mode 100644
+index 0000000000..043677372f
+--- /dev/null
++++ b/reproduce_index_together_bug.py
+@@ -0,0 +1,41 @@
++import os
++import sys
++import types
++
++jinja2 = types.ModuleType('jinja2')
++jinja2.Environment = type('Environment', (), {})
++jinja2.FileSystemLoader = type('FileSystemLoader', (), {})
++jinja2.Template = type('Template', (), {})
++jinja2.TemplateDoesNotExist = type('TemplateDoesNotExist', (Exception,), {})
++jinja2.TemplateSyntaxError = type('TemplateSyntaxError', (Exception,), {})
++sys.modules.setdefault('jinja2', jinja2)
++
++os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tests.test_sqlite')
++
++import django
++from django.conf import settings
++settings.DATABASES['default']['NAME'] = ':memory:'
++settings.DATABASES['other']['NAME'] = ':memory:'
++from django.db import connection, models
++
++django.setup()
++
++class TestModel(models.Model):
++    a = models.IntegerField()
++    b = models.IntegerField()
++
++    class Meta:
++        app_label = 'tests'
++        index_together = [('a', 'b')]
++        unique_together = [('a', 'b')]
++
++with connection.schema_editor() as editor:
++    editor.create_model(TestModel)
++
++try:
++    with connection.schema_editor() as editor:
++        editor.alter_index_together(TestModel, [('a', 'b')], [])
++    print('SUCCESS')
++except Exception as e:
++    print(type(e).__name__, e)
++    raise
+
+</diff>
+
+
+2026-03-07 11:54:56,144 - INFO - swea-agent-django__django-12708 - ========================= STEP 17 =========================
+2026-03-07 11:55:01,453 - INFO - swea-agent-django__django-12708 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && rm -f reproduce_index_together_bug.py edgecase_check.py && git status --short
+2026-03-07 11:55:02,176 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+M  django/db/backends/base/schema.py
+AD edgecase_check.py
+AD reproduce_index_together_bug.py
+
+2026-03-07 11:55:02,302 - INFO - swea-agent-django__django-12708 - ========================= STEP 18 =========================
+2026-03-07 11:55:06,188 - WARNING - swea-lm-django__django-12708 - Token budget exhausted: 108527 > 100000
+2026-03-07 11:55:06,191 - WARNING - swea-agent-django__django-12708 - Exit due to token budget exhaustion
+2026-03-07 11:55:06,194 - WARNING - swea-agent-django__django-12708 - Attempting autosubmission after error
+2026-03-07 11:55:06,206 - INFO - swea-agent-django__django-12708 - Executing submission command git add -A && git diff --cached > /tmp/model.patch in /testbed
+2026-03-07 11:55:06,393 - INFO - swea-agent-django__django-12708 - Found submission: diff --git a/django/db/backends/base/schema.py b/django/db/backends/base/schema.py
+index 61f88401ab..17bbee7238 100644
+--- a/django/db/backends/base/schema.py
++++ b/django/db/backends/base/schema.py
+@@ -407,6 +407,13 @@ class BaseDatabaseSchemaEditor:
+             model, columns, exclude=meta_constraint_names | meta_index_names,
+             **constraint_kwargs
+         )
++        if (
++            constraint_kwargs.get('index') and
++            self.connection.features.allows_multiple_constraints_on_same_fields
++        ):
++            default_name = self._create_index_name(model._meta.db_table, columns, suffix="_idx")
++            if default_name in constraint_names:
++                constraint_names = [default_name]
+         if len(constraint_names) != 1:
+             raise ValueError("Found wrong number (%s) of constraints for %s(%s)" % (
+                 len(constraint_names),
+
+2026-03-07 11:55:06,393 - INFO - swea-agent-django__django-12708 - Exiting with autosubmission
+2026-03-07 11:55:06,395 - INFO - swea-agent-django__django-12708 - 🤖 MODEL INPUT
+OBSERVATION:
+Exited (autosubmitted)
+2026-03-07 11:55:06,453 - INFO - swea-agent-django__django-12708 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.4__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok100k_mt8_probev3_gpt54_rerun1/django__django-12708/django__django-12708.traj
+2026-03-07 11:55:06,464 - INFO - swea-env-django__django-12708 - Beginning environment shutdown...

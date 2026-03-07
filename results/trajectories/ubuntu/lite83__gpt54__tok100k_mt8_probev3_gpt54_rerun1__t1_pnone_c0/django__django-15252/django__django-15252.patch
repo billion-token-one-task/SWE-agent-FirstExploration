@@ -1,0 +1,34 @@
+diff --git a/django/forms/boundfield.py b/django/forms/boundfield.py
+index 2ff8b0ee26..a061f15f87 100644
+--- a/django/forms/boundfield.py
++++ b/django/forms/boundfield.py
+@@ -277,7 +277,7 @@ class BoundWidget:
+ 
+     @property
+     def id_for_label(self):
+-        return 'id_%s_%s' % (self.data['name'], self.data['index'])
++        return self.data['attrs'].get('id')
+ 
+     @property
+     def choice_label(self):
+diff --git a/repro_boundwidget_id.py b/repro_boundwidget_id.py
+new file mode 100644
+index 0000000000..931593e5ec
+--- /dev/null
++++ b/repro_boundwidget_id.py
+@@ -0,0 +1,15 @@
++from django.conf import settings
++if not settings.configured:
++    settings.configure(USE_I18N=False, SECRET_KEY='test', INSTALLED_APPS=[])
++
++from django import forms
++
++class F(forms.Form):
++    beatles = forms.MultipleChoiceField(
++        choices=[('j', 'John'), ('p', 'Paul')],
++        widget=forms.CheckboxSelectMultiple,
++    )
++
++f = F(auto_id='custom_%s')
++for i, w in enumerate(f['beatles']):
++    print(i, w.data['attrs'].get('id'), w.id_for_label)

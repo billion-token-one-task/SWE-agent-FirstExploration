@@ -1,0 +1,38 @@
+diff --git a/django/db/migrations/serializer.py b/django/db/migrations/serializer.py
+index d88cda6e20..5335b40af6 100644
+--- a/django/db/migrations/serializer.py
++++ b/django/db/migrations/serializer.py
+@@ -168,9 +168,11 @@ class FunctionTypeSerializer(BaseSerializer):
+         ):
+             klass = self.value.__self__
+             module = klass.__module__
+-            return "%s.%s.%s" % (module, klass.__name__, self.value.__name__), {
+-                "import %s" % module
+-            }
++            return "%s.%s.%s" % (
++                module,
++                klass.__qualname__,
++                self.value.__name__,
++            ), {"import %s" % module}
+         # Further error checking
+         if self.value.__name__ == "<lambda>":
+             raise ValueError("Cannot serialize function: lambda")
+diff --git a/repro_nested_default.py b/repro_nested_default.py
+new file mode 100644
+index 0000000000..d9e00188ba
+--- /dev/null
++++ b/repro_nested_default.py
+@@ -0,0 +1,13 @@
++from types import SimpleNamespace
++from django.db.migrations.serializer import serializer_factory
++
++class Profile:
++    class Capability:
++        @classmethod
++        def default(cls):
++            return ["BASIC"]
++
++value = Profile.Capability.default
++serialized, imports = serializer_factory(value).serialize()
++print(serialized)
++print(sorted(imports))

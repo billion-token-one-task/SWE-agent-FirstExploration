@@ -1,0 +1,1017 @@
+2026-03-07 01:29:42,426 - DEBUG - free_port-astropy__astropy-14995 - Found free port 52659
+2026-03-07 01:29:42,428 - INFO - rex-deploy-astropy__astropy-14995 - Starting container docker.ioswebenchsweb.eval.x86_64.astropy_1776_astropy-14995latest-781748cb-30b2-425b-85f1-92b23072ae08 with image docker.io/swebench/sweb.eval.x86_64.astropy_1776_astropy-14995:latest serving on port 52659
+2026-03-07 01:29:42,428 - DEBUG - rex-deploy-astropy__astropy-14995 - Command: 'docker run --rm -p 52659:8000 -e SWEREX_FALLBACK_PYTHONPATH=/opt/sweagent_deps -v /data/liora/sweagent_deps:/opt/sweagent_deps:ro --name docker.ioswebenchsweb.eval.x86_64.astropy_1776_astropy-14995latest-781748cb-30b2-425b-85f1-92b23072ae08 docker.io/swebench/sweb.eval.x86_64.astropy_1776_astropy-14995:latest /bin/sh -c \'swerex-remote --auth-token 84cd4e7b-d62c-490f-8ea7-5dd919bab131 || (if [ -n "$SWEREX_FALLBACK_PYTHONPATH" ]; then PYTHONPATH="$SWEREX_FALLBACK_PYTHONPATH" python3 -m swerex --auth-token 84cd4e7b-d62c-490f-8ea7-5dd919bab131; fi) || (python3 -m pip install pipx && python3 -m pipx ensurepath && pipx run swe-rex --auth-token 84cd4e7b-d62c-490f-8ea7-5dd919bab131)\''
+2026-03-07 01:29:42,432 - INFO - rex-deploy-astropy__astropy-14995 - Starting runtime at 52659
+2026-03-07 01:29:44,570 - INFO - rex-deploy-astropy__astropy-14995 - Runtime started in 2.14s
+2026-03-07 01:29:45,606 - INFO - swea-env-astropy__astropy-14995 - Environment Initialized
+2026-03-07 01:29:45,868 - DEBUG - swea-env-astropy__astropy-14995 - Resetting repository testbed to commit b16c7d12ccbc7b2d20364b89fb44285bcbfede54
+2026-03-07 01:29:46,461 - INFO - swea-agent-astropy__astropy-14995 - Setting up agent for instance astropy__astropy-14995
+2026-03-07 01:29:46,462 - INFO - swea-agent-astropy__astropy-14995 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.4__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok200k_mt8_probev3_gpt54_rerun3/astropy__astropy-14995/astropy__astropy-14995.traj
+2026-03-07 01:29:46,726 - DEBUG - rex-runtime-astropy__astropy-14995 - Uploading file from /data/liora/SWE-agent-src/tools/registry to /root/tools/registry
+2026-03-07 01:29:46,730 - DEBUG - rex-runtime-astropy__astropy-14995 - Created zip file at /tmp/tmplyul997n/zipped_transfer.zip
+2026-03-07 01:29:46,733 - DEBUG - rex-runtime-astropy__astropy-14995 - Uploading file from /data/liora/SWE-agent-src/tools/edit_anthropic to /root/tools/edit_anthropic
+2026-03-07 01:29:46,741 - DEBUG - rex-runtime-astropy__astropy-14995 - Created zip file at /tmp/tmp2dajihx4/zipped_transfer.zip
+2026-03-07 01:29:46,744 - DEBUG - rex-runtime-astropy__astropy-14995 - Uploading file from /data/liora/SWE-agent-src/tools/review_on_submit_m to /root/tools/review_on_submit_m
+2026-03-07 01:29:46,747 - DEBUG - rex-runtime-astropy__astropy-14995 - Created zip file at /tmp/tmpxvgphl1r/zipped_transfer.zip
+2026-03-07 01:30:20,712 - INFO - swea-tools-astropy__astropy-14995 - Resetting tools
+2026-03-07 01:30:21,153 - INFO - swea-agent-astropy__astropy-14995 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-07 01:30:21,364 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:30:21,371 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+In v5.3, NDDataRef mask propagation fails when one of the operand does not have a mask
+### Description
+
+This applies to v5.3. 
+
+It looks like when one of the operand does not have a mask, the mask propagation when doing arithmetic, in particular with `handle_mask=np.bitwise_or` fails.  This is not a problem in v5.2.
+
+I don't know enough about how all that works, but it seems from the error that the operand without a mask is set as a mask of None's and then the bitwise_or tries to operate on an integer and a None and fails.
+
+### Expected behavior
+
+When one of the operand does not have mask, the mask that exists should just be copied over to the output.  Or whatever was done in that situation in v5.2 where there's no problem.
+
+### How to Reproduce
+
+This is with v5.3.   With v5.2, there are no errors.
+
+```
+>>> import numpy as np
+>>> from astropy.nddata import NDDataRef
+
+>>> array = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])
+>>> mask = np.array([[0, 1, 64], [8, 0, 1], [2, 1, 0]])
+
+>>> nref_nomask = NDDataRef(array)
+>>> nref_mask = NDDataRef(array, mask=mask)
+
+# multiply no mask by constant (no mask * no mask)
+>>> nref_nomask.multiply(1., handle_mask=np.bitwise_or).mask   # returns nothing, no mask,  OK
+
+# multiply no mask by itself (no mask * no mask)
+>>> nref_nomask.multiply(nref_nomask, handle_mask=np.bitwise_or).mask # return nothing, no mask, OK
+
+# multiply mask by constant (mask * no mask)
+>>> nref_mask.multiply(1., handle_mask=np.bitwise_or).mask
+...
+TypeError: unsupported operand type(s) for |: 'int' and 'NoneType'
+
+# multiply mask by itself (mask * mask)
+>>> nref_mask.multiply(nref_mask, handle_mask=np.bitwise_or).mask
+array([[ 0,  1, 64],
+       [ 8,  0,  1],
+       [ 2,  1,  0]])
+
+# multiply mask by no mask (mask * no mask)
+>>> nref_mask.multiply(nref_nomask, handle_mask=np.bitwise_or).mask
+...
+TypeError: unsupported operand type(s) for |: 'int' and 'NoneType'
+```
+
+
+### Versions
+
+>>> import sys; print("Python", sys.version)
+Python 3.10.11 | packaged by conda-forge | (main, May 10 2023, 19:07:22) [Clang 14.0.6 ]
+>>> import astropy; print("astropy", astropy.__version__)
+astropy 5.3
+>>> import numpy; print("Numpy", numpy.__version__)
+Numpy 1.24.3
+>>> import erfa; print("pyerfa", erfa.__version__)
+pyerfa 2.0.0.3
+>>> import scipy; print("Scipy", scipy.__version__)
+Scipy 1.10.1
+>>> import matplotlib; print("Matplotlib", matplotlib.__version__)
+Matplotlib 3.7.1
+
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-07 01:30:21,372 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 1 =========================
+2026-03-07 01:30:21,372 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 1
+2026-03-07 01:30:21,375 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:30:24,584 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-2d78a2aa-a160-47bd-947f-80df472437ac', created=1772818224, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='stop', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"cd /testbed && rg -n \\"handle_mask|bitwise_or|mask propagation|NDDataRef\\""}{"command":"view","path":"/testbed"}', name='str_replace_editor'), id='call_TSu7VmVlZ761QWsqiBdmmxIH', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=79, prompt_tokens=0, total_tokens=79, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:30:24,585 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=1,021, output_tokens=0, instance_cost=0.00, cost=0.00
+2026-03-07 01:30:24,585 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=1,021, total_tokens_received=0, total_cost=0.01, total_api_calls=1
+2026-03-07 01:30:24,589 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed
+2026-03-07 01:30:25,043 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:30:25,047 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the files and directories up to 2 levels deep in /testbed, excluding hidden items:
+/testbed
+/testbed/pyproject.toml
+/testbed/CHANGES.rst
+/testbed/CITATION
+/testbed/CODE_OF_CONDUCT.md
+/testbed/CONTRIBUTING.md
+/testbed/GOVERNANCE.md
+/testbed/LICENSE.rst
+/testbed/MANIFEST.in
+/testbed/README.rst
+/testbed/astropy
+/testbed/astropy/CITATION
+/testbed/astropy/__init__.py
+/testbed/astropy/_compiler.c
+/testbed/astropy/_dev
+/testbed/astropy/_version.py
+/testbed/astropy/compiler_version.cpython-39-x86_64-linux-gnu.so
+/testbed/astropy/config
+/testbed/astropy/conftest.py
+/testbed/astropy/constants
+/testbed/astropy/convolution
+/testbed/astropy/coordinates
+/testbed/astropy/cosmology
+/testbed/astropy/extern
+/testbed/astropy/io
+/testbed/astropy/logger.py
+/testbed/astropy/modeling
+/testbed/astropy/nddata
+/testbed/astropy/samp
+/testbed/astropy/stats
+/testbed/astropy/table
+/testbed/astropy/tests
+/testbed/astropy/time
+/testbed/astropy/timeseries
+/testbed/astropy/uncertainty
+/testbed/astropy/units
+/testbed/astropy/utils
+/testbed/astropy/version.py
+/testbed/astropy/visualization
+/testbed/astropy/wcs
+/testbed/astropy.egg-info
+/testbed/astropy.egg-info/PKG-INFO
+/testbed/astropy.egg-info/SOURCES.txt
+/testbed/astropy.egg-info/dependency_links.txt
+/testbed/astropy.egg-info/entry_points.txt
+/testbed/astropy.egg-info/not-zip-safe
+/testbed/astropy.egg-info/requires.txt
+/testbed/astropy.egg-info/top_level.txt
+/testbed/cextern
+/testbed/cextern/README.rst
+/testbed/cextern/cfitsio
+/testbed/cextern/expat
+/testbed/cextern/trim_cfitsio.sh
+/testbed/cextern/trim_expat.sh
+/testbed/cextern/trim_wcslib.sh
+/testbed/cextern/wcslib
+/testbed/codecov.yml
+/testbed/conftest.py
+/testbed/docs
+/testbed/docs/Makefile
+/testbed/docs/_pkgtemplate.rst
+/testbed/docs/_static
+/testbed/docs/_templates
+/testbed/docs/changelog.rst
+/testbed/docs/changes
+/testbed/docs/common_links.txt
+/testbed/docs/conf.py
+/testbed/docs/config
+/testbed/docs/conftest.py
+/testbed/docs/constants
+/testbed/docs/convolution
+/testbed/docs/coordinates
+/testbed/docs/cosmology
+/testbed/docs/credits.rst
+/testbed/docs/development
+/testbed/docs/glossary.rst
+/testbed/docs/importing_astropy.rst
+/testbed/docs/index.rst
+/testbed/docs/install.rst
+/testbed/docs/io
+/testbed/docs/known_issues.rst
+/testbed/docs/license.rst
+/testbed/docs/logging.rst
+/testbed/docs/lts_policy.rst
+/testbed/docs/make.bat
+/testbed/docs/modeling
+/testbed/docs/nddata
+/testbed/docs/nitpick-exceptions
+/testbed/docs/robots.txt
+/testbed/docs/rtd_environment.yaml
+/testbed/docs/samp
+/testbed/docs/stats
+/testbed/docs/table
+/testbed/docs/time
+/testbed/docs/timeseries
+/testbed/docs/uncertainty
+/testbed/docs/units
+/testbed/docs/utils
+/testbed/docs/visualization
+/testbed/docs/warnings.rst
+/testbed/docs/wcs
+/testbed/docs/whatsnew
+/testbed/examples
+/testbed/examples/README.rst
+/testbed/examples/coordinates
+/testbed/examples/io
+/testbed/examples/template
+/testbed/licenses
+/testbed/licenses/AURA_LICENSE.rst
+/testbed/licenses/CONFIGOBJ_LICENSE.rst
+/testbed/licenses/DATATABLES_LICENSE.rst
+/testbed/licenses/ERFA.rst
+/testbed/licenses/EXPAT_LICENSE.rst
+/testbed/licenses/GATSPY_LICENSE.rst
+/testbed/licenses/JQUERY_LICENSE.rst
+/testbed/licenses/NUMPY_LICENSE.rst
+/testbed/licenses/PLY_LICENSE.rst
+/testbed/licenses/PYFITS.rst
+/testbed/licenses/PYTHON.rst
+/testbed/licenses/README.rst
+/testbed/licenses/WCSLIB_LICENSE.rst
+/testbed/setup.cfg
+/testbed/setup.py
+/testbed/tox.ini
+
+
+
+2026-03-07 01:30:25,052 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 2 =========================
+2026-03-07 01:30:25,053 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:30:25,057 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:30:27,870 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-28e8b084-9c56-4b63-b452-cbd4cfbfcd3b', created=1772818227, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"cd /testbed && rg -n \\"handle_mask|bitwise_or|NDDataRef|propagate.*mask|mask.*handle\\" astropy/nddata"}', name='bash'), id='call_pfbulWoWXU6nAgfCLsgy5uo8', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=75, prompt_tokens=0, total_tokens=75, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:30:27,871 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=2,088, output_tokens=0, instance_cost=0.00, cost=0.00
+2026-03-07 01:30:27,872 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=3,109, total_tokens_received=0, total_cost=0.02, total_api_calls=2
+2026-03-07 01:30:27,873 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && rg -n "handle_mask|bitwise_or|NDDataRef|propagate.*mask|mask.*handle" astropy/nddata
+2026-03-07 01:30:28,278 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:30:28,284 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+bash: rg: command not found
+
+2026-03-07 01:30:28,299 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 3 =========================
+2026-03-07 01:30:28,301 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:30:28,352 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:30:30,674 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-eccee936-3877-4096-9276-e3580f6260f1', created=1772818230, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"cd /testbed && grep -RIn \\"handle_mask\\\\|bitwise_or\\\\|NDDataRef\\\\|propagate.*mask\\\\|mask.*handle\\" astropy/nddata | head -200"}', name='bash'), id='call_ystaKiZ8IMTarPKfMfgvzNPz', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=84, prompt_tokens=0, total_tokens=84, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:30:30,675 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=2,164, output_tokens=0, instance_cost=0.00, cost=0.00
+2026-03-07 01:30:30,675 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=5,273, total_tokens_received=0, total_cost=0.02, total_api_calls=3
+2026-03-07 01:30:30,677 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -RIn "handle_mask\|bitwise_or\|NDDataRef\|propagate.*mask\|mask.*handle" astropy/nddata | head -200
+2026-03-07 01:30:31,020 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:30:31,025 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+astropy/nddata/ccddata.py:395:            # Convert boolean mask to uint since io.fits cannot handle bool.
+astropy/nddata/mixins/ndarithmetic.py:44:    handle_mask : callable, ``'first_found'`` or ``None``, optional
+astropy/nddata/mixins/ndarithmetic.py:171:        handle_mask=np.logical_or,
+astropy/nddata/mixins/ndarithmetic.py:199:        handle_mask : callable, ``'first_found'`` or ``None``, optional
+astropy/nddata/mixins/ndarithmetic.py:264:        # do the arithmetic on the data and propagate masks.
+astropy/nddata/mixins/ndarithmetic.py:323:        if handle_mask is None:
+astropy/nddata/mixins/ndarithmetic.py:329:        elif handle_mask in ["ff", "first_found"]:
+astropy/nddata/mixins/ndarithmetic.py:336:                operation, operand, handle_mask, axis=axis, **kwds2["mask"]
+astropy/nddata/mixins/ndarithmetic.py:485:    def _arithmetic_mask(self, operation, operand, handle_mask, axis=None, **kwds):
+astropy/nddata/mixins/ndarithmetic.py:502:        handle_mask : callable
+astropy/nddata/mixins/ndarithmetic.py:506:            Additional parameters given to ``handle_mask``.
+astropy/nddata/mixins/ndarithmetic.py:513:            ``handle_mask`` must create (and copy) the returned mask.
+astropy/nddata/mixins/ndarithmetic.py:518:        ) or handle_mask is None:
+astropy/nddata/mixins/ndarithmetic.py:527:            return handle_mask(self.mask, operand.mask, **kwds)
+astropy/nddata/mixins/ndarithmetic.py:742:            # for collapse operations, use astropy.utils.masked rather than handle_mask
+astropy/nddata/mixins/ndslicing.py:54:    NDDataRef
+astropy/nddata/mixins/tests/test_ndarithmetic.py:8:from astropy.nddata import NDDataRef
+astropy/nddata/mixins/tests/test_ndarithmetic.py:22:NDDataArithmetic = NDDataRef
+astropy/nddata/mixins/tests/test_ndarithmetic.py:1098:        handle_mask=None,
+astropy/nddata/mixins/tests/test_ndarithmetic.py:1111:        handle_mask=use_abbreviation,
+astropy/nddata/mixins/tests/test_ndarithmetic.py:1124:        handle_mask=use_abbreviation,
+astropy/nddata/mixins/tests/test_ndarithmetic.py:1219:    nd3 = nd1.add(nd2, handle_mask=mask_sad_func)
+astropy/nddata/mixins/tests/test_ndarithmetic.py:1222:    nd4 = nd1.add(nd2, handle_mask=mask_sad_func, mask_fun=1)
+astropy/nddata/mixins/tests/test_ndarithmetic.py:1226:        nd1.add(nd2, handle_mask=mask_sad_func, fun=1)
+astropy/nddata/mixins/tests/test_ndio.py:1:from astropy.nddata import NDData, NDDataRef, NDIOMixin  # noqa: F401
+astropy/nddata/mixins/tests/test_ndio.py:4:NDDataIO = NDDataRef
+astropy/nddata/mixins/tests/test_ndslicing.py:19:# TODO: Make this use NDDataRef instead!
+astropy/nddata/nddata.py:118:    NDDataRef
+astropy/nddata/nddata_withmixins.py:13:__all__ = ["NDDataRef"]
+astropy/nddata/nddata_withmixins.py:16:class NDDataRef(NDArithmeticMixin, NDIOMixin, NDSlicingMixin, NDData):
+astropy/nddata/nddata_withmixins.py:40:        >>> from astropy.nddata import NDDataRef, StdDevUncertainty
+astropy/nddata/nddata_withmixins.py:44:        >>> ndd1 = NDDataRef(data, uncertainty=StdDevUncertainty(data))
+astropy/nddata/nddata_withmixins.py:45:        >>> ndd2 = NDDataRef(data, uncertainty=StdDevUncertainty(data))
+astropy/nddata/tests/test_nddata.py:646:    "mask, unit, propagate_uncertainties, operation_ignores_mask",
+astropy/nddata/tests/test_nddata.py:647:    zip(collapse_masks, collapse_units, collapse_propagate, collapse_ignore_masked),
+astropy/nddata/tests/test_nddata.py:649:def test_collapse(mask, unit, propagate_uncertainties, operation_ignores_mask):
+
+2026-03-07 01:30:31,031 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 4 =========================
+2026-03-07 01:30:31,032 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:30:31,040 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:30:34,837 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-4b2061a4-f8fe-496a-a20e-5ff10ac55b0c', created=1772818234, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"view","path":"/testbed/astropy/nddata/mixins/ndarithmetic.py","view_range":[480,540]}', name='str_replace_editor'), id='call_jdBsFvxuS5rsc0x1LlXU1FOM', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=73, prompt_tokens=0, total_tokens=73, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:30:34,838 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=3,299, output_tokens=0, instance_cost=0.00, cost=0.00
+2026-03-07 01:30:34,838 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=8,572, total_tokens_received=0, total_cost=0.03, total_api_calls=4
+2026-03-07 01:30:34,844 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/astropy/nddata/mixins/ndarithmetic.py  --view_range 480 540
+2026-03-07 01:30:35,281 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:30:35,286 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/astropy/nddata/mixins/ndarithmetic.py:
+   480	            axis_kwarg = dict(axis=kwds["axis"]) if "axis" in kwds else dict()
+   481	            return self.uncertainty.propagate(
+   482	                operation, operand, result, correlation, **axis_kwarg
+   483	            )
+   484	
+   485	    def _arithmetic_mask(self, operation, operand, handle_mask, axis=None, **kwds):
+   486	        """
+   487	        Calculate the resulting mask.
+   488	
+   489	        This is implemented as the piecewise ``or`` operation if both have a
+   490	        mask.
+   491	
+   492	        Parameters
+   493	        ----------
+   494	        operation : callable
+   495	            see :meth:`NDArithmeticMixin._arithmetic` parameter description.
+   496	            By default, the ``operation`` will be ignored.
+   497	
+   498	        operand : `NDData`-like instance
+   499	            The second operand wrapped in an instance of the same class as
+   500	            self.
+   501	
+   502	        handle_mask : callable
+   503	            see :meth:`NDArithmeticMixin.add`
+   504	
+   505	        kwds :
+   506	            Additional parameters given to ``handle_mask``.
+   507	
+   508	        Returns
+   509	        -------
+   510	        result_mask : any type
+   511	            If only one mask was present this mask is returned.
+   512	            If neither had a mask ``None`` is returned. Otherwise
+   513	            ``handle_mask`` must create (and copy) the returned mask.
+   514	        """
+   515	        # If only one mask is present we need not bother about any type checks
+   516	        if (
+   517	            self.mask is None and operand is not None and operand.mask is None
+   518	        ) or handle_mask is None:
+   519	            return None
+   520	        elif self.mask is None and operand is not None:
+   521	            # Make a copy so there is no reference in the result.
+   522	            return deepcopy(operand.mask)
+   523	        elif operand is None:
+   524	            return deepcopy(self.mask)
+   525	        else:
+   526	            # Now lets calculate the resulting mask (operation enforces copy)
+   527	            return handle_mask(self.mask, operand.mask, **kwds)
+   528	
+   529	    def _arithmetic_wcs(self, operation, operand, compare_wcs, **kwds):
+   530	        """
+   531	        Calculate the resulting wcs.
+   532	
+   533	        There is actually no calculation involved but it is a good place to
+   534	        compare wcs information of both operands. This is currently not working
+   535	        properly with `~astropy.wcs.WCS` (which is the suggested class for
+   536	        storing as wcs property) but it will not break it neither.
+   537	
+   538	        Parameters
+   539	        ----------
+   540	        operation : callable
+
+
+2026-03-07 01:30:35,293 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 5 =========================
+2026-03-07 01:30:35,295 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:30:35,302 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:30:37,745 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-f73b7b10-1a3b-4d5b-ada3-e758e9d3b50b', created=1772818237, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"view","path":"/testbed/astropy/nddata/mixins/ndarithmetic.py","view_range":[300,345]}', name='str_replace_editor'), id='call_vtxBho1RqMwIzxJuHsKvdtoe', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=71, prompt_tokens=0, total_tokens=71, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:30:37,755 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=4,065, output_tokens=0, instance_cost=0.01, cost=0.00
+2026-03-07 01:30:37,755 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=12,637, total_tokens_received=0, total_cost=0.04, total_api_calls=5
+2026-03-07 01:30:37,760 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/astropy/nddata/mixins/ndarithmetic.py  --view_range 300 345
+2026-03-07 01:30:38,305 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:30:38,309 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/astropy/nddata/mixins/ndarithmetic.py:
+   300	            kwargs["uncertainty"] = None
+   301	        elif not propagate_uncertainties:
+   302	            if self.uncertainty is None:
+   303	                kwargs["uncertainty"] = deepcopy(operand.uncertainty)
+   304	            else:
+   305	                kwargs["uncertainty"] = deepcopy(self.uncertainty)
+   306	        else:
+   307	            kwargs["uncertainty"] = self._arithmetic_uncertainty(
+   308	                operation,
+   309	                operand,
+   310	                result,
+   311	                uncertainty_correlation,
+   312	                axis=axis,
+   313	                **kwds2["uncertainty"],
+   314	            )
+   315	
+   316	        # If both are None, there is nothing to do.
+   317	        if self.psf is not None or (operand is not None and operand.psf is not None):
+   318	            warnings.warn(
+   319	                f"Not setting psf attribute during {operation.__name__}.",
+   320	                AstropyUserWarning,
+   321	            )
+   322	
+   323	        if handle_mask is None:
+   324	            pass
+   325	        elif hasattr(result, "mask"):
+   326	            # if numpy.ma or astropy.utils.masked is being used, the constructor
+   327	            # will pick up the mask from the masked object:
+   328	            kwargs["mask"] = None
+   329	        elif handle_mask in ["ff", "first_found"]:
+   330	            if self.mask is None:
+   331	                kwargs["mask"] = deepcopy(operand.mask)
+   332	            else:
+   333	                kwargs["mask"] = deepcopy(self.mask)
+   334	        else:
+   335	            kwargs["mask"] = self._arithmetic_mask(
+   336	                operation, operand, handle_mask, axis=axis, **kwds2["mask"]
+   337	            )
+   338	
+   339	        if handle_meta is None:
+   340	            kwargs["meta"] = None
+   341	        elif handle_meta in ["ff", "first_found"]:
+   342	            if not self.meta:
+   343	                kwargs["meta"] = deepcopy(operand.meta)
+   344	            else:
+   345	                kwargs["meta"] = deepcopy(self.meta)
+
+
+2026-03-07 01:30:38,318 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 6 =========================
+2026-03-07 01:30:38,320 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:30:38,328 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:30:49,797 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-71e66a36-15a9-43bd-94a0-0c96e8772c1b', created=1772818241, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"create","path":"/testbed/repro_mask_issue.py","file_text":"import numpy as np\\nfrom astropy.nddata import NDDataRef\\n\\narray = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])\\nmask = np.array([[0, 1, 64], [8, 0, 1], [2, 1, 0]])\\n\\nnref_nomask = NDDataRef(array)\\nnref_mask = NDDataRef(array, mask=mask)\\n\\ncases = [\\n    (\\"no mask * const\\", lambda: nref_nomask.multiply(1.0, handle_mask=np.bitwise_or).mask),\\n    (\\"no mask * no mask\\", lambda: nref_nomask.multiply(nref_nomask, handle_mask=np.bitwise_or).mask),\\n    (\\"mask * const\\", lambda: nref_mask.multiply(1.0, handle_mask=np.bitwise_or).mask),\\n    (\\"mask * mask\\", lambda: nref_mask.multiply(nref_mask, handle_mask=np.bitwise_or).mask),\\n    (\\"mask * no mask\\", lambda: nref_mask.multiply(nref_nomask, handle_mask=np.bitwise_or).mask),\\n]\\n\\nfor name, func in cases:\\n    print(f\\"CASE: {name}\\")\\n    try:\\n        print(func())\\n    except Exception as exc:\\n        print(type(exc).__name__, exc)\\n"}', name='str_replace_editor'), id='call_2jRjgwwdfbBjo45BpMxBRskh', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=392, prompt_tokens=0, total_tokens=392, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:30:49,799 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=4,656, output_tokens=0, instance_cost=0.01, cost=0.01
+2026-03-07 01:30:49,799 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=17,293, total_tokens_received=0, total_cost=0.06, total_api_calls=6
+2026-03-07 01:30:49,824 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor create /testbed/repro_mask_issue.py --file_text 'import numpy as np
+from astropy.nddata import NDDataRef
+
+array = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])
+mask = np.array([[0, 1, 64], [8, 0, 1], [2, 1, 0]])
+
+nref_nomask = NDDataRef(array)
+nref_mask = NDDataRef(array, mask=mask)
+
+cases = [
+    ("no mask * const", lambda: nref_nomask.multiply(1.0, handle_mask=np.bitwise_or).mask),
+    ("no mask * no mask", lambda: nref_nomask.multiply(nref_nomask, handle_mask=np.bitwise_or).mask),
+    ("mask * const", lambda: nref_mask.multiply(1.0, handle_mask=np.bitwise_or).mask),
+    ("mask * mask", lambda: nref_mask.multiply(nref_mask, handle_mask=np.bitwise_or).mask),
+    ("mask * no mask", lambda: nref_mask.multiply(nref_nomask, handle_mask=np.bitwise_or).mask),
+]
+
+for name, func in cases:
+    print(f"CASE: {name}")
+    try:
+        print(func())
+    except Exception as exc:
+        print(type(exc).__name__, exc)
+'
+2026-03-07 01:30:50,511 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:30:50,514 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+File created successfully at: /testbed/repro_mask_issue.py
+
+2026-03-07 01:30:50,556 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 7 =========================
+2026-03-07 01:30:50,558 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:30:50,716 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:30:53,670 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-ca5898cf-6ad8-4b19-8d99-ea49168c9205', created=1772818253, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"cd /testbed && python repro_mask_issue.py"}', name='bash'), id='call_bLVii8XMxjnsnLUWVNAsEMBB', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=48, prompt_tokens=0, total_tokens=48, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:30:53,672 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=5,035, output_tokens=0, instance_cost=0.01, cost=0.00
+2026-03-07 01:30:53,672 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=22,328, total_tokens_received=0, total_cost=0.07, total_api_calls=7
+2026-03-07 01:30:53,674 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python repro_mask_issue.py
+2026-03-07 01:30:54,285 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:30:54,318 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+Traceback (most recent call last):
+  File "/opt/sweagent_deps/numpy/_core/__init__.py", line 24, in <module>
+    from . import multiarray
+  File "/opt/sweagent_deps/numpy/_core/multiarray.py", line 11, in <module>
+    from . import _multiarray_umath, overrides
+  File "/opt/sweagent_deps/numpy/_core/overrides.py", line 6, in <module>
+    from numpy._core._multiarray_umath import (
+ModuleNotFoundError: No module named 'numpy._core._multiarray_umath'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/testbed/repro_mask_issue.py", line 1, in <module>
+    import numpy as np
+  File "/opt/sweagent_deps/numpy/__init__.py", line 112, in <module>
+    from numpy.__config__ import show_config
+  File "/opt/sweagent_deps/numpy/__config__.py", line 4, in <module>
+    from numpy._core._multiarray_umath import (
+  File "/opt/sweagent_deps/numpy/_core/__init__.py", line 85, in <module>
+    raise ImportError(msg) from exc
+ImportError: 
+
+IMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!
+
+Importing the numpy C-extensions failed. This error can happen for
+many reasons, often due to issues with your setup or how NumPy was
+installed.
+The following compiled module files exist, but seem incompatible
+with with either python 'cpython-39' or the platform 'linux':
+
+  * _multiarray_umath.cpython-311-x86_64-linux-gnu.so
+
+We have compiled some common reasons and troubleshooting tips at:
+
+    https://numpy.org/devdocs/user/troubleshooting-importerror.html
+
+Please note and check the following:
+
+  * The Python version is: Python 3.9 from "/opt/miniconda3/envs/testbed/bin/python"
+  * The NumPy version is: "2.4.2"
+
+and make sure that they are the versions you expect.
+
+Please carefully study the information and documentation linked above.
+This is unlikely to be a NumPy issue but will be caused by a bad install
+or environment on your machine.
+
+Original error was: No module named 'numpy._core._multiarray_umath'
+
+
+2026-03-07 01:30:54,408 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 8 =========================
+2026-03-07 01:30:54,410 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:30:54,544 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:30:59,980 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-e68e2559-247f-46a3-bd5f-ca1c6908b209', created=1772818258, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"cd /testbed && which python3 && python3 -V && python3 repro_mask_issue.py"}', name='bash'), id='call_bI2b63lWDITjEVtUdOzyWj3b', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=62, prompt_tokens=0, total_tokens=62, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:30:59,993 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=5,588, output_tokens=0, instance_cost=0.01, cost=0.00
+2026-03-07 01:30:59,993 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=27,916, total_tokens_received=0, total_cost=0.08, total_api_calls=8
+2026-03-07 01:30:59,996 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && which python3 && python3 -V && python3 repro_mask_issue.py
+2026-03-07 01:31:00,698 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:31:00,706 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+/opt/miniconda3/envs/testbed/bin/python3
+Python 3.9.20
+Traceback (most recent call last):
+  File "/opt/sweagent_deps/numpy/_core/__init__.py", line 24, in <module>
+    from . import multiarray
+  File "/opt/sweagent_deps/numpy/_core/multiarray.py", line 11, in <module>
+    from . import _multiarray_umath, overrides
+  File "/opt/sweagent_deps/numpy/_core/overrides.py", line 6, in <module>
+    from numpy._core._multiarray_umath import (
+ModuleNotFoundError: No module named 'numpy._core._multiarray_umath'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/testbed/repro_mask_issue.py", line 1, in <module>
+    import numpy as np
+  File "/opt/sweagent_deps/numpy/__init__.py", line 112, in <module>
+    from numpy.__config__ import show_config
+  File "/opt/sweagent_deps/numpy/__config__.py", line 4, in <module>
+    from numpy._core._multiarray_umath import (
+  File "/opt/sweagent_deps/numpy/_core/__init__.py", line 85, in <module>
+    raise ImportError(msg) from exc
+ImportError: 
+
+IMPORTANT: PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!
+
+Importing the numpy C-extensions failed. This error can happen for
+many reasons, often due to issues with your setup or how NumPy was
+installed.
+The following compiled module files exist, but seem incompatible
+with with either python 'cpython-39' or the platform 'linux':
+
+  * _multiarray_umath.cpython-311-x86_64-linux-gnu.so
+
+We have compiled some common reasons and troubleshooting tips at:
+
+    https://numpy.org/devdocs/user/troubleshooting-importerror.html
+
+Please note and check the following:
+
+  * The Python version is: Python 3.9 from "/opt/miniconda3/envs/testbed/bin/python3"
+  * The NumPy version is: "2.4.2"
+
+and make sure that they are the versions you expect.
+
+Please carefully study the information and documentation linked above.
+This is unlikely to be a NumPy issue but will be caused by a bad install
+or environment on your machine.
+
+Original error was: No module named 'numpy._core._multiarray_umath'
+
+
+2026-03-07 01:31:00,768 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 9 =========================
+2026-03-07 01:31:00,770 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:31:01,022 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:31:09,181 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-849ac612-9361-41bb-8fce-0a7d7ad25698', created=1772818268, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"cd /testbed && PYTHONPATH= python - <<\'PY\'\\nimport sys\\nprint(sys.path)\\nPY"}', name='bash'), id='call_ggad5m528ePDwSRQnvvtNxNw', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=66, prompt_tokens=0, total_tokens=66, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:31:09,189 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=6,177, output_tokens=0, instance_cost=0.01, cost=0.00
+2026-03-07 01:31:09,189 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=34,093, total_tokens_received=0, total_cost=0.10, total_api_calls=9
+2026-03-07 01:31:09,191 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && PYTHONPATH= python - <<'PY'
+import sys
+print(sys.path)
+PY
+2026-03-07 01:31:09,859 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:31:09,869 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+['', '/opt/miniconda3/envs/testbed/lib/python39.zip', '/opt/miniconda3/envs/testbed/lib/python3.9', '/opt/miniconda3/envs/testbed/lib/python3.9/lib-dynload', '/opt/miniconda3/envs/testbed/lib/python3.9/site-packages']
+
+2026-03-07 01:31:09,965 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 10 =========================
+2026-03-07 01:31:09,968 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:31:10,189 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:31:13,056 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-d77d09e2-7041-4067-a754-927b119882d2', created=1772818272, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"cd /testbed && find .. -maxdepth 3 -type d -name \'numpy\' | head"}', name='bash'), id='call_oGb2gYpc7Xv4GKFAW5FSqcQy', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=64, prompt_tokens=0, total_tokens=64, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:31:13,057 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=6,306, output_tokens=0, instance_cost=0.02, cost=0.00
+2026-03-07 01:31:13,058 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=40,399, total_tokens_received=0, total_cost=0.12, total_api_calls=10
+2026-03-07 01:31:13,060 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && find .. -maxdepth 3 -type d -name 'numpy' | head
+2026-03-07 01:31:13,526 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:31:13,529 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+../opt/sweagent_deps/numpy
+
+2026-03-07 01:31:13,573 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 11 =========================
+2026-03-07 01:31:13,576 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:31:13,643 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:31:17,906 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-6523dcc3-4264-456a-9ba9-c81cfc72e095', created=1772818275, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"cd /testbed && python - <<\'PY\'\\nimport sys\\nimport site\\nprint(site.getsitepackages())\\nPY"}', name='bash'), id='call_Ysf40yisiLDyvRv4nswOnD9C', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=70, prompt_tokens=0, total_tokens=70, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:31:17,920 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=6,374, output_tokens=0, instance_cost=0.02, cost=0.00
+2026-03-07 01:31:17,920 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=46,773, total_tokens_received=0, total_cost=0.13, total_api_calls=11
+2026-03-07 01:31:17,922 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+import sys
+import site
+print(site.getsitepackages())
+PY
+2026-03-07 01:31:18,538 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:31:18,563 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+['/opt/miniconda3/envs/testbed/lib/python3.9/site-packages']
+
+2026-03-07 01:31:18,609 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 12 =========================
+2026-03-07 01:31:18,613 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:31:19,093 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:31:23,107 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-6b1e441f-15ac-430d-ba8e-4036a0bb5ad3', created=1772818281, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"cd /testbed && ls /opt/miniconda3/envs/testbed/lib/python3.9/site-packages | grep -i \'^numpy\'"}', name='bash'), id='call_MGTffVHkrQYH9Q1hDlKWaOqz', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=73, prompt_tokens=0, total_tokens=73, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:31:23,108 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=6,455, output_tokens=0, instance_cost=0.02, cost=0.00
+2026-03-07 01:31:23,108 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=53,228, total_tokens_received=0, total_cost=0.14, total_api_calls=12
+2026-03-07 01:31:23,110 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && ls /opt/miniconda3/envs/testbed/lib/python3.9/site-packages | grep -i '^numpy'
+2026-03-07 01:31:23,763 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:31:23,803 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+numpy
+numpy-1.25.2.dist-info
+numpy.libs
+
+2026-03-07 01:31:23,897 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 13 =========================
+2026-03-07 01:31:23,900 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:31:24,360 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:31:24,988 - WARNING - swea-lm-astropy__astropy-14995 - Retrying LM query: attempt 1 (slept for 10.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 01:31:35,153 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:31:36,023 - WARNING - swea-lm-astropy__astropy-14995 - Retrying LM query: attempt 2 (slept for 20.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 01:31:46,040 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:31:51,172 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-3e301568-4b05-4189-8ffc-8f5426fab5cc', created=1772818310, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"cd /testbed && PYTHONNOUSERSITE=1 PYTHONPATH=/opt/miniconda3/envs/testbed/lib/python3.9/site-packages python repro_mask_issue.py"}', name='bash'), id='call_OaJkINI23PuEWNaN5SNYNU5d', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=74, prompt_tokens=0, total_tokens=74, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:31:51,173 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=6,538, output_tokens=0, instance_cost=0.02, cost=0.00
+2026-03-07 01:31:51,173 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=59,766, total_tokens_received=0, total_cost=0.17, total_api_calls=13
+2026-03-07 01:31:51,175 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && PYTHONNOUSERSITE=1 PYTHONPATH=/opt/miniconda3/envs/testbed/lib/python3.9/site-packages python repro_mask_issue.py
+2026-03-07 01:31:52,979 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:31:52,985 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+CASE: no mask * const
+None
+CASE: no mask * no mask
+None
+CASE: mask * const
+TypeError unsupported operand type(s) for |: 'int' and 'NoneType'
+CASE: mask * mask
+[[ 0  1 64]
+ [ 8  0  1]
+ [ 2  1  0]]
+CASE: mask * no mask
+TypeError unsupported operand type(s) for |: 'int' and 'NoneType'
+
+2026-03-07 01:31:53,243 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 14 =========================
+2026-03-07 01:31:53,245 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:31:53,491 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:32:01,998 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-5c87a58b-12be-4378-81ad-12a663a80db3', created=1772818315, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"str_replace","path":"/testbed/astropy/nddata/mixins/ndarithmetic.py","old_str":"        elif self.mask is None and operand is not None:\\n            # Make a copy so there is no reference in the result.\\n            return deepcopy(operand.mask)\\n        elif operand is None:\\n            return deepcopy(self.mask)\\n        else:\\n            # Now lets calculate the resulting mask (operation enforces copy)\\n            return handle_mask(self.mask, operand.mask, **kwds)\\n","new_str":"        elif self.mask is None and operand is not None:\\n            # Make a copy so there is no reference in the result.\\n            return deepcopy(operand.mask)\\n        elif operand is None or operand.mask is None:\\n            return deepcopy(self.mask)\\n        else:\\n            # Now lets calculate the resulting mask (operation enforces copy)\\n            return handle_mask(self.mask, operand.mask, **kwds)\\n"}', name='str_replace_editor'), id='call_Vj0CcWWTyr4bTd9g1cpO6Ak9', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=256, prompt_tokens=0, total_tokens=256, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:32:02,013 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=6,708, output_tokens=0, instance_cost=0.02, cost=0.00
+2026-03-07 01:32:02,013 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=66,474, total_tokens_received=0, total_cost=0.18, total_api_calls=14
+2026-03-07 01:32:02,031 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/astropy/nddata/mixins/ndarithmetic.py   --old_str '        elif self.mask is None and operand is not None:
+            # Make a copy so there is no reference in the result.
+            return deepcopy(operand.mask)
+        elif operand is None:
+            return deepcopy(self.mask)
+        else:
+            # Now lets calculate the resulting mask (operation enforces copy)
+            return handle_mask(self.mask, operand.mask, **kwds)
+' --new_str '        elif self.mask is None and operand is not None:
+            # Make a copy so there is no reference in the result.
+            return deepcopy(operand.mask)
+        elif operand is None or operand.mask is None:
+            return deepcopy(self.mask)
+        else:
+            # Now lets calculate the resulting mask (operation enforces copy)
+            return handle_mask(self.mask, operand.mask, **kwds)
+'
+2026-03-07 01:32:02,807 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:32:02,824 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/astropy/nddata/mixins/ndarithmetic.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/astropy/nddata/mixins/ndarithmetic.py:
+   515	        # If only one mask is present we need not bother about any type checks
+   516	        if (
+   517	            self.mask is None and operand is not None and operand.mask is None
+   518	        ) or handle_mask is None:
+   519	            return None
+   520	        elif self.mask is None and operand is not None:
+   521	            # Make a copy so there is no reference in the result.
+   522	            return deepcopy(operand.mask)
+   523	        elif operand is None or operand.mask is None:
+   524	            return deepcopy(self.mask)
+   525	        else:
+   526	            # Now lets calculate the resulting mask (operation enforces copy)
+   527	            return handle_mask(self.mask, operand.mask, **kwds)
+   528	
+   529	    def _arithmetic_wcs(self, operation, operand, compare_wcs, **kwds):
+   530	        """
+   531	        Calculate the resulting wcs.
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-07 01:32:03,010 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 15 =========================
+2026-03-07 01:32:03,013 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:32:03,430 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:32:06,782 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-18020780-6e10-431b-bb95-9510bf4b0933', created=1772818325, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"cd /testbed && PYTHONNOUSERSITE=1 PYTHONPATH=/opt/miniconda3/envs/testbed/lib/python3.9/site-packages python repro_mask_issue.py"}', name='bash'), id='call_iNPoWU0Hx07um4fyDeVDYzbt', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=76, prompt_tokens=0, total_tokens=76, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:32:06,784 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=7,230, output_tokens=0, instance_cost=0.02, cost=0.00
+2026-03-07 01:32:06,784 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=73,704, total_tokens_received=0, total_cost=0.20, total_api_calls=15
+2026-03-07 01:32:06,786 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && PYTHONNOUSERSITE=1 PYTHONPATH=/opt/miniconda3/envs/testbed/lib/python3.9/site-packages python repro_mask_issue.py
+2026-03-07 01:32:07,856 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:32:07,860 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+CASE: no mask * const
+None
+CASE: no mask * no mask
+None
+CASE: mask * const
+[[ 0  1 64]
+ [ 8  0  1]
+ [ 2  1  0]]
+CASE: mask * mask
+[[ 0  1 64]
+ [ 8  0  1]
+ [ 2  1  0]]
+CASE: mask * no mask
+[[ 0  1 64]
+ [ 8  0  1]
+ [ 2  1  0]]
+
+2026-03-07 01:32:07,915 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 16 =========================
+2026-03-07 01:32:07,918 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:32:07,956 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:32:16,739 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-8fbf68d3-cc1c-4b76-9471-9914c74a98dc', created=1772818330, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"cd /testbed && PYTHONNOUSERSITE=1 PYTHONPATH=/opt/miniconda3/envs/testbed/lib/python3.9/site-packages python - <<\'PY\'\\nimport numpy as np\\nfrom astropy.nddata import NDDataRef\\n\\narr = np.arange(4).reshape(2,2)\\nmask = np.array([[1,0],[0,1]])\\na = NDDataRef(arr, mask=mask)\\nb = NDDataRef(arr)\\n\\nr1 = a.multiply(1.0, handle_mask=np.bitwise_or)\\nprint(\'const copy equal\', np.array_equal(r1.mask, mask), \'same object\', r1.mask is mask)\\n\\nr2 = a.multiply(b, handle_mask=np.bitwise_or)\\nprint(\'nd copy equal\', np.array_equal(r2.mask, mask), \'same object\', r2.mask is mask)\\n\\nr3 = b.multiply(a, handle_mask=np.bitwise_or)\\nprint(\'reverse copy equal\', np.array_equal(r3.mask, mask), \'same object\', r3.mask is mask)\\nPY"}', name='bash'), id='call_izpMvZukI6jnAf4NIFgk3NAc', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=286, prompt_tokens=0, total_tokens=286, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:32:16,745 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=7,426, output_tokens=0, instance_cost=0.03, cost=0.00
+2026-03-07 01:32:16,746 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=81,130, total_tokens_received=0, total_cost=0.22, total_api_calls=16
+2026-03-07 01:32:16,749 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && PYTHONNOUSERSITE=1 PYTHONPATH=/opt/miniconda3/envs/testbed/lib/python3.9/site-packages python - <<'PY'
+import numpy as np
+from astropy.nddata import NDDataRef
+
+arr = np.arange(4).reshape(2,2)
+mask = np.array([[1,0],[0,1]])
+a = NDDataRef(arr, mask=mask)
+b = NDDataRef(arr)
+
+r1 = a.multiply(1.0, handle_mask=np.bitwise_or)
+print('const copy equal', np.array_equal(r1.mask, mask), 'same object', r1.mask is mask)
+
+r2 = a.multiply(b, handle_mask=np.bitwise_or)
+print('nd copy equal', np.array_equal(r2.mask, mask), 'same object', r2.mask is mask)
+
+r3 = b.multiply(a, handle_mask=np.bitwise_or)
+print('reverse copy equal', np.array_equal(r3.mask, mask), 'same object', r3.mask is mask)
+PY
+2026-03-07 01:32:18,126 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:32:18,131 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+const copy equal True same object False
+nd copy equal True same object False
+reverse copy equal True same object False
+
+2026-03-07 01:32:18,174 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 17 =========================
+2026-03-07 01:32:18,177 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:32:18,197 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:32:20,274 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-4d666a74-93fc-46fd-8cee-23f87d71a125', created=1772818340, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{}', name='submit'), id='call_nl9s5h0mlR4G5nqMGBOiMnNZ', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=38, prompt_tokens=0, total_tokens=38, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:32:20,277 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=7,718, output_tokens=0, instance_cost=0.03, cost=0.00
+2026-03-07 01:32:20,277 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=88,848, total_tokens_received=0, total_cost=0.23, total_api_calls=17
+2026-03-07 01:32:20,278 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-07 01:32:20,820 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:32:20,826 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+Thank you for your work on this issue. Please carefully follow the steps below to help review your changes.
+
+1. If you made any changes to your code after running the reproduction script, please run the reproduction script again.
+  If the reproduction script is failing, please revisit your changes and make sure they are correct.
+  If you have already removed your reproduction script, please ignore this step.
+2. Remove your reproduction script (if you haven't done so already).
+3. If you have modified any TEST files, please revert them to the state they had before you started fixing the issue.
+  You can do this with `git checkout -- /path/to/test/file.py`. Use below <diff> to find the files you need to revert.
+4. Run the submit command again to confirm.
+
+Here is a list of all of your changes:
+
+<diff>
+diff --git a/astropy/nddata/mixins/ndarithmetic.py b/astropy/nddata/mixins/ndarithmetic.py
+index 4153dfccb..56a867879 100644
+--- a/astropy/nddata/mixins/ndarithmetic.py
++++ b/astropy/nddata/mixins/ndarithmetic.py
+@@ -520,7 +520,7 @@ class NDArithmeticMixin:
+         elif self.mask is None and operand is not None:
+             # Make a copy so there is no reference in the result.
+             return deepcopy(operand.mask)
+-        elif operand is None:
++        elif operand is None or operand.mask is None:
+             return deepcopy(self.mask)
+         else:
+             # Now lets calculate the resulting mask (operation enforces copy)
+diff --git a/repro_mask_issue.py b/repro_mask_issue.py
+new file mode 100644
+index 000000000..f3b43dfef
+--- /dev/null
++++ b/repro_mask_issue.py
+@@ -0,0 +1,23 @@
++import numpy as np
++from astropy.nddata import NDDataRef
++
++array = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])
++mask = np.array([[0, 1, 64], [8, 0, 1], [2, 1, 0]])
++
++nref_nomask = NDDataRef(array)
++nref_mask = NDDataRef(array, mask=mask)
++
++cases = [
++    ("no mask * const", lambda: nref_nomask.multiply(1.0, handle_mask=np.bitwise_or).mask),
++    ("no mask * no mask", lambda: nref_nomask.multiply(nref_nomask, handle_mask=np.bitwise_or).mask),
++    ("mask * const", lambda: nref_mask.multiply(1.0, handle_mask=np.bitwise_or).mask),
++    ("mask * mask", lambda: nref_mask.multiply(nref_mask, handle_mask=np.bitwise_or).mask),
++    ("mask * no mask", lambda: nref_mask.multiply(nref_nomask, handle_mask=np.bitwise_or).mask),
++]
++
++for name, func in cases:
++    print(f"CASE: {name}")
++    try:
++        print(func())
++    except Exception as exc:
++        print(type(exc).__name__, exc)
+
+</diff>
+
+
+2026-03-07 01:32:20,879 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 18 =========================
+2026-03-07 01:32:20,882 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:32:20,896 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:32:29,958 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-cbb10eb3-be81-4a93-9d8c-360a20e7d57d', created=1772818343, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{"command":"cd /testbed && rm -f repro_mask_issue.py && PYTHONNOUSERSITE=1 PYTHONPATH=/opt/miniconda3/envs/testbed/lib/python3.9/site-packages python - <<\'PY\'\\nimport numpy as np\\nfrom astropy.nddata import NDDataRef\\n\\narray = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])\\nmask = np.array([[0, 1, 64], [8, 0, 1], [2, 1, 0]])\\n\\nnref_nomask = NDDataRef(array)\\nnref_mask = NDDataRef(array, mask=mask)\\n\\ncases = [\\n    (\\"no mask * const\\", lambda: nref_nomask.multiply(1.0, handle_mask=np.bitwise_or).mask),\\n    (\\"no mask * no mask\\", lambda: nref_nomask.multiply(nref_nomask, handle_mask=np.bitwise_or).mask),\\n    (\\"mask * const\\", lambda: nref_mask.multiply(1.0, handle_mask=np.bitwise_or).mask),\\n    (\\"mask * mask\\", lambda: nref_mask.multiply(nref_mask, handle_mask=np.bitwise_or).mask),\\n    (\\"mask * no mask\\", lambda: nref_mask.multiply(nref_nomask, handle_mask=np.bitwise_or).mask),\\n]\\n\\nfor name, func in cases:\\n    print(f\\"CASE: {name}\\")\\n    try:\\n        print(func())\\n    except Exception as exc:\\n        print(type(exc).__name__, exc)\\nPY"}', name='bash'), id='call_iW1CdpLFMnRcoX3ZBDClt8xz', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=421, prompt_tokens=0, total_tokens=421, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:32:29,959 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=8,459, output_tokens=0, instance_cost=0.03, cost=0.01
+2026-03-07 01:32:29,959 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=97,307, total_tokens_received=0, total_cost=0.25, total_api_calls=18
+2026-03-07 01:32:29,963 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && rm -f repro_mask_issue.py && PYTHONNOUSERSITE=1 PYTHONPATH=/opt/miniconda3/envs/testbed/lib/python3.9/site-packages python - <<'PY'
+import numpy as np
+from astropy.nddata import NDDataRef
+
+array = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])
+mask = np.array([[0, 1, 64], [8, 0, 1], [2, 1, 0]])
+
+nref_nomask = NDDataRef(array)
+nref_mask = NDDataRef(array, mask=mask)
+
+cases = [
+    ("no mask * const", lambda: nref_nomask.multiply(1.0, handle_mask=np.bitwise_or).mask),
+    ("no mask * no mask", lambda: nref_nomask.multiply(nref_nomask, handle_mask=np.bitwise_or).mask),
+    ("mask * const", lambda: nref_mask.multiply(1.0, handle_mask=np.bitwise_or).mask),
+    ("mask * mask", lambda: nref_mask.multiply(nref_mask, handle_mask=np.bitwise_or).mask),
+    ("mask * no mask", lambda: nref_mask.multiply(nref_nomask, handle_mask=np.bitwise_or).mask),
+]
+
+for name, func in cases:
+    print(f"CASE: {name}")
+    try:
+        print(func())
+    except Exception as exc:
+        print(type(exc).__name__, exc)
+PY
+2026-03-07 01:32:31,190 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:32:31,196 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+CASE: no mask * const
+None
+CASE: no mask * no mask
+None
+CASE: mask * const
+[[ 0  1 64]
+ [ 8  0  1]
+ [ 2  1  0]]
+CASE: mask * mask
+[[ 0  1 64]
+ [ 8  0  1]
+ [ 2  1  0]]
+CASE: mask * no mask
+[[ 0  1 64]
+ [ 8  0  1]
+ [ 2  1  0]]
+
+2026-03-07 01:32:31,240 - INFO - swea-agent-astropy__astropy-14995 - ========================= STEP 19 =========================
+2026-03-07 01:32:31,242 - DEBUG - swea-lm-astropy__astropy-14995 - n_cache_control: 2
+2026-03-07 01:32:31,254 - DEBUG - config-astropy__astropy-14995 - Choosing API key 0 for thread ThreadPoolExecutor-2_3 (idx 7)
+2026-03-07 01:32:33,456 - DEBUG - swea-lm-astropy__astropy-14995 - Response: ModelResponse(id='chatcmpl-ec303caa-3449-4c7e-9b93-21a7eedc6fb9', created=1772818352, model='gpt-5.4', object='chat.completion', system_fingerprint=None, choices=[Choices(finish_reason='tool_calls', index=0, message=Message(content=None, role='assistant', tool_calls=[ChatCompletionMessageToolCall(function=Function(arguments='{}', name='submit'), id='call_IEO08hP3JmoMzyhh4lcEUuAO', type='function')], function_call=None, provider_specific_fields=None))], usage=Usage(completion_tokens=35, prompt_tokens=0, total_tokens=35, completion_tokens_details=CompletionTokensDetailsWrapper(accepted_prediction_tokens=None, audio_tokens=None, reasoning_tokens=0, rejected_prediction_tokens=None, text_tokens=None, image_tokens=None), prompt_tokens_details=None))
+2026-03-07 01:32:33,457 - DEBUG - swea-lm-astropy__astropy-14995 - input_tokens=8,980, output_tokens=0, instance_cost=0.04, cost=0.00
+2026-03-07 01:32:33,457 - DEBUG - swea-lm-astropy__astropy-14995 - total_tokens_sent=106,287, total_tokens_received=0, total_cost=0.25, total_api_calls=19
+2026-03-07 01:32:33,458 - INFO - swea-agent-astropy__astropy-14995 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-07 01:32:33,947 - DEBUG - swea-tools-astropy__astropy-14995 - Retrieved state from environment: {'working_dir': '/testbed'}
+2026-03-07 01:32:33,957 - INFO - swea-agent-astropy__astropy-14995 - Found submission: diff --git a/astropy/nddata/mixins/ndarithmetic.py b/astropy/nddata/mixins/ndarithmetic.py
+index 4153dfccb..56a867879 100644
+--- a/astropy/nddata/mixins/ndarithmetic.py
++++ b/astropy/nddata/mixins/ndarithmetic.py
+@@ -520,7 +520,7 @@ class NDArithmeticMixin:
+         elif self.mask is None and operand is not None:
+             # Make a copy so there is no reference in the result.
+             return deepcopy(operand.mask)
+-        elif operand is None:
++        elif operand is None or operand.mask is None:
+             return deepcopy(self.mask)
+         else:
+             # Now lets calculate the resulting mask (operation enforces copy)
+
+2026-03-07 01:32:33,961 - INFO - swea-agent-astropy__astropy-14995 - 🤖 MODEL INPUT
+OBSERVATION:
+diff --git a/astropy/nddata/mixins/ndarithmetic.py b/astropy/nddata/mixins/ndarithmetic.py
+index 4153dfccb..56a867879 100644
+--- a/astropy/nddata/mixins/ndarithmetic.py
++++ b/astropy/nddata/mixins/ndarithmetic.py
+@@ -520,7 +520,7 @@ class NDArithmeticMixin:
+         elif self.mask is None and operand is not None:
+             # Make a copy so there is no reference in the result.
+             return deepcopy(operand.mask)
+-        elif operand is None:
++        elif operand is None or operand.mask is None:
+             return deepcopy(self.mask)
+         else:
+             # Now lets calculate the resulting mask (operation enforces copy)
+
+2026-03-07 01:32:34,019 - INFO - swea-agent-astropy__astropy-14995 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.4__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok200k_mt8_probev3_gpt54_rerun3/astropy__astropy-14995/astropy__astropy-14995.traj
+2026-03-07 01:32:34,030 - INFO - swea-env-astropy__astropy-14995 - Beginning environment shutdown...
+2026-03-07 01:32:34,712 - DEBUG - rex-deploy-astropy__astropy-14995 - Ensuring deployment is stopped because object is deleted

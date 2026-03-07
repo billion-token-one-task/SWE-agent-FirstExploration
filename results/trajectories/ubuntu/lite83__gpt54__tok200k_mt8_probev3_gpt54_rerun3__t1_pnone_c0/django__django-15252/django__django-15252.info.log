@@ -1,0 +1,1114 @@
+2026-03-07 01:40:14,694 - INFO - rex-deploy-django__django-15252 - Starting container docker.ioswebenchsweb.eval.x86_64.django_1776_django-15252latest-16b5fc6f-0fde-45c8-9ac6-933237a66eed with image docker.io/swebench/sweb.eval.x86_64.django_1776_django-15252:latest serving on port 60635
+2026-03-07 01:40:14,697 - INFO - rex-deploy-django__django-15252 - Starting runtime at 60635
+2026-03-07 01:40:16,345 - INFO - rex-deploy-django__django-15252 - Runtime started in 1.65s
+2026-03-07 01:40:17,512 - INFO - swea-env-django__django-15252 - Environment Initialized
+2026-03-07 01:40:18,841 - INFO - swea-agent-django__django-15252 - Setting up agent for instance django__django-15252
+2026-03-07 01:40:18,842 - INFO - swea-agent-django__django-15252 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.4__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok200k_mt8_probev3_gpt54_rerun3/django__django-15252/django__django-15252.traj
+2026-03-07 01:40:51,950 - INFO - swea-tools-django__django-15252 - Resetting tools
+2026-03-07 01:40:52,391 - INFO - swea-agent-django__django-15252 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-07 01:40:52,599 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+MigrationRecorder does not obey db_router allow_migrate rules
+Description
+	
+Hi,
+We have a multi-db setup. We have one connection that is for the django project, and several connections that talk to other dbs for information (ie models with managed = False). Django should only create tables in the first connection, never in any of the other connections. We have a simple router that does the following: 
+class Router(object):
+	def allow_migrate(self, db, model):
+		if db == 'default':
+			return True
+		return False
+Current Behaviour
+We run our functional tests and the migrate command is called against each connection when the test databases are created (see django/test/runner.py, setup_databases, line 300-ish, which calls django/db/backends/creation.py, create_test_db, line 377-ish)
+When this migrate runs, it tries to apply our migrations, which tries to record that a migration has been applied (see django/db/migrations/executor.py, apply_migration, which has several calls to self.recorder.record_applied). 
+The first thing that record_applied does is a call to self.ensure_schema() (see django/db/migrations/recorder.py, record_applied, lien 66-ish). 
+ensure_schema checks to see if the Migration model is in the tables in the connection. If it does not find the table then it tries to create the table. 
+I believe that this is incorrect behaviour when a db_router has been provided. If using the router above, my expectation would be that the table is not created on any connection other than the 'default' connection. Looking at the other methods on the MigrationRecorder, I would expect that there will be similar issues with applied_migrations and record_unapplied.
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-07 01:40:52,600 - INFO - swea-agent-django__django-15252 - ========================= STEP 1 =========================
+2026-03-07 01:40:53,077 - WARNING - swea-lm-django__django-15252 - Retrying LM query: attempt 1 (slept for 10.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 01:41:07,535 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -R "class MigrationRecorder\|def allow_migrate\|record_applied\|ensure_schema\|applied_migrations\|record_unapplied" -n django | head -200
+2026-03-07 01:41:08,115 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+django/core/management/commands/migrate.py:210:        pre_migrate_state = executor._create_project_state(with_applied_migrations=True)
+django/core/management/commands/showmigrations.py:77:        recorded_migrations = recorder.applied_migrations()
+django/core/management/commands/showmigrations.py:97:                        applied_migration = loader.applied_migrations.get(plan_node)
+django/core/management/commands/showmigrations.py:152:            if node.key in loader.applied_migrations:
+django/db/migrations/executor.py:30:            applied = dict(self.loader.applied_migrations)
+django/db/migrations/executor.py:73:    def _create_project_state(self, with_applied_migrations=False):
+django/db/migrations/executor.py:76:        migrations and applied migrations if with_applied_migrations=True.
+django/db/migrations/executor.py:79:        if with_applied_migrations:
+django/db/migrations/executor.py:82:            applied_migrations = {
+django/db/migrations/executor.py:83:                self.loader.graph.nodes[key] for key in self.loader.applied_migrations
+django/db/migrations/executor.py:87:                if migration in applied_migrations:
+django/db/migrations/executor.py:100:        self.recorder.ensure_schema()
+django/db/migrations/executor.py:113:                state = self._create_project_state(with_applied_migrations=True)
+django/db/migrations/executor.py:125:                state = self._create_project_state(with_applied_migrations=True)
+django/db/migrations/executor.py:175:        applied_migrations = {
+django/db/migrations/executor.py:176:            self.loader.graph.nodes[key] for key in self.loader.applied_migrations
+django/db/migrations/executor.py:196:            elif migration in applied_migrations:
+django/db/migrations/executor.py:206:            applied_migrations.remove(migration)
+django/db/migrations/executor.py:216:                    if migration in applied_migrations:
+django/db/migrations/executor.py:251:                self.recorder.record_applied(app_label, name)
+django/db/migrations/executor.py:253:            self.recorder.record_applied(migration.app_label, migration.name)
+django/db/migrations/executor.py:265:                self.recorder.record_unapplied(app_label, name)
+django/db/migrations/executor.py:266:        self.recorder.record_unapplied(migration.app_label, migration.name)
+django/db/migrations/executor.py:283:        applied = self.recorder.applied_migrations()
+django/db/migrations/executor.py:287:                self.recorder.record_applied(*key)
+django/db/migrations/loader.py:49:        self.applied_migrations = None
+django/db/migrations/loader.py:220:            self.applied_migrations = {}
+django/db/migrations/loader.py:223:            self.applied_migrations = recorder.applied_migrations()
+django/db/migrations/loader.py:244:                applied_statuses = [(target in self.applied_migrations) for target in migration.replaces]
+django/db/migrations/loader.py:248:                    self.applied_migrations[key] = migration
+django/db/migrations/loader.py:250:                    self.applied_migrations.pop(key, None)
+django/db/migrations/loader.py:297:        applied = recorder.applied_migrations()
+django/db/migrations/operations/base.py:111:    def allow_migrate_model(self, connection_alias, model):
+django/db/migrations/recorder.py:9:class MigrationRecorder:
+django/db/migrations/recorder.py:59:    def ensure_schema(self):
+django/db/migrations/recorder.py:72:    def applied_migrations(self):
+django/db/migrations/recorder.py:84:    def record_applied(self, app, name):
+django/db/migrations/recorder.py:86:        self.ensure_schema()
+django/db/migrations/recorder.py:89:    def record_unapplied(self, app, name):
+django/db/migrations/recorder.py:91:        self.ensure_schema()
+django/db/utils.py:272:    def allow_migrate(self, db, app_label, **hints):
+django/db/utils.py:286:    def allow_migrate_model(self, db, model):
+
+2026-03-07 01:41:08,118 - INFO - swea-agent-django__django-15252 - ========================= STEP 2 =========================
+2026-03-07 01:41:12,012 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/django/db/utils.py  --view_range 260 310
+2026-03-07 01:41:12,459 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+Invalid `view_range`: [260, 310]. Its second element `310` should be smaller than the number of lines in the file: `298`
+
+2026-03-07 01:41:12,465 - INFO - swea-agent-django__django-15252 - ========================= STEP 3 =========================
+2026-03-07 01:41:16,457 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/django/db/utils.py  --view_range 260 298
+2026-03-07 01:41:16,934 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/django/db/utils.py:
+   260	        for router in self.routers:
+   261	            try:
+   262	                method = router.allow_relation
+   263	            except AttributeError:
+   264	                # If the router doesn't have a method, skip to the next one.
+   265	                pass
+   266	            else:
+   267	                allow = method(obj1, obj2, **hints)
+   268	                if allow is not None:
+   269	                    return allow
+   270	        return obj1._state.db == obj2._state.db
+   271	
+   272	    def allow_migrate(self, db, app_label, **hints):
+   273	        for router in self.routers:
+   274	            try:
+   275	                method = router.allow_migrate
+   276	            except AttributeError:
+   277	                # If the router doesn't have a method, skip to the next one.
+   278	                continue
+   279	
+   280	            allow = method(db, app_label, **hints)
+   281	
+   282	            if allow is not None:
+   283	                return allow
+   284	        return True
+   285	
+   286	    def allow_migrate_model(self, db, model):
+   287	        return self.allow_migrate(
+   288	            db,
+   289	            model._meta.app_label,
+   290	            model_name=model._meta.model_name,
+   291	            model=model,
+   292	        )
+   293	
+   294	    def get_migratable_models(self, app_config, db, include_auto_created=False):
+   295	        """Return app models allowed to be migrated on provided db."""
+   296	        models = app_config.get_models(include_auto_created=include_auto_created)
+   297	        return [model for model in models if self.allow_migrate_model(db, model)]
+   298	
+
+
+2026-03-07 01:41:16,940 - INFO - swea-agent-django__django-15252 - ========================= STEP 4 =========================
+2026-03-07 01:41:19,531 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/django/db/migrations/recorder.py  --view_range 1 140
+2026-03-07 01:41:19,962 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+Invalid `view_range`: [1, 140]. Its second element `140` should be smaller than the number of lines in the file: `97`
+
+2026-03-07 01:41:19,970 - INFO - swea-agent-django__django-15252 - ========================= STEP 5 =========================
+2026-03-07 01:41:24,472 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/django/db/migrations/recorder.py  --view_range 1 97
+2026-03-07 01:41:24,921 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/django/db/migrations/recorder.py:
+     1	from django.apps.registry import Apps
+     2	from django.db import DatabaseError, models
+     3	from django.utils.functional import classproperty
+     4	from django.utils.timezone import now
+     5	
+     6	from .exceptions import MigrationSchemaMissing
+     7	
+     8	
+     9	class MigrationRecorder:
+    10	    """
+    11	    Deal with storing migration records in the database.
+    12	
+    13	    Because this table is actually itself used for dealing with model
+    14	    creation, it's the one thing we can't do normally via migrations.
+    15	    We manually handle table creation/schema updating (using schema backend)
+    16	    and then have a floating model to do queries with.
+    17	
+    18	    If a migration is unapplied its row is removed from the table. Having
+    19	    a row in the table always means a migration is applied.
+    20	    """
+    21	    _migration_class = None
+    22	
+    23	    @classproperty
+    24	    def Migration(cls):
+    25	        """
+    26	        Lazy load to avoid AppRegistryNotReady if installed apps import
+    27	        MigrationRecorder.
+    28	        """
+    29	        if cls._migration_class is None:
+    30	            class Migration(models.Model):
+    31	                app = models.CharField(max_length=255)
+    32	                name = models.CharField(max_length=255)
+    33	                applied = models.DateTimeField(default=now)
+    34	
+    35	                class Meta:
+    36	                    apps = Apps()
+    37	                    app_label = 'migrations'
+    38	                    db_table = 'django_migrations'
+    39	
+    40	                def __str__(self):
+    41	                    return 'Migration %s for %s' % (self.name, self.app)
+    42	
+    43	            cls._migration_class = Migration
+    44	        return cls._migration_class
+    45	
+    46	    def __init__(self, connection):
+    47	        self.connection = connection
+    48	
+    49	    @property
+    50	    def migration_qs(self):
+    51	        return self.Migration.objects.using(self.connection.alias)
+    52	
+    53	    def has_table(self):
+    54	        """Return True if the django_migrations table exists."""
+    55	        with self.connection.cursor() as cursor:
+    56	            tables = self.connection.introspection.table_names(cursor)
+    57	        return self.Migration._meta.db_table in tables
+    58	
+    59	    def ensure_schema(self):
+    60	        """Ensure the table exists and has the correct schema."""
+    61	        # If the table's there, that's fine - we've never changed its schema
+    62	        # in the codebase.
+    63	        if self.has_table():
+    64	            return
+    65	        # Make the table
+    66	        try:
+    67	            with self.connection.schema_editor() as editor:
+    68	                editor.create_model(self.Migration)
+    69	        except DatabaseError as exc:
+    70	            raise MigrationSchemaMissing("Unable to create the django_migrations table (%s)" % exc)
+    71	
+    72	    def applied_migrations(self):
+    73	        """
+    74	        Return a dict mapping (app_name, migration_name) to Migration instances
+    75	        for all applied migrations.
+    76	        """
+    77	        if self.has_table():
+    78	            return {(migration.app, migration.name): migration for migration in self.migration_qs}
+    79	        else:
+    80	            # If the django_migrations table doesn't exist, then no migrations
+    81	            # are applied.
+    82	            return {}
+    83	
+    84	    def record_applied(self, app, name):
+    85	        """Record that a migration was applied."""
+    86	        self.ensure_schema()
+    87	        self.migration_qs.create(app=app, name=name)
+    88	
+    89	    def record_unapplied(self, app, name):
+    90	        """Record that a migration was unapplied."""
+    91	        self.ensure_schema()
+    92	        self.migration_qs.filter(app=app, name=name).delete()
+    93	
+    94	    def flush(self):
+    95	        """Delete all migration records. Useful for testing migrations."""
+    96	        self.migration_qs.all().delete()
+    97	
+
+
+2026-03-07 01:41:24,929 - INFO - swea-agent-django__django-15252 - ========================= STEP 6 =========================
+2026-03-07 01:41:30,857 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/django/db/migrations/executor.py  --view_range 96 106
+2026-03-07 01:41:31,304 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/django/db/migrations/executor.py:
+    96	        (un)applied and in a second step run all the database operations.
+    97	        """
+    98	        # The django_migrations table must be present to record applied
+    99	        # migrations.
+   100	        self.recorder.ensure_schema()
+   101	
+   102	        if plan is None:
+   103	            plan = self.migration_plan(targets)
+   104	        # Create the forwards plan Django would follow on an empty database
+   105	        full_plan = self.migration_plan(self.loader.graph.leaf_nodes(), clean_start=True)
+   106	
+
+
+2026-03-07 01:41:31,314 - INFO - swea-agent-django__django-15252 - ========================= STEP 7 =========================
+2026-03-07 01:41:35,098 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+import os
+for root, dirs, files in os.walk('tests'):
+    for f in files:
+        if f.endswith('.py'):
+            path=os.path.join(root,f)
+            with open(path,'r',encoding='utf8',errors='ignore') as fh:
+                s=fh.read()
+            if 'allow_migrate' in s and 'django_migrations' in s:
+                print(path)
+PY
+2026-03-07 01:41:35,705 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+Your command ran successfully and did not produce any output.
+2026-03-07 01:41:35,718 - INFO - swea-agent-django__django-15252 - ========================= STEP 8 =========================
+2026-03-07 01:41:39,450 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && find . -maxdepth 2 -name manage.py -o -name runtests.py
+2026-03-07 01:41:39,842 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+./tests/runtests.py
+
+2026-03-07 01:41:39,880 - INFO - swea-agent-django__django-15252 - ========================= STEP 9 =========================
+2026-03-07 01:41:44,542 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+import os
+for root, dirs, files in os.walk('tests'):
+    for f in files:
+        if f.endswith('.py'):
+            path=os.path.join(root,f)
+            with open(path,'r',encoding='utf8',errors='ignore') as fh:
+                s=fh.read()
+            if 'DATABASE_ROUTERS' in s or 'allow_migrate(' in s:
+                print(path)
+PY
+2026-03-07 01:41:45,166 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+tests/admin_views/test_multidb.py
+tests/auth_tests/test_admin_multidb.py
+tests/cache/tests.py
+tests/check_framework/test_model_checks.py
+tests/check_framework/test_multi_db.py
+tests/contenttypes_tests/test_models.py
+tests/contenttypes_tests/test_operations.py
+tests/gis_tests/layermap/tests.py
+tests/invalid_models_tests/test_backend_specific.py
+tests/invalid_models_tests/test_models.py
+tests/migrations/routers.py
+tests/migrations/test_commands.py
+tests/migrations/test_multidb.py
+tests/multiple_database/routers.py
+tests/multiple_database/tests.py
+tests/postgres_tests/test_operations.py
+tests/select_for_update/tests.py
+tests/sites_tests/tests.py
+tests/test_utils/tests.py
+
+2026-03-07 01:41:45,182 - INFO - swea-agent-django__django-15252 - ========================= STEP 10 =========================
+2026-03-07 01:41:45,953 - WARNING - swea-lm-django__django-15252 - Retrying LM query: attempt 1 (slept for 10.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 01:41:56,429 - WARNING - swea-lm-django__django-15252 - Retrying LM query: attempt 2 (slept for 20.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 01:42:10,592 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/tests/migrations/test_multidb.py  --view_range 1 220
+2026-03-07 01:42:11,038 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+Invalid `view_range`: [1, 220]. Its second element `220` should be smaller than the number of lines in the file: `172`
+
+2026-03-07 01:42:11,058 - INFO - swea-agent-django__django-15252 - ========================= STEP 11 =========================
+2026-03-07 01:42:14,246 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/tests/migrations/test_multidb.py  --view_range 1 172
+2026-03-07 01:42:14,737 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/tests/migrations/test_multidb.py:
+     1	from django.db import connection, migrations, models
+     2	from django.db.migrations.state import ProjectState
+     3	from django.test import override_settings
+     4	
+     5	from .test_base import OperationTestBase
+     6	
+     7	
+     8	class AgnosticRouter:
+     9	    """
+    10	    A router that doesn't have an opinion regarding migrating.
+    11	    """
+    12	    def allow_migrate(self, db, app_label, **hints):
+    13	        return None
+    14	
+    15	
+    16	class MigrateNothingRouter:
+    17	    """
+    18	    A router that doesn't allow migrating.
+    19	    """
+    20	    def allow_migrate(self, db, app_label, **hints):
+    21	        return False
+    22	
+    23	
+    24	class MigrateEverythingRouter:
+    25	    """
+    26	    A router that always allows migrating.
+    27	    """
+    28	    def allow_migrate(self, db, app_label, **hints):
+    29	        return True
+    30	
+    31	
+    32	class MigrateWhenFooRouter:
+    33	    """
+    34	    A router that allows migrating depending on a hint.
+    35	    """
+    36	    def allow_migrate(self, db, app_label, **hints):
+    37	        return hints.get('foo', False)
+    38	
+    39	
+    40	class MultiDBOperationTests(OperationTestBase):
+    41	    databases = {'default', 'other'}
+    42	
+    43	    def _test_create_model(self, app_label, should_run):
+    44	        """
+    45	        CreateModel honors multi-db settings.
+    46	        """
+    47	        operation = migrations.CreateModel(
+    48	            "Pony",
+    49	            [("id", models.AutoField(primary_key=True))],
+    50	        )
+    51	        # Test the state alteration
+    52	        project_state = ProjectState()
+    53	        new_state = project_state.clone()
+    54	        operation.state_forwards(app_label, new_state)
+    55	        # Test the database alteration
+    56	        self.assertTableNotExists("%s_pony" % app_label)
+    57	        with connection.schema_editor() as editor:
+    58	            operation.database_forwards(app_label, editor, project_state, new_state)
+    59	        if should_run:
+    60	            self.assertTableExists("%s_pony" % app_label)
+    61	        else:
+    62	            self.assertTableNotExists("%s_pony" % app_label)
+    63	        # And test reversal
+    64	        with connection.schema_editor() as editor:
+    65	            operation.database_backwards(app_label, editor, new_state, project_state)
+    66	        self.assertTableNotExists("%s_pony" % app_label)
+    67	
+    68	    @override_settings(DATABASE_ROUTERS=[AgnosticRouter()])
+    69	    def test_create_model(self):
+    70	        """
+    71	        Test when router doesn't have an opinion (i.e. CreateModel should run).
+    72	        """
+    73	        self._test_create_model("test_mltdb_crmo", should_run=True)
+    74	
+    75	    @override_settings(DATABASE_ROUTERS=[MigrateNothingRouter()])
+    76	    def test_create_model2(self):
+    77	        """
+    78	        Test when router returns False (i.e. CreateModel shouldn't run).
+    79	        """
+    80	        self._test_create_model("test_mltdb_crmo2", should_run=False)
+    81	
+    82	    @override_settings(DATABASE_ROUTERS=[MigrateEverythingRouter()])
+    83	    def test_create_model3(self):
+    84	        """
+    85	        Test when router returns True (i.e. CreateModel should run).
+    86	        """
+    87	        self._test_create_model("test_mltdb_crmo3", should_run=True)
+    88	
+    89	    def test_create_model4(self):
+    90	        """
+    91	        Test multiple routers.
+    92	        """
+    93	        with override_settings(DATABASE_ROUTERS=[AgnosticRouter(), AgnosticRouter()]):
+    94	            self._test_create_model("test_mltdb_crmo4", should_run=True)
+    95	        with override_settings(DATABASE_ROUTERS=[MigrateNothingRouter(), MigrateEverythingRouter()]):
+    96	            self._test_create_model("test_mltdb_crmo4", should_run=False)
+    97	        with override_settings(DATABASE_ROUTERS=[MigrateEverythingRouter(), MigrateNothingRouter()]):
+    98	            self._test_create_model("test_mltdb_crmo4", should_run=True)
+    99	
+   100	    def _test_run_sql(self, app_label, should_run, hints=None):
+   101	        with override_settings(DATABASE_ROUTERS=[MigrateEverythingRouter()]):
+   102	            project_state = self.set_up_test_model(app_label)
+   103	
+   104	        sql = """
+   105	        INSERT INTO {0}_pony (pink, weight) VALUES (1, 3.55);
+   106	        INSERT INTO {0}_pony (pink, weight) VALUES (3, 5.0);
+   107	        """.format(app_label)
+   108	
+   109	        operation = migrations.RunSQL(sql, hints=hints or {})
+   110	        # Test the state alteration does nothing
+   111	        new_state = project_state.clone()
+   112	        operation.state_forwards(app_label, new_state)
+   113	        self.assertEqual(new_state, project_state)
+   114	        # Test the database alteration
+   115	        self.assertEqual(project_state.apps.get_model(app_label, "Pony").objects.count(), 0)
+   116	        with connection.schema_editor() as editor:
+   117	            operation.database_forwards(app_label, editor, project_state, new_state)
+   118	        Pony = project_state.apps.get_model(app_label, "Pony")
+   119	        if should_run:
+   120	            self.assertEqual(Pony.objects.count(), 2)
+   121	        else:
+   122	            self.assertEqual(Pony.objects.count(), 0)
+   123	
+   124	    @override_settings(DATABASE_ROUTERS=[MigrateNothingRouter()])
+   125	    def test_run_sql_migrate_nothing_router(self):
+   126	        self._test_run_sql("test_mltdb_runsql", should_run=False)
+   127	
+   128	    @override_settings(DATABASE_ROUTERS=[MigrateWhenFooRouter()])
+   129	    def test_run_sql_migrate_foo_router_without_hints(self):
+   130	        self._test_run_sql("test_mltdb_runsql2", should_run=False)
+   131	
+   132	    @override_settings(DATABASE_ROUTERS=[MigrateWhenFooRouter()])
+   133	    def test_run_sql_migrate_foo_router_with_hints(self):
+   134	        self._test_run_sql('test_mltdb_runsql3', should_run=True, hints={'foo': True})
+   135	
+   136	    def _test_run_python(self, app_label, should_run, hints=None):
+   137	        with override_settings(DATABASE_ROUTERS=[MigrateEverythingRouter()]):
+   138	            project_state = self.set_up_test_model(app_label)
+   139	
+   140	        # Create the operation
+   141	        def inner_method(models, schema_editor):
+   142	            Pony = models.get_model(app_label, "Pony")
+   143	            Pony.objects.create(pink=1, weight=3.55)
+   144	            Pony.objects.create(weight=5)
+   145	
+   146	        operation = migrations.RunPython(inner_method, hints=hints or {})
+   147	        # Test the state alteration does nothing
+   148	        new_state = project_state.clone()
+   149	        operation.state_forwards(app_label, new_state)
+   150	        self.assertEqual(new_state, project_state)
+   151	        # Test the database alteration
+   152	        self.assertEqual(project_state.apps.get_model(app_label, "Pony").objects.count(), 0)
+   153	        with connection.schema_editor() as editor:
+   154	            operation.database_forwards(app_label, editor, project_state, new_state)
+   155	        Pony = project_state.apps.get_model(app_label, "Pony")
+   156	        if should_run:
+   157	            self.assertEqual(Pony.objects.count(), 2)
+   158	        else:
+   159	            self.assertEqual(Pony.objects.count(), 0)
+   160	
+   161	    @override_settings(DATABASE_ROUTERS=[MigrateNothingRouter()])
+   162	    def test_run_python_migrate_nothing_router(self):
+   163	        self._test_run_python("test_mltdb_runpython", should_run=False)
+   164	
+   165	    @override_settings(DATABASE_ROUTERS=[MigrateWhenFooRouter()])
+   166	    def test_run_python_migrate_foo_router_without_hints(self):
+   167	        self._test_run_python("test_mltdb_runpython2", should_run=False)
+   168	
+   169	    @override_settings(DATABASE_ROUTERS=[MigrateWhenFooRouter()])
+   170	    def test_run_python_migrate_foo_router_with_hints(self):
+   171	        self._test_run_python('test_mltdb_runpython3', should_run=True, hints={'foo': True})
+   172	
+
+
+2026-03-07 01:42:14,759 - INFO - swea-agent-django__django-15252 - ========================= STEP 12 =========================
+2026-03-07 01:42:25,243 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && cat > reproduce_migration_recorder_router.py <<'PY'
+from django.conf import settings
+
+settings.configure(
+    SECRET_KEY='x',
+    INSTALLED_APPS=[],
+    DATABASES={
+        'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'},
+        'other': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'},
+    },
+)
+
+import django
+from django.db import connections
+from django.db.migrations.recorder import MigrationRecorder
+from django.test import override_settings
+
+
+django.setup()
+
+class Router:
+    def allow_migrate(self, db, app_label, **hints):
+        if db == 'default':
+            return True
+        return False
+
+with override_settings(DATABASE_ROUTERS=[Router()]):
+    default_recorder = MigrationRecorder(connections['default'])
+    other_recorder = MigrationRecorder(connections['other'])
+
+    print('before default has table:', default_recorder.has_table())
+    print('before other has table:', other_recorder.has_table())
+
+    try:
+        other_recorder.record_applied('app', '0001_initial')
+        print('record_applied on other succeeded')
+    except Exception as exc:
+        print('record_applied on other raised:', type(exc).__name__, exc)
+
+    print('after other has table:', other_recorder.has_table())
+PY
+python reproduce_migration_recorder_router.py
+2026-03-07 01:42:26,782 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+before default has table: False
+before other has table: False
+record_applied on other succeeded
+after other has table: True
+
+2026-03-07 01:42:26,809 - INFO - swea-agent-django__django-15252 - ========================= STEP 13 =========================
+2026-03-07 01:42:31,840 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/django/db/migrations/recorder.py   --old_str 'from django.apps.registry import Apps
+from django.db import DatabaseError, models
+from django.utils.functional import classproperty
+from django.utils.timezone import now
+' --new_str 'from django.apps.registry import Apps
+from django.db import DatabaseError, models, router
+from django.utils.functional import classproperty
+from django.utils.timezone import now
+'
+2026-03-07 01:42:32,312 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/django/db/migrations/recorder.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/django/db/migrations/recorder.py:
+     1	from django.apps.registry import Apps
+     2	from django.db import DatabaseError, models, router
+     3	from django.utils.functional import classproperty
+     4	from django.utils.timezone import now
+     5	
+     6	from .exceptions import MigrationSchemaMissing
+     7	
+     8	
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-07 01:42:32,361 - INFO - swea-agent-django__django-15252 - ========================= STEP 14 =========================
+2026-03-07 01:42:45,996 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/django/db/migrations/recorder.py   --old_str '    def has_table(self):
+        """Return True if the django_migrations table exists."""
+        with self.connection.cursor() as cursor:
+            tables = self.connection.introspection.table_names(cursor)
+        return self.Migration._meta.db_table in tables
+
+    def ensure_schema(self):
+        """Ensure the table exists and has the correct schema."""
+        # If the table'"'"'s there, that'"'"'s fine - we'"'"'ve never changed its schema
+        # in the codebase.
+        if self.has_table():
+            return
+        # Make the table
+        try:
+            with self.connection.schema_editor() as editor:
+                editor.create_model(self.Migration)
+        except DatabaseError as exc:
+            raise MigrationSchemaMissing("Unable to create the django_migrations table (%s)" % exc)
+' --new_str '    def has_table(self):
+        """Return True if the django_migrations table exists."""
+        with self.connection.cursor() as cursor:
+            tables = self.connection.introspection.table_names(cursor)
+        return self.Migration._meta.db_table in tables
+
+    def migration_qs_allowed(self):
+        return router.allow_migrate(self.connection.alias, self.Migration._meta.app_label, model=self.Migration)
+
+    def ensure_schema(self):
+        """Ensure the table exists and has the correct schema."""
+        if not self.migration_qs_allowed():
+            return
+        # If the table'"'"'s there, that'"'"'s fine - we'"'"'ve never changed its schema
+        # in the codebase.
+        if self.has_table():
+            return
+        # Make the table
+        try:
+            with self.connection.schema_editor() as editor:
+                editor.create_model(self.Migration)
+        except DatabaseError as exc:
+            raise MigrationSchemaMissing("Unable to create the django_migrations table (%s)" % exc)
+'
+2026-03-07 01:42:46,805 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/django/db/migrations/recorder.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/django/db/migrations/recorder.py:
+    48	
+    49	    @property
+    50	    def migration_qs(self):
+    51	        return self.Migration.objects.using(self.connection.alias)
+    52	
+    53	    def has_table(self):
+    54	        """Return True if the django_migrations table exists."""
+    55	        with self.connection.cursor() as cursor:
+    56	            tables = self.connection.introspection.table_names(cursor)
+    57	        return self.Migration._meta.db_table in tables
+    58	
+    59	    def migration_qs_allowed(self):
+    60	        return router.allow_migrate(self.connection.alias, self.Migration._meta.app_label, model=self.Migration)
+    61	
+    62	    def ensure_schema(self):
+    63	        """Ensure the table exists and has the correct schema."""
+    64	        if not self.migration_qs_allowed():
+    65	            return
+    66	        # If the table's there, that's fine - we've never changed its schema
+    67	        # in the codebase.
+    68	        if self.has_table():
+    69	            return
+    70	        # Make the table
+    71	        try:
+    72	            with self.connection.schema_editor() as editor:
+    73	                editor.create_model(self.Migration)
+    74	        except DatabaseError as exc:
+    75	            raise MigrationSchemaMissing("Unable to create the django_migrations table (%s)" % exc)
+    76	
+    77	    def applied_migrations(self):
+    78	        """
+    79	        Return a dict mapping (app_name, migration_name) to Migration instances
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-07 01:42:46,969 - INFO - swea-agent-django__django-15252 - ========================= STEP 15 =========================
+2026-03-07 01:42:48,840 - WARNING - swea-lm-django__django-15252 - Retrying LM query: attempt 1 (slept for 10.00s) due to RateLimitError: litellm.RateLimitError: RateLimitError: OpenAIException - {"error":{"message":"Too many concurrent requests"}}
+2026-03-07 01:43:11,480 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/django/db/migrations/recorder.py   --old_str '    def applied_migrations(self):
+        """
+        Return a dict mapping (app_name, migration_name) to Migration instances
+        for all applied migrations.
+        """
+        if self.has_table():
+            return {(migration.app, migration.name): migration for migration in self.migration_qs}
+        else:
+            # If the django_migrations table doesn'"'"'t exist, then no migrations
+            # are applied.
+            return {}
+
+    def record_applied(self, app, name):
+        """Record that a migration was applied."""
+        self.ensure_schema()
+        self.migration_qs.create(app=app, name=name)
+
+    def record_unapplied(self, app, name):
+        """Record that a migration was unapplied."""
+        self.ensure_schema()
+        self.migration_qs.filter(app=app, name=name).delete()
+' --new_str '    def applied_migrations(self):
+        """
+        Return a dict mapping (app_name, migration_name) to Migration instances
+        for all applied migrations.
+        """
+        if self.migration_qs_allowed() and self.has_table():
+            return {(migration.app, migration.name): migration for migration in self.migration_qs}
+        else:
+            # If the django_migrations table doesn'"'"'t exist, then no migrations
+            # are applied.
+            return {}
+
+    def record_applied(self, app, name):
+        """Record that a migration was applied."""
+        self.ensure_schema()
+        if self.migration_qs_allowed():
+            self.migration_qs.create(app=app, name=name)
+
+    def record_unapplied(self, app, name):
+        """Record that a migration was unapplied."""
+        self.ensure_schema()
+        if self.migration_qs_allowed():
+            self.migration_qs.filter(app=app, name=name).delete()
+'
+2026-03-07 01:43:12,063 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/django/db/migrations/recorder.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/django/db/migrations/recorder.py:
+    72	            with self.connection.schema_editor() as editor:
+    73	                editor.create_model(self.Migration)
+    74	        except DatabaseError as exc:
+    75	            raise MigrationSchemaMissing("Unable to create the django_migrations table (%s)" % exc)
+    76	
+    77	    def applied_migrations(self):
+    78	        """
+    79	        Return a dict mapping (app_name, migration_name) to Migration instances
+    80	        for all applied migrations.
+    81	        """
+    82	        if self.migration_qs_allowed() and self.has_table():
+    83	            return {(migration.app, migration.name): migration for migration in self.migration_qs}
+    84	        else:
+    85	            # If the django_migrations table doesn't exist, then no migrations
+    86	            # are applied.
+    87	            return {}
+    88	
+    89	    def record_applied(self, app, name):
+    90	        """Record that a migration was applied."""
+    91	        self.ensure_schema()
+    92	        if self.migration_qs_allowed():
+    93	            self.migration_qs.create(app=app, name=name)
+    94	
+    95	    def record_unapplied(self, app, name):
+    96	        """Record that a migration was unapplied."""
+    97	        self.ensure_schema()
+    98	        if self.migration_qs_allowed():
+    99	            self.migration_qs.filter(app=app, name=name).delete()
+   100	
+   101	    def flush(self):
+   102	        """Delete all migration records. Useful for testing migrations."""
+   103	        self.migration_qs.all().delete()
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-07 01:43:12,166 - INFO - swea-agent-django__django-15252 - ========================= STEP 16 =========================
+2026-03-07 01:43:16,531 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python reproduce_migration_recorder_router.py
+2026-03-07 01:43:17,785 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+before default has table: False
+before other has table: False
+record_applied on other succeeded
+after other has table: False
+
+2026-03-07 01:43:17,940 - INFO - swea-agent-django__django-15252 - ========================= STEP 17 =========================
+2026-03-07 01:43:29,315 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+from django.conf import settings
+settings.configure(
+    SECRET_KEY='x',
+    INSTALLED_APPS=[],
+    DATABASES={
+        'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'},
+        'other': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'},
+    },
+)
+import django
+from django.db import connections
+from django.db.migrations.recorder import MigrationRecorder
+from django.test import override_settings
+
+django.setup()
+
+class Router:
+    def allow_migrate(self, db, app_label, **hints):
+        return db == 'default'
+
+with override_settings(DATABASE_ROUTERS=[Router()]):
+    default = MigrationRecorder(connections['default'])
+    other = MigrationRecorder(connections['other'])
+    default.record_applied('app', '0001_initial')
+    print('default has table', default.has_table())
+    print('default applied', sorted(default.applied_migrations().keys()))
+    print('other has table', other.has_table())
+    print('other applied', other.applied_migrations())
+    other.record_unapplied('app', '0001_initial')
+    print('other after unapplied has table', other.has_table())
+PY
+2026-03-07 01:43:30,571 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+default has table True
+default applied [('app', '0001_initial')]
+other has table False
+other applied {}
+other after unapplied has table False
+
+2026-03-07 01:43:30,765 - INFO - swea-agent-django__django-15252 - ========================= STEP 18 =========================
+2026-03-07 01:43:35,967 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-07 01:43:36,634 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+Thank you for your work on this issue. Please carefully follow the steps below to help review your changes.
+
+1. If you made any changes to your code after running the reproduction script, please run the reproduction script again.
+  If the reproduction script is failing, please revisit your changes and make sure they are correct.
+  If you have already removed your reproduction script, please ignore this step.
+2. Remove your reproduction script (if you haven't done so already).
+3. If you have modified any TEST files, please revert them to the state they had before you started fixing the issue.
+  You can do this with `git checkout -- /path/to/test/file.py`. Use below <diff> to find the files you need to revert.
+4. Run the submit command again to confirm.
+
+Here is a list of all of your changes:
+
+<diff>
+diff --git a/django/db/migrations/recorder.py b/django/db/migrations/recorder.py
+index 1a37c6b7d0..012e7141dc 100644
+--- a/django/db/migrations/recorder.py
++++ b/django/db/migrations/recorder.py
+@@ -1,5 +1,5 @@
+ from django.apps.registry import Apps
+-from django.db import DatabaseError, models
++from django.db import DatabaseError, models, router
+ from django.utils.functional import classproperty
+ from django.utils.timezone import now
+ 
+@@ -56,8 +56,13 @@ class MigrationRecorder:
+             tables = self.connection.introspection.table_names(cursor)
+         return self.Migration._meta.db_table in tables
+ 
++    def migration_qs_allowed(self):
++        return router.allow_migrate(self.connection.alias, self.Migration._meta.app_label, model=self.Migration)
++
+     def ensure_schema(self):
+         """Ensure the table exists and has the correct schema."""
++        if not self.migration_qs_allowed():
++            return
+         # If the table's there, that's fine - we've never changed its schema
+         # in the codebase.
+         if self.has_table():
+@@ -74,7 +79,7 @@ class MigrationRecorder:
+         Return a dict mapping (app_name, migration_name) to Migration instances
+         for all applied migrations.
+         """
+-        if self.has_table():
++        if self.migration_qs_allowed() and self.has_table():
+             return {(migration.app, migration.name): migration for migration in self.migration_qs}
+         else:
+             # If the django_migrations table doesn't exist, then no migrations
+@@ -84,12 +89,14 @@ class MigrationRecorder:
+     def record_applied(self, app, name):
+         """Record that a migration was applied."""
+         self.ensure_schema()
+-        self.migration_qs.create(app=app, name=name)
++        if self.migration_qs_allowed():
++            self.migration_qs.create(app=app, name=name)
+ 
+     def record_unapplied(self, app, name):
+         """Record that a migration was unapplied."""
+         self.ensure_schema()
+-        self.migration_qs.filter(app=app, name=name).delete()
++        if self.migration_qs_allowed():
++            self.migration_qs.filter(app=app, name=name).delete()
+ 
+     def flush(self):
+         """Delete all migration records. Useful for testing migrations."""
+diff --git a/reproduce_migration_recorder_router.py b/reproduce_migration_recorder_router.py
+new file mode 100644
+index 0000000000..beee608115
+--- /dev/null
++++ b/reproduce_migration_recorder_router.py
+@@ -0,0 +1,39 @@
++from django.conf import settings
++
++settings.configure(
++    SECRET_KEY='x',
++    INSTALLED_APPS=[],
++    DATABASES={
++        'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'},
++        'other': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'},
++    },
++)
++
++import django
++from django.db import connections
++from django.db.migrations.recorder import MigrationRecorder
++from django.test import override_settings
++
++
++django.setup()
++
++class Router:
++    def allow_migrate(self, db, app_label, **hints):
++        if db == 'default':
++            return True
++        return False
++
++with override_settings(DATABASE_ROUTERS=[Router()]):
++    default_recorder = MigrationRecorder(connections['default'])
++    other_recorder = MigrationRecorder(connections['other'])
++
++    print('before default has table:', default_recorder.has_table())
++    print('before other has table:', other_recorder.has_table())
++
++    try:
++        other_recorder.record_applied('app', '0001_initial')
++        print('record_applied on other succeeded')
++    except Exception as exc:
++        print('record_applied on other raised:', type(exc).__name__, exc)
++
++    print('after other has table:', other_recorder.has_table())
+
+</diff>
+
+
+2026-03-07 01:43:36,661 - INFO - swea-agent-django__django-15252 - ========================= STEP 19 =========================
+2026-03-07 01:43:40,668 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && rm -f reproduce_migration_recorder_router.py && git diff --name-only
+2026-03-07 01:43:41,162 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+reproduce_migration_recorder_router.py
+
+2026-03-07 01:43:41,204 - INFO - swea-agent-django__django-15252 - ========================= STEP 20 =========================
+2026-03-07 01:43:42,902 - INFO - swea-agent-django__django-15252 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-07 01:43:43,548 - INFO - swea-agent-django__django-15252 - Found submission: diff --git a/django/db/migrations/recorder.py b/django/db/migrations/recorder.py
+index 1a37c6b7d0..012e7141dc 100644
+--- a/django/db/migrations/recorder.py
++++ b/django/db/migrations/recorder.py
+@@ -1,5 +1,5 @@
+ from django.apps.registry import Apps
+-from django.db import DatabaseError, models
++from django.db import DatabaseError, models, router
+ from django.utils.functional import classproperty
+ from django.utils.timezone import now
+ 
+@@ -56,8 +56,13 @@ class MigrationRecorder:
+             tables = self.connection.introspection.table_names(cursor)
+         return self.Migration._meta.db_table in tables
+ 
++    def migration_qs_allowed(self):
++        return router.allow_migrate(self.connection.alias, self.Migration._meta.app_label, model=self.Migration)
++
+     def ensure_schema(self):
+         """Ensure the table exists and has the correct schema."""
++        if not self.migration_qs_allowed():
++            return
+         # If the table's there, that's fine - we've never changed its schema
+         # in the codebase.
+         if self.has_table():
+@@ -74,7 +79,7 @@ class MigrationRecorder:
+         Return a dict mapping (app_name, migration_name) to Migration instances
+         for all applied migrations.
+         """
+-        if self.has_table():
++        if self.migration_qs_allowed() and self.has_table():
+             return {(migration.app, migration.name): migration for migration in self.migration_qs}
+         else:
+             # If the django_migrations table doesn't exist, then no migrations
+@@ -84,12 +89,14 @@ class MigrationRecorder:
+     def record_applied(self, app, name):
+         """Record that a migration was applied."""
+         self.ensure_schema()
+-        self.migration_qs.create(app=app, name=name)
++        if self.migration_qs_allowed():
++            self.migration_qs.create(app=app, name=name)
+ 
+     def record_unapplied(self, app, name):
+         """Record that a migration was unapplied."""
+         self.ensure_schema()
+-        self.migration_qs.filter(app=app, name=name).delete()
++        if self.migration_qs_allowed():
++            self.migration_qs.filter(app=app, name=name).delete()
+ 
+     def flush(self):
+         """Delete all migration records. Useful for testing migrations."""
+
+2026-03-07 01:43:43,553 - INFO - swea-agent-django__django-15252 - 🤖 MODEL INPUT
+OBSERVATION:
+diff --git a/django/db/migrations/recorder.py b/django/db/migrations/recorder.py
+index 1a37c6b7d0..012e7141dc 100644
+--- a/django/db/migrations/recorder.py
++++ b/django/db/migrations/recorder.py
+@@ -1,5 +1,5 @@
+ from django.apps.registry import Apps
+-from django.db import DatabaseError, models
++from django.db import DatabaseError, models, router
+ from django.utils.functional import classproperty
+ from django.utils.timezone import now
+ 
+@@ -56,8 +56,13 @@ class MigrationRecorder:
+             tables = self.connection.introspection.table_names(cursor)
+         return self.Migration._meta.db_table in tables
+ 
++    def migration_qs_allowed(self):
++        return router.allow_migrate(self.connection.alias, self.Migration._meta.app_label, model=self.Migration)
++
+     def ensure_schema(self):
+         """Ensure the table exists and has the correct schema."""
++        if not self.migration_qs_allowed():
++            return
+         # If the table's there, that's fine - we've never changed its schema
+         # in the codebase.
+         if self.has_table():
+@@ -74,7 +79,7 @@ class MigrationRecorder:
+         Return a dict mapping (app_name, migration_name) to Migration instances
+         for all applied migrations.
+         """
+-        if self.has_table():
++        if self.migration_qs_allowed() and self.has_table():
+             return {(migration.app, migration.name): migration for migration in self.migration_qs}
+         else:
+             # If the django_migrations table doesn't exist, then no migrations
+@@ -84,12 +89,14 @@ class MigrationRecorder:
+     def record_applied(self, app, name):
+         """Record that a migration was applied."""
+         self.ensure_schema()
+-        self.migration_qs.create(app=app, name=name)
++        if self.migration_qs_allowed():
++            self.migration_qs.create(app=app, name=name)
+ 
+     def record_unapplied(self, app, name):
+         """Record that a migration was unapplied."""
+         self.ensure_schema()
+-        self.migration_qs.filter(app=app, name=name).delete()
++        if self.migration_qs_allowed():
++            self.migration_qs.filter(app=app, name=name).delete()
+ 
+     def flush(self):
+         """Delete all migration records. Useful for testing migrations."""
+
+2026-03-07 01:43:43,612 - INFO - swea-agent-django__django-15252 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.4__t-1.00__p-None__c-0.00___lite_test_local83__lite83_tok200k_mt8_probev3_gpt54_rerun3/django__django-15252/django__django-15252.traj
+2026-03-07 01:43:43,625 - INFO - swea-env-django__django-15252 - Beginning environment shutdown...

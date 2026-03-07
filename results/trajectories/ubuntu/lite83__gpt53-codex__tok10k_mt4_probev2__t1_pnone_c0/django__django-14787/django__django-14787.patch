@@ -1,0 +1,82 @@
+diff --git a/repro_migration_import_bug.py b/repro_migration_import_bug.py
+new file mode 100644
+index 0000000000..18690ebc9c
+--- /dev/null
++++ b/repro_migration_import_bug.py
+@@ -0,0 +1,76 @@
++import os
++import sys
++import tempfile
++from textwrap import dedent
++
++
++def main():
++    repo_root = "/testbed"
++    sys.path.insert(0, repo_root)
++
++    from django.conf import settings
++    from django.core.management import call_command
++
++    tmpdir = tempfile.mkdtemp(prefix="dj_repro_")
++    app_dir = os.path.join(tmpdir, "app")
++    migrations_dir = os.path.join(app_dir, "migrations")
++    os.makedirs(migrations_dir)
++
++    with open(os.path.join(app_dir, "__init__.py"), "w"):
++        pass
++    with open(os.path.join(migrations_dir, "__init__.py"), "w"):
++        pass
++
++    with open(os.path.join(app_dir, "apps.py"), "w") as f:
++        f.write(dedent('''
++            from django.apps import AppConfig
++            class AppConfig(AppConfig):
++                name = "app"
++        '''))
++
++    with open(os.path.join(app_dir, "models.py"), "w") as f:
++        f.write(dedent('''
++            from django.db import models
++            class MyField(models.TextField):
++                pass
++            class MyBaseModel(models.Model):
++                class Meta:
++                    abstract = True
++            class MyMixin:
++                pass
++            class MyModel(MyMixin, MyBaseModel):
++                name = MyField(primary_key=True)
++        '''))
++
++    sys.path.insert(0, tmpdir)
++    settings.configure(
++        SECRET_KEY="x",
++        USE_TZ=True,
++        DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}},
++        INSTALLED_APPS=["app"],
++        MIGRATION_MODULES={"app": "app.migrations"},
++    )
++
++    import django
++    django.setup()
++
++    call_command("makemigrations", "app", verbosity=0)
++
++    migration_file = os.path.join(migrations_dir, "0001_initial.py")
++    with open(migration_file) as f:
++        content = f.read()
++
++    print("=== Generated migration ===")
++    print(content)
++
++    try:
++        __import__("app.migrations.0001_initial")
++    except Exception as exc:
++        print("IMPORT_FAILED:", repr(exc))
++        raise
++    else:
++        print("IMPORT_OK")
++
++
++if __name__ == "__main__":
++    main()

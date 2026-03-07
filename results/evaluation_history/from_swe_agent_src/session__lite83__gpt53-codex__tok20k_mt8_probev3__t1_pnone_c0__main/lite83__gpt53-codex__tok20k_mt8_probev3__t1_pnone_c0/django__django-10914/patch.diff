@@ -1,0 +1,44 @@
+diff --git a/repro_upload_perm.py b/repro_upload_perm.py
+new file mode 100644
+index 0000000000..4532aa8186
+--- /dev/null
++++ b/repro_upload_perm.py
+@@ -0,0 +1,38 @@
++import os
++import stat
++import tempfile
++
++from django.conf import settings
++
++if not settings.configured:
++    tmp = tempfile.mkdtemp(prefix='dj-repro-')
++    settings.configure(
++        SECRET_KEY='x',
++        INSTALLED_APPS=[],
++        MEDIA_ROOT=tmp,
++        DEFAULT_FILE_STORAGE='django.core.files.storage.FileSystemStorage',
++    )
++
++from django.core.files.base import ContentFile
++from django.core.files.uploadedfile import TemporaryUploadedFile
++from django.core.files.storage import FileSystemStorage
++
++
++def mode(path):
++    return oct(stat.S_IMODE(os.stat(path).st_mode))
++
++
++storage = FileSystemStorage()
++
++# Memory upload path
++name1 = storage.save('mem.txt', ContentFile(b'abc'))
++path1 = storage.path(name1)
++print('memory:', mode(path1))
++
++# Temporary upload path
++t = TemporaryUploadedFile('tmp.txt', 'text/plain', 3, None)
++t.write(b'abc')
++t.seek(0)
++name2 = storage.save('tmp.txt', t)
++path2 = storage.path(name2)
++print('temp:', mode(path2))

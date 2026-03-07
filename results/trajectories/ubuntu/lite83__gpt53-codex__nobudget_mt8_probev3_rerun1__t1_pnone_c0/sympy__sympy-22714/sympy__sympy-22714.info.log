@@ -1,0 +1,2392 @@
+2026-03-06 03:08:55,666 - INFO - rex-deploy-sympy__sympy-22714 - Starting container docker.ioswebenchsweb.eval.x86_64.sympy_1776_sympy-22714latest-c6a50ac7-f203-41e5-940b-233b36ac0cf7 with image docker.io/swebench/sweb.eval.x86_64.sympy_1776_sympy-22714:latest serving on port 45047
+2026-03-06 03:08:55,704 - INFO - rex-deploy-sympy__sympy-22714 - Starting runtime at 45047
+2026-03-06 03:08:57,310 - INFO - rex-deploy-sympy__sympy-22714 - Runtime started in 1.61s
+2026-03-06 03:08:58,337 - INFO - swea-env-sympy__sympy-22714 - Environment Initialized
+2026-03-06 03:08:59,197 - INFO - swea-agent-sympy__sympy-22714 - Setting up agent for instance sympy__sympy-22714
+2026-03-06 03:08:59,198 - INFO - swea-agent-sympy__sympy-22714 - Trajectory will be saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_nobudget_mt8_probev3_rerun1/sympy__sympy-22714/sympy__sympy-22714.traj
+2026-03-06 03:11:06,252 - INFO - swea-tools-sympy__sympy-22714 - Resetting tools
+2026-03-06 03:11:06,774 - INFO - swea-agent-sympy__sympy-22714 - SYSTEM (main)
+You are a helpful assistant that can interact with a computer to solve tasks.
+2026-03-06 03:11:07,073 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+<uploaded_files>
+/testbed
+</uploaded_files>
+I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+<pr_description>
+simpify gives `Imaginary coordinates are not permitted.` with evaluate(False)
+## Issue
+`with evaluate(False)` crashes unexpectedly with `Point2D`
+
+## Code
+```python
+import sympy as sp
+with sp.evaluate(False):
+  sp.S('Point2D(Integer(1),Integer(2))')
+```
+
+## Error
+```
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/home/avinash/.local/lib/python3.8/site-packages/sympy/core/sympify.py", line 472, in sympify
+    expr = parse_expr(a, local_dict=locals, transformations=transformations, evaluate=evaluate)
+  File "/home/avinash/.local/lib/python3.8/site-packages/sympy/parsing/sympy_parser.py", line 1026, in parse_expr
+    raise e from ValueError(f"Error from parse_expr with transformed code: {code!r}")
+  File "/home/avinash/.local/lib/python3.8/site-packages/sympy/parsing/sympy_parser.py", line 1017, in parse_expr
+    rv = eval_expr(code, local_dict, global_dict)
+  File "/home/avinash/.local/lib/python3.8/site-packages/sympy/parsing/sympy_parser.py", line 911, in eval_expr
+    expr = eval(
+  File "<string>", line 1, in <module>
+  File "/home/avinash/.local/lib/python3.8/site-packages/sympy/geometry/point.py", line 912, in __new__
+    args = Point(*args, **kwargs)
+  File "/home/avinash/.local/lib/python3.8/site-packages/sympy/geometry/point.py", line 153, in __new__
+    raise ValueError('Imaginary coordinates are not permitted.')
+ValueError: Imaginary coordinates are not permitted.
+```
+
+However, it works without `with evaluate(False)`. Both of following commands work
+```python
+sp.S('Point2D(Integer(1),Integer(2))')
+sp.S('Point2D(Integer(1),Integer(2))', evaluate=False)
+```
+
+</pr_description>
+
+Can you help me implement the necessary changes to the repository so that the requirements specified in the <pr_description> are met?
+I've already taken care of all changes to any of the test files described in the <pr_description>. This means you DON'T have to modify the testing logic or any of the tests in any way!
+Your task is to make the minimal changes to non-tests files in the /testbed directory to ensure the <pr_description> is satisfied.
+Follow these steps to resolve the issue:
+1. As a first step, it might be a good idea to find and read code relevant to the <pr_description>
+2. Create a script to reproduce the error and execute it with `python <filename.py>` using the bash tool, to confirm the error
+3. Edit the sourcecode of the repo to resolve the issue
+4. Rerun your reproduce script and confirm that the error is fixed!
+5. Think about edgecases and make sure your fix handles them as well
+Your thinking should be thorough and so it's fine if it's very long.
+2026-03-06 03:11:07,074 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 1 =========================
+2026-03-06 03:11:10,647 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+import sympy as sp
+print('sympy', sp.__version__)
+try:
+    with sp.evaluate(False):
+        print(sp.S('Point2D(Integer(1),Integer(2))'))
+except Exception as e:
+    import traceback; traceback.print_exc()
+PY
+2026-03-06 03:11:12,907 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+OBSERVATION:
+sympy 1.10.dev
+ValueError: Error from parse_expr with transformed code: <code object <module> at 0x7fe31238d500, file "<string>", line 1>
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<stdin>", line 5, in <module>
+  File "/testbed/sympy/core/sympify.py", line 476, in sympify
+    expr = parse_expr(a, local_dict=locals, transformations=transformations, evaluate=evaluate)
+  File "/testbed/sympy/parsing/sympy_parser.py", line 1100, in parse_expr
+    raise e from ValueError(f"Error from parse_expr with transformed code: {code!r}")
+  File "/testbed/sympy/parsing/sympy_parser.py", line 1091, in parse_expr
+    rv = eval_expr(code, local_dict, global_dict)
+  File "/testbed/sympy/parsing/sympy_parser.py", line 913, in eval_expr
+    expr = eval(
+  File "<string>", line 1, in <module>
+  File "/testbed/sympy/geometry/point.py", line 915, in __new__
+    args = Point(*args, **kwargs)
+  File "/testbed/sympy/geometry/point.py", line 156, in __new__
+    raise ValueError('Imaginary coordinates are not permitted.')
+ValueError: Imaginary coordinates are not permitted.
+
+2026-03-06 03:11:12,911 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 2 =========================
+2026-03-06 03:11:16,475 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -R "Imaginary coordinates are not permitted" -n sympy | head
+2026-03-06 03:11:16,959 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+OBSERVATION:
+grep: sympy/geometry/__pycache__/point.cpython-39.pyc: binary file matches
+sympy/geometry/point.py:156:            raise ValueError('Imaginary coordinates are not permitted.')
+
+2026-03-06 03:11:16,964 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 3 =========================
+2026-03-06 03:11:19,165 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/sympy/geometry/point.py  --view_range 120 190
+2026-03-06 03:11:19,596 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/sympy/geometry/point.py:
+   120	            evaluate = False
+   121	            if len(coords) == kwargs.get('dim', len(coords)):
+   122	                return coords
+   123	
+   124	        if not is_sequence(coords):
+   125	            raise TypeError(filldedent('''
+   126	                Expecting sequence of coordinates, not `{}`'''
+   127	                                       .format(func_name(coords))))
+   128	        # A point where only `dim` is specified is initialized
+   129	        # to zeros.
+   130	        if len(coords) == 0 and kwargs.get('dim', None):
+   131	            coords = (S.Zero,)*kwargs.get('dim')
+   132	
+   133	        coords = Tuple(*coords)
+   134	        dim = kwargs.get('dim', len(coords))
+   135	
+   136	        if len(coords) < 2:
+   137	            raise ValueError(filldedent('''
+   138	                Point requires 2 or more coordinates or
+   139	                keyword `dim` > 1.'''))
+   140	        if len(coords) != dim:
+   141	            message = ("Dimension of {} needs to be changed "
+   142	                       "from {} to {}.").format(coords, len(coords), dim)
+   143	            if on_morph == 'ignore':
+   144	                pass
+   145	            elif on_morph == "error":
+   146	                raise ValueError(message)
+   147	            elif on_morph == 'warn':
+   148	                warnings.warn(message)
+   149	            else:
+   150	                raise ValueError(filldedent('''
+   151	                        on_morph value should be 'error',
+   152	                        'warn' or 'ignore'.'''))
+   153	        if any(coords[dim:]):
+   154	            raise ValueError('Nonzero coordinates cannot be removed.')
+   155	        if any(a.is_number and im(a) for a in coords):
+   156	            raise ValueError('Imaginary coordinates are not permitted.')
+   157	        if not all(isinstance(a, Expr) for a in coords):
+   158	            raise TypeError('Coordinates must be valid SymPy expressions.')
+   159	
+   160	        # pad with zeros appropriately
+   161	        coords = coords[:dim] + (S.Zero,)*(dim - len(coords))
+   162	
+   163	        # Turn any Floats into rationals and simplify
+   164	        # any expressions before we instantiate
+   165	        if evaluate:
+   166	            coords = coords.xreplace({
+   167	                f: simplify(nsimplify(f, rational=True))
+   168	                 for f in coords.atoms(Float)})
+   169	
+   170	        # return 2D or 3D instances
+   171	        if len(coords) == 2:
+   172	            kwargs['_nocheck'] = True
+   173	            return Point2D(*coords, **kwargs)
+   174	        elif len(coords) == 3:
+   175	            kwargs['_nocheck'] = True
+   176	            return Point3D(*coords, **kwargs)
+   177	
+   178	        # the general Point
+   179	        return GeometryEntity.__new__(cls, *coords)
+   180	
+   181	    def __abs__(self):
+   182	        """Returns the distance between this point and the origin."""
+   183	        origin = Point([0]*len(self))
+   184	        return Point.distance(origin, self)
+   185	
+   186	    def __add__(self, other):
+   187	        """Add other to self by incrementing self's coordinates by
+   188	        those of other.
+   189	
+   190	        Notes
+
+
+2026-03-06 03:11:19,601 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 4 =========================
+2026-03-06 03:11:21,767 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -R "global_evaluate" -n sympy/core sympy/geometry | head -n 20
+2026-03-06 03:11:22,121 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+Your command ran successfully and did not produce any output.
+2026-03-06 03:11:22,128 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 5 =========================
+2026-03-06 03:11:24,814 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && grep -R "evaluate(False" -n sympy/core | head -n 20
+2026-03-06 03:11:25,159 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+OBSERVATION:
+grep: sympy/core/__pycache__/parameters.cpython-39.pyc: binary file matches
+sympy/core/parameters.py:91:    >>> with evaluate(False):
+sympy/core/tests/test_arit.py:1148:    with evaluate(False):
+sympy/core/tests/test_arit.py:1152:    with evaluate(False):
+sympy/core/tests/test_parameters.py:8:    with evaluate(False):
+sympy/core/tests/test_parameters.py:24:    with evaluate(False):
+sympy/core/tests/test_parameters.py:36:    with evaluate(False):
+sympy/core/tests/test_parameters.py:87:    with evaluate(False):
+
+2026-03-06 03:11:25,167 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 6 =========================
+2026-03-06 03:11:27,345 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor view /testbed/sympy/core/parameters.py  --view_range 1 140
+2026-03-06 03:11:27,814 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+OBSERVATION:
+Here's the result of running `cat -n` on /testbed/sympy/core/parameters.py:
+     1	"""Thread-safe global parameters"""
+     2	
+     3	from .cache import clear_cache
+     4	from contextlib import contextmanager
+     5	from threading import local
+     6	
+     7	class _global_parameters(local):
+     8	    """
+     9	    Thread-local global parameters.
+    10	
+    11	    Explanation
+    12	    ===========
+    13	
+    14	    This class generates thread-local container for SymPy's global parameters.
+    15	    Every global parameters must be passed as keyword argument when generating
+    16	    its instance.
+    17	    A variable, `global_parameters` is provided as default instance for this class.
+    18	
+    19	    WARNING! Although the global parameters are thread-local, SymPy's cache is not
+    20	    by now.
+    21	    This may lead to undesired result in multi-threading operations.
+    22	
+    23	    Examples
+    24	    ========
+    25	
+    26	    >>> from sympy.abc import x
+    27	    >>> from sympy.core.cache import clear_cache
+    28	    >>> from sympy.core.parameters import global_parameters as gp
+    29	
+    30	    >>> gp.evaluate
+    31	    True
+    32	    >>> x+x
+    33	    2*x
+    34	
+    35	    >>> log = []
+    36	    >>> def f():
+    37	    ...     clear_cache()
+    38	    ...     gp.evaluate = False
+    39	    ...     log.append(x+x)
+    40	    ...     clear_cache()
+    41	    >>> import threading
+    42	    >>> thread = threading.Thread(target=f)
+    43	    >>> thread.start()
+    44	    >>> thread.join()
+    45	
+    46	    >>> print(log)
+    47	    [x + x]
+    48	
+    49	    >>> gp.evaluate
+    50	    True
+    51	    >>> x+x
+    52	    2*x
+    53	
+    54	    References
+    55	    ==========
+    56	
+    57	    .. [1] https://docs.python.org/3/library/threading.html
+    58	
+    59	    """
+    60	    def __init__(self, **kwargs):
+    61	        self.__dict__.update(kwargs)
+    62	
+    63	    def __setattr__(self, name, value):
+    64	        if getattr(self, name) != value:
+    65	            clear_cache()
+    66	        return super().__setattr__(name, value)
+    67	
+    68	global_parameters = _global_parameters(evaluate=True, distribute=True, exp_is_pow=False)
+    69	
+    70	@contextmanager
+    71	def evaluate(x):
+    72	    """ Control automatic evaluation
+    73	
+    74	    Explanation
+    75	    ===========
+    76	
+    77	    This context manager controls whether or not all SymPy functions evaluate
+    78	    by default.
+    79	
+    80	    Note that much of SymPy expects evaluated expressions.  This functionality
+    81	    is experimental and is unlikely to function as intended on large
+    82	    expressions.
+    83	
+    84	    Examples
+    85	    ========
+    86	
+    87	    >>> from sympy import evaluate
+    88	    >>> from sympy.abc import x
+    89	    >>> print(x + x)
+    90	    2*x
+    91	    >>> with evaluate(False):
+    92	    ...     print(x + x)
+    93	    x + x
+    94	    """
+    95	
+    96	    old = global_parameters.evaluate
+    97	
+    98	    try:
+    99	        global_parameters.evaluate = x
+   100	        yield
+   101	    finally:
+   102	        global_parameters.evaluate = old
+   103	
+   104	
+   105	@contextmanager
+   106	def distribute(x):
+   107	    """ Control automatic distribution of Number over Add
+   108	
+   109	    Explanation
+   110	    ===========
+   111	
+   112	    This context manager controls whether or not Mul distribute Number over
+   113	    Add. Plan is to avoid distributing Number over Add in all of sympy. Once
+   114	    that is done, this contextmanager will be removed.
+   115	
+   116	    Examples
+   117	    ========
+   118	
+   119	    >>> from sympy.abc import x
+   120	    >>> from sympy.core.parameters import distribute
+   121	    >>> print(2*(x + 1))
+   122	    2*x + 2
+   123	    >>> with distribute(False):
+   124	    ...     print(2*(x + 1))
+   125	    2*(x + 1)
+   126	    """
+   127	
+   128	    old = global_parameters.distribute
+   129	
+   130	    try:
+   131	        global_parameters.distribute = x
+   132	        yield
+   133	    finally:
+   134	        global_parameters.distribute = old
+   135	
+   136	
+   137	@contextmanager
+   138	def _exp_is_pow(x):
+   139	    """
+   140	    Control whether `e^x` should be represented as ``exp(x)`` or a ``Pow(E, x)``.
+
+
+2026-03-06 03:11:27,854 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 7 =========================
+2026-03-06 03:11:31,658 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+str_replace_editor str_replace /testbed/sympy/geometry/point.py   --old_str '        if any(a.is_number and im(a) for a in coords):
+            raise ValueError('"'"'Imaginary coordinates are not permitted.'"'"')' --new_str '        if evaluate and any(a.is_number and im(a) for a in coords):
+            raise ValueError('"'"'Imaginary coordinates are not permitted.'"'"')'
+2026-03-06 03:11:32,089 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+OBSERVATION:
+The file /testbed/sympy/geometry/point.py has been edited. Here's the result of running `cat -n` on a snippet of /testbed/sympy/geometry/point.py:
+   150	                raise ValueError(filldedent('''
+   151	                        on_morph value should be 'error',
+   152	                        'warn' or 'ignore'.'''))
+   153	        if any(coords[dim:]):
+   154	            raise ValueError('Nonzero coordinates cannot be removed.')
+   155	        if evaluate and any(a.is_number and im(a) for a in coords):
+   156	            raise ValueError('Imaginary coordinates are not permitted.')
+   157	        if not all(isinstance(a, Expr) for a in coords):
+   158	            raise TypeError('Coordinates must be valid SymPy expressions.')
+   159	
+Review the changes and make sure they are as expected. Edit the file again if necessary.
+
+2026-03-06 03:11:32,101 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 8 =========================
+2026-03-06 03:11:37,402 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+cd /testbed && python - <<'PY'
+import sympy as sp
+print('case1')
+with sp.evaluate(False):
+    print(sp.S('Point2D(Integer(1),Integer(2))'))
+print('case2')
+print(sp.S('Point2D(Integer(1),Integer(2))'))
+print('edge evaluate True complex should error')
+try:
+    print(sp.Point(1+sp.I, 2))
+except Exception as e:
+    print(type(e).__name__, e)
+print('edge evaluate False complex should preserve')
+with sp.evaluate(False):
+    print(sp.Point(1+sp.I, 2))
+PY
+2026-03-06 03:11:38,683 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+Observation: case1
+Point2D(1, 2)
+case2
+Point2D(1, 2)
+edge evaluate True complex should error
+ValueError Imaginary coordinates are not permitted.
+edge evaluate False complex should preserve
+Traceback (most recent call last):
+  File "<stdin>", line 14, in <module>
+  File "/testbed/sympy/geometry/entity.py", line 152, in __str__
+    return type(self).__name__ + sstr(self.args)
+  File "/testbed/sympy/printing/printer.py", line 373, in __call__
+    return self.__wrapped__(*args, **kwargs)
+  File "/testbed/sympy/printing/str.py", line 999, in sstr
+    s = p.doprint(expr)
+  File "/testbed/sympy/printing/printer.py", line 293, in doprint
+    return self._str(self._print(expr))
+  File "/testbed/sympy/printing/printer.py", line 332, in _print
+    return printmethod(expr, **kwargs)
+  File "/testbed/sympy/printing/str.py", line 870, in _print_tuple
+    return "(%s)" % self.stringify(expr, ", ")
+  File "/testbed/sympy/printing/str.py", line 42, in stringify
+    return sep.join([self.parenthesize(item, level) for item in args])
+  File "/testbed/sympy/printing/str.py", line 42, in <listcomp>
+    return sep.join([self.parenthesize(item, level) for item in args])
+  File "/testbed/sympy/printing/str.py", line 39, in parenthesize
+    return self._print(item)
+  File "/testbed/sympy/printing/printer.py", line 332, in _print
+    return printmethod(expr, **kwargs)
+  File "/testbed/sympy/printing/str.py", line 53, in _print_Add
+    terms = self._as_ordered_terms(expr, order=order)
+  File "/testbed/sympy/printing/printer.py", line 350, in _as_ordered_terms
+    return expr.as_ordered_terms(order=order)
+  File "/testbed/sympy/core/expr.py", line 1185, in as_ordered_terms
+    terms, gens = self.as_terms()
+  File "/testbed/sympy/core/expr.py", line 1222, in as_terms
+    coeff *= complex(factor)
+  File "/testbed/sympy/core/expr.py", line 375, in __complex__
+    return complex(float(re), float(im))
+  File "/testbed/sympy/core/expr.py", line 365, in __float__
+    result = self.evalf()
+  File "/testbed/sympy/core/evalf.py", line 1640, in evalf
+    result = evalf(self, prec + 4, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 602, in evalf_add
+    terms = [evalf(arg, prec + 10, options) for arg in v.args]
+  File "/testbed/sympy/core/evalf.py", line 602, in <listcomp>
+    terms = [evalf(arg, prec + 10, options) for arg in v.args]
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 650, in evalf_mul
+    result = evalf(arg, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 313, in evalf_im
+    return get_complex_part(expr.args[0], 1, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 293, in get_complex_part
+    res = evalf(expr, workprec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im, re_acc, im_acc = evalf(arg, working_prec, options)
+  File "/testbed/sympy/core/evalf.py", line 1492, in evalf
+    r = rf(x, prec, options)
+  File "/testbed/sympy/core/evalf.py", line 698, in evalf_mul
+    re, im<response clipped><NOTE>Observations should not exceeded 100000 characters. 5862 characters were elided. Please try a different command that produces less output or use head/tail/grep/redirect the output to a file. Do not use interactive pagers.</NOTE>
+2026-03-06 03:11:38,696 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 9 =========================
+2026-03-06 03:11:46,503 - WARNING - swea-agent-sympy__sympy-22714 - Requerying model after FunctionCallingFormatError (1th requery)
+2026-03-06 03:11:46,508 - WARNING - swea-agent-sympy__sympy-22714 - Your last output did not use any tool calls!
+Please make sure your output includes exactly _ONE_ function call!
+You must invoke the function directly using the function call format.
+You cannot invoke commands with ```, you have to use the function call format.
+If you think you have already resolved the issue, please submit your changes by running the `submit` command.
+If you think you cannot solve the problem, please run `exit_forfeit` (if available) or `submit`.
+Else, please continue with a new tool call!
+2026-03-06 03:11:49,500 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-06 03:11:49,991 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+OBSERVATION:
+Thank you for your work on this issue. Please carefully follow the steps below to help review your changes.
+
+1. If you made any changes to your code after running the reproduction script, please run the reproduction script again.
+  If the reproduction script is failing, please revisit your changes and make sure they are correct.
+  If you have already removed your reproduction script, please ignore this step.
+2. Remove your reproduction script (if you haven't done so already).
+3. If you have modified any TEST files, please revert them to the state they had before you started fixing the issue.
+  You can do this with `git checkout -- /path/to/test/file.py`. Use below <diff> to find the files you need to revert.
+4. Run the submit command again to confirm.
+
+Here is a list of all of your changes:
+
+<diff>
+diff --git a/sympy/geometry/point.py b/sympy/geometry/point.py
+index 73c20334d0..ad06668efe 100644
+--- a/sympy/geometry/point.py
++++ b/sympy/geometry/point.py
+@@ -152,7 +152,7 @@ def __new__(cls, *args, **kwargs):
+                         'warn' or 'ignore'.'''))
+         if any(coords[dim:]):
+             raise ValueError('Nonzero coordinates cannot be removed.')
+-        if any(a.is_number and im(a) for a in coords):
++        if evaluate and any(a.is_number and im(a) for a in coords):
+             raise ValueError('Imaginary coordinates are not permitted.')
+         if not all(isinstance(a, Expr) for a in coords):
+             raise TypeError('Coordinates must be valid SymPy expressions.')
+
+</diff>
+
+
+2026-03-06 03:11:50,015 - INFO - swea-agent-sympy__sympy-22714 - ========================= STEP 11 =========================
+2026-03-06 03:11:56,360 - WARNING - swea-agent-sympy__sympy-22714 - Requerying model after FunctionCallingFormatError (1th requery)
+2026-03-06 03:11:56,366 - WARNING - swea-agent-sympy__sympy-22714 - Your last output did not use any tool calls!
+Please make sure your output includes exactly _ONE_ function call!
+You must invoke the function directly using the function call format.
+You cannot invoke commands with ```, you have to use the function call format.
+If you think you have already resolved the issue, please submit your changes by running the `submit` command.
+If you think you cannot solve the problem, please run `exit_forfeit` (if available) or `submit`.
+Else, please continue with a new tool call!
+2026-03-06 03:11:59,436 - INFO - swea-agent-sympy__sympy-22714 - 💭 THOUGHT
+
+
+🎬 ACTION
+submit
+2026-03-06 03:11:59,907 - INFO - swea-agent-sympy__sympy-22714 - Found submission: diff --git a/sympy/geometry/point.py b/sympy/geometry/point.py
+index 73c20334d0..ad06668efe 100644
+--- a/sympy/geometry/point.py
++++ b/sympy/geometry/point.py
+@@ -152,7 +152,7 @@ def __new__(cls, *args, **kwargs):
+                         'warn' or 'ignore'.'''))
+         if any(coords[dim:]):
+             raise ValueError('Nonzero coordinates cannot be removed.')
+-        if any(a.is_number and im(a) for a in coords):
++        if evaluate and any(a.is_number and im(a) for a in coords):
+             raise ValueError('Imaginary coordinates are not permitted.')
+         if not all(isinstance(a, Expr) for a in coords):
+             raise TypeError('Coordinates must be valid SymPy expressions.')
+
+2026-03-06 03:11:59,911 - INFO - swea-agent-sympy__sympy-22714 - 🤖 MODEL INPUT
+OBSERVATION:
+diff --git a/sympy/geometry/point.py b/sympy/geometry/point.py
+index 73c20334d0..ad06668efe 100644
+--- a/sympy/geometry/point.py
++++ b/sympy/geometry/point.py
+@@ -152,7 +152,7 @@ def __new__(cls, *args, **kwargs):
+                         'warn' or 'ignore'.'''))
+         if any(coords[dim:]):
+             raise ValueError('Nonzero coordinates cannot be removed.')
+-        if any(a.is_number and im(a) for a in coords):
++        if evaluate and any(a.is_number and im(a) for a in coords):
+             raise ValueError('Imaginary coordinates are not permitted.')
+         if not all(isinstance(a, Expr) for a in coords):
+             raise TypeError('Coordinates must be valid SymPy expressions.')
+
+2026-03-06 03:11:59,955 - INFO - swea-agent-sympy__sympy-22714 - Trajectory saved to /data/liora/SWE-agent-src/trajectories/ubuntu/default__gpt-5.3-codex__t-1.00__p-None__c-0.00___lite_test_local83__lite83_nobudget_mt8_probev3_rerun1/sympy__sympy-22714/sympy__sympy-22714.traj
+2026-03-06 03:11:59,961 - INFO - swea-env-sympy__sympy-22714 - Beginning environment shutdown...

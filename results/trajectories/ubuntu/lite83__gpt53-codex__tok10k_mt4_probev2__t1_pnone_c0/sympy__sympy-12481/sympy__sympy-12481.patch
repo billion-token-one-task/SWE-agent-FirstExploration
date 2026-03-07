@@ -1,0 +1,63 @@
+diff --git a/repro_autodoc_all_empty.py b/repro_autodoc_all_empty.py
+new file mode 100644
+index 000000000..c567b977a
+--- /dev/null
++++ b/repro_autodoc_all_empty.py
+@@ -0,0 +1,57 @@
++import os
++import sys
++import textwrap
++import tempfile
++from sphinx.application import Sphinx
++
++
++def main():
++    with tempfile.TemporaryDirectory() as tmp:
++        src = os.path.join(tmp, 'src')
++        out = os.path.join(tmp, 'out')
++        doctree = os.path.join(tmp, 'doctree')
++        os.makedirs(src)
++
++        with open(os.path.join(src, 'conf.py'), 'w') as f:
++            f.write("extensions = ['sphinx.ext.autodoc']\n")
++
++        with open(os.path.join(src, 'example.py'), 'w') as f:
++            f.write(textwrap.dedent('''\
++                __all__ = []
++
++                def foo():
++                    """docstring"""
++
++                def bar():
++                    """docstring"""
++
++                def baz():
++                    """docstring"""
++            '''))
++
++        with open(os.path.join(src, 'index.rst'), 'w') as f:
++            f.write(textwrap.dedent('''\
++                Test
++                ====
++
++                .. automodule:: example
++                   :members:
++            '''))
++
++        sys.path.insert(0, src)
++        app = Sphinx(srcdir=src, confdir=src, outdir=out, doctreedir=doctree,
++                     buildername='text', warningiserror=False, freshenv=True)
++        app.build(force_all=True)
++
++        output_path = os.path.join(out, 'index.txt')
++        with open(output_path, 'r') as f:
++            content = f.read()
++
++        has_members = any(name in content for name in ['foo', 'bar', 'baz'])
++        print('HAS_MEMBERS:', has_members)
++        print('--- index.txt ---')
++        print(content)
++
++
++if __name__ == '__main__':
++    main()

@@ -1,0 +1,52 @@
+diff --git a/repro_skip_runxfail.py b/repro_skip_runxfail.py
+new file mode 100644
+index 000000000..01a1248ba
+--- /dev/null
++++ b/repro_skip_runxfail.py
+@@ -0,0 +1,20 @@
++
++import subprocess, sys, textwrap
++from pathlib import Path
++
++root = Path(__file__).parent
++pkg = root / 'tmp_repro_test.py'
++pkg.write_text(textwrap.dedent("""
++import pytest
++
++@pytest.mark.skip
++
++def test_skip_location():
++    assert 0
++"""))
++
++cmd = [sys.executable, '-m', 'pytest', '-rs', '--runxfail', str(pkg)]
++proc = subprocess.run(cmd, cwd=root, capture_output=True, text=True)
++print(proc.stdout)
++print(proc.stderr)
++print('RETURNCODE', proc.returncode)
+diff --git a/src/_pytest/skipping.py b/src/_pytest/skipping.py
+index 7bd975e5a..d8ffba578 100644
+--- a/src/_pytest/skipping.py
++++ b/src/_pytest/skipping.py
+@@ -270,8 +270,6 @@ def pytest_runtest_makereport(item: Item, call: CallInfo[None]):
+         else:
+             rep.longrepr = "Unexpected success"
+         rep.outcome = "failed"
+-    elif item.config.option.runxfail:
+-        pass  # don't interfere
+     elif call.excinfo and isinstance(call.excinfo.value, xfail.Exception):
+         assert call.excinfo.value.msg is not None
+         rep.wasxfail = "reason: " + call.excinfo.value.msg
+diff --git a/tmp_repro_test.py b/tmp_repro_test.py
+new file mode 100644
+index 000000000..60b05f94f
+--- /dev/null
++++ b/tmp_repro_test.py
+@@ -0,0 +1,7 @@
++
++import pytest
++
++@pytest.mark.skip
++
++def test_skip_location():
++    assert 0

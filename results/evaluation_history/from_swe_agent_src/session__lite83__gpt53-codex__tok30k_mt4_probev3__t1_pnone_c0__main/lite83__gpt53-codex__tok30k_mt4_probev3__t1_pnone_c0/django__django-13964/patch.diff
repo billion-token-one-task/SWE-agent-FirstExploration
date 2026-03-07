@@ -1,0 +1,42 @@
+diff --git a/repro_fk_char_pk.py b/repro_fk_char_pk.py
+new file mode 100644
+index 0000000000..8b31a54c78
+--- /dev/null
++++ b/repro_fk_char_pk.py
+@@ -0,0 +1,36 @@
++from django.conf import settings
++
++if not settings.configured:
++    settings.configure(
++        SECRET_KEY="test",
++        INSTALLED_APPS=["__main__"],
++        DATABASES={"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}},
++    )
++
++import django
++from django.db import models, transaction, connection
++
++django.setup()
++
++
++class Product(models.Model):
++    sku = models.CharField(primary_key=True, max_length=50)
++
++
++class Order(models.Model):
++    product = models.ForeignKey(Product, on_delete=models.CASCADE)
++
++
++with connection.schema_editor() as editor:
++    editor.create_model(Product)
++    editor.create_model(Order)
++
++with transaction.atomic():
++    order = Order()
++    order.product = Product()
++    order.product.sku = "foo"
++    order.product.save()
++    order.save()
++    print("order.product_id:", repr(order.product_id))
++    print("filter(product_id='').exists()", Order.objects.filter(product_id="").exists())
++    print("filter(product=order.product).exists()", Order.objects.filter(product=order.product).exists())

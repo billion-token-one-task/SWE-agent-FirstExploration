@@ -1,0 +1,128 @@
+diff --git a/django/db/models/fields/__init__.py b/django/db/models/fields/__init__.py
+index aa21a151bc..5be81cf116 100644
+--- a/django/db/models/fields/__init__.py
++++ b/django/db/models/fields/__init__.py
+@@ -487,7 +487,7 @@ class Field(RegisterLookupMixin):
+             else:
+                 if value is not default:
+                     keywords[name] = value
+-        # Work out path - we shorten it for known Django core fields
++        # Work out path - use __qualname__ so inner classes are preserved.
+         path = "%s.%s" % (self.__class__.__module__, self.__class__.__qualname__)
+         if path.startswith("django.db.models.fields.related"):
+             path = path.replace("django.db.models.fields.related", "django.db.models")
+diff --git a/repro_inner_field_path.py b/repro_inner_field_path.py
+new file mode 100644
+index 0000000000..76774a3437
+--- /dev/null
++++ b/repro_inner_field_path.py
+@@ -0,0 +1,84 @@
++import os
++import sys
++import tempfile
++import textwrap
++
++
++def main():
++    repo = os.path.abspath(os.path.dirname(__file__))
++    with tempfile.TemporaryDirectory() as tmp:
++        project_dir = os.path.join(tmp, 'proj')
++        os.makedirs(project_dir)
++        app_dir = os.path.join(project_dir, 'testapp')
++        os.makedirs(os.path.join(app_dir, 'migrations'))
++
++        with open(os.path.join(project_dir, 'manage.py'), 'w') as f:
++            f.write(textwrap.dedent('''\
++                #!/usr/bin/env python
++                import os
++                import sys
++                if __name__ == '__main__':
++                    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'settings')
++                    from django.core.management import execute_from_command_line
++                    execute_from_command_line(sys.argv)
++            '''))
++        with open(os.path.join(project_dir, 'settings.py'), 'w') as f:
++            f.write(textwrap.dedent('''\
++                SECRET_KEY = 'x'
++                INSTALLED_APPS = ['testapp']
++                DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'}}
++                TEMPLATES = [{
++                    'BACKEND': 'django.template.backends.django.DjangoTemplates',
++                    'APP_DIRS': True,
++                }]
++            '''))
++        with open(os.path.join(app_dir, '__init__.py'), 'w') as f:
++            f.write('')
++        with open(os.path.join(app_dir, 'apps.py'), 'w') as f:
++            f.write(textwrap.dedent('''\
++                from django.apps import AppConfig
++                class TestappConfig(AppConfig):
++                    name = 'testapp'
++            '''))
++        with open(os.path.join(app_dir, 'migrations', '__init__.py'), 'w') as f:
++            f.write('')
++        with open(os.path.join(app_dir, 'models.py'), 'w') as f:
++            f.write(textwrap.dedent('''\
++                from django.db import models
++
++                class Outer(object):
++                    class Inner(models.CharField):
++                        pass
++
++                class A(models.Model):
++                    field = Outer.Inner(max_length=20)
++            '''))
++
++        env = os.environ.copy()
++        env['PYTHONPATH'] = repo + os.pathsep + project_dir + os.pathsep + env.get('PYTHONPATH', '')
++        env['DJANGO_SETTINGS_MODULE'] = 'settings'
++        import subprocess
++        result = subprocess.run(
++            [sys.executable, 'manage.py', 'makemigrations', 'testapp'],
++            cwd=project_dir,
++            env=env,
++            stdout=subprocess.PIPE,
++            stderr=subprocess.STDOUT,
++            universal_newlines=True,
++        )
++        print(result.stdout)
++        if result.returncode:
++            raise SystemExit(result.returncode)
++        migration = os.path.join(app_dir, 'migrations', '0001_initial.py')
++        data = open(migration).read()
++        print(data)
++        if 'testapp.models.Outer.Inner' in data:
++            print('OK: nested class path preserved')
++        elif 'testapp.models.Inner' in data:
++            print('BUG: nested class path flattened incorrectly')
++        else:
++            print('Unexpected migration output')
++
++
++if __name__ == '__main__':
++    main()
+diff --git a/repro_inner_field_path_simple.py b/repro_inner_field_path_simple.py
+new file mode 100644
+index 0000000000..4b49d2ccd7
+--- /dev/null
++++ b/repro_inner_field_path_simple.py
+@@ -0,0 +1,19 @@
++from django.db import models
++
++
++class Outer(object):
++    class Inner(models.CharField):
++        pass
++
++
++field = Outer.Inner(max_length=20)
++name, path, args, kwargs = field.deconstruct()
++print(path)
++if path == 'django.db.models.CharField':
++    print('core field shortcut preserved')
++elif path == '__main__.Outer.Inner':
++    print('OK: nested class path preserved')
++elif path == '__main__.Inner':
++    print('BUG: nested class path flattened incorrectly')
++else:
++    print('Observed path:', path)

@@ -1,0 +1,36 @@
+diff --git a/django/db/models/query_utils.py b/django/db/models/query_utils.py
+index c957ffa564..09047c6e2f 100644
+--- a/django/db/models/query_utils.py
++++ b/django/db/models/query_utils.py
+@@ -64,6 +64,12 @@ class Q(tree.Node):
+     def __and__(self, other):
+         return self._combine(other, self.AND)
+ 
++    def __rand__(self, other):
++        return self.__and__(other)
++
++    def __ror__(self, other):
++        return self.__or__(other)
++
+     def __invert__(self):
+         obj = type(self)()
+         obj.add(self, self.AND)
+diff --git a/repro_q_exists.py b/repro_q_exists.py
+new file mode 100644
+index 0000000000..14efd78621
+--- /dev/null
++++ b/repro_q_exists.py
+@@ -0,0 +1,13 @@
++from django.db.models import Exists, Q
++
++
++def main():
++    e = Exists(None)
++    print('Exists & Q:', e & Q())
++    try:
++        print('Q & Exists:', Q() & e)
++    except Exception as exc:
++        print(type(exc).__name__, exc)
++
++if __name__ == '__main__':
++    main()

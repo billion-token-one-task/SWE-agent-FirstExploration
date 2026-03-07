@@ -1,0 +1,73 @@
+diff --git a/django/db/backends/base/schema.py b/django/db/backends/base/schema.py
+index 61f88401ab..c148a30c22 100644
+--- a/django/db/backends/base/schema.py
++++ b/django/db/backends/base/schema.py
+@@ -407,6 +407,16 @@ class BaseDatabaseSchemaEditor:
+             model, columns, exclude=meta_constraint_names | meta_index_names,
+             **constraint_kwargs
+         )
++        if len(constraint_names) != 1:
++            # On some backends (e.g. MySQL), unique constraints are
++            # represented as indexes. When deleting a composed index and both
++            # index_together and unique_together exist on the same fields,
++            # introspection may return both constraints. In that case, keep
++            # only the default index name generated for index_together.
++            if constraint_kwargs == {'index': True}:
++                index_name = self._create_index_name(model._meta.db_table, columns, suffix='_idx')
++                if index_name in constraint_names:
++                    constraint_names = [index_name]
+         if len(constraint_names) != 1:
+             raise ValueError("Found wrong number (%s) of constraints for %s(%s)" % (
+                 len(constraint_names),
+diff --git a/repro.py b/repro.py
+new file mode 100644
+index 0000000000..1abcae2907
+--- /dev/null
++++ b/repro.py
+@@ -0,0 +1,46 @@
++from django.conf import settings
++
++settings.configure(
++    INSTALLED_APPS=[],
++    DATABASES={'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': ':memory:'}},
++)
++
++import django
++from django.db import connection, models
++from django.db.backends.base.schema import BaseDatabaseSchemaEditor
++
++django.setup()
++
++class TestModel(models.Model):
++    a = models.IntegerField()
++    b = models.IntegerField()
++
++    class Meta:
++        app_label = 'testapp'
++        db_table = 'test_model'
++        unique_together = (('a', 'b'),)
++        index_together = (('a', 'b'),)
++
++schema_editor = connection.schema_editor()
++
++original_constraint_names = BaseDatabaseSchemaEditor._constraint_names
++
++def fake_constraint_names(self, model, columns, **kwargs):
++    if kwargs.get('index'):
++        return ['test_model_a_b_uniq', 'test_model_a_b_idx']
++    return original_constraint_names(self, model, columns, **kwargs)
++
++BaseDatabaseSchemaEditor._constraint_names = fake_constraint_names
++
++try:
++    schema_editor._delete_composed_index(
++        TestModel,
++        ('a', 'b'),
++        {'index': True},
++        schema_editor.sql_delete_index,
++    )
++    print('No error')
++except Exception as e:
++    print(type(e).__name__, e)
++finally:
++    BaseDatabaseSchemaEditor._constraint_names = original_constraint_names

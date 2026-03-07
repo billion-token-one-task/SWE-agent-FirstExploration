@@ -1,0 +1,17 @@
+diff --git a/django/db/models/fields/related_descriptors.py b/django/db/models/fields/related_descriptors.py
+index 872a4c98dc..779f29b858 100644
+--- a/django/db/models/fields/related_descriptors.py
++++ b/django/db/models/fields/related_descriptors.py
+@@ -258,6 +258,12 @@ class ForwardManyToOneDescriptor:
+ 
+         # Set the related instance cache used by __get__ to avoid an SQL query
+         # when accessing the attribute we just set.
++        # Keep the local foreign key value in sync with the related object so
++        # subsequent parent primary key updates are reflected (e.g. non-auto
++        # CharField primary keys assigned after relation assignment).
++        if value is not None:
++            for lh_field, rh_field in self.field.related_fields:
++                setattr(instance, lh_field.attname, getattr(value, rh_field.attname))
+         self.field.set_cached_value(instance, value)
+ 
+         # If this is a one-to-one relation, set the reverse accessor cache on

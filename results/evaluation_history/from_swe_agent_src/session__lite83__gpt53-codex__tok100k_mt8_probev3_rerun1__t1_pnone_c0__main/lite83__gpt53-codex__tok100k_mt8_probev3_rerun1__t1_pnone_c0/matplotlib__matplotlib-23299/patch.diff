@@ -1,0 +1,25 @@
+diff --git a/lib/matplotlib/pyplot.py b/lib/matplotlib/pyplot.py
+index e3c66ea67c..8756510654 100644
+--- a/lib/matplotlib/pyplot.py
++++ b/lib/matplotlib/pyplot.py
+@@ -199,10 +199,16 @@ def _get_backend_mod():
+     This is currently private, but may be made public in the future.
+     """
+     if _backend_mod is None:
+-        # Use __getitem__ here to avoid going through the fallback logic (which
+-        # will (re)import pyplot and then call switch_backend if we need to
+-        # resolve the auto sentinel)
+-        switch_backend(dict.__getitem__(rcParams, "backend"))
++        # Use rcParams._get_backend_or_none() to avoid resolving the auto
++        # backend sentinel in temporary rc contexts. Falling back to __getitem__
++        # can trigger backend resolution from the context value and clear open
++        # figures via switch_backend(close("all")).
++        backend = rcParams._get_backend_or_none()
++        if backend is None:
++            # Resolve the auto backend sentinel only if no backend has been set
++            # explicitly yet.
++            backend = dict.__getitem__(rcParams, "backend")
++        switch_backend(backend)
+     return _backend_mod
+ 
+ 
